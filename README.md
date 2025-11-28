@@ -8,8 +8,8 @@
 - 启动 WebSocket 服务：`node sync-server.js`
   - 终端显示 `ws://0.0.0.0:8080` 代表服务已启动
   - 服务端文件：`sync-server.js`（支持环境变量 `PORT`）
-- 打开主页面：`课堂积分系统.html`
-- 打开排行页面：`排行榜.html`
+- 打开主页面：`admin.html`
+- 打开排行页面：`index.html`
 
 ## 使用说明
 - 在主页面进行积分加减、改队名、增删队伍或重置，都会自动推送最新排名到服务端并缓存
@@ -18,8 +18,8 @@
 
 ## 局域网/多设备
 - 将两处 `WS_URL` 改为你的电脑 IP：
-  - 主页面：`课堂积分系统.html:781`
-  - 排行页：`排行榜.html:31`
+  - 主页面：`admin.html:792`
+  - 排行页：`index.html:39`
 - 示例：`ws://192.168.1.100:8080`
 - 在 Windows 防火墙允许入站 8080 端口，或修改 `PORT` 使用其他端口
 
@@ -38,14 +38,14 @@
 - 若需要分班/房间，请在消息体中增加房间标识并在服务端按房间转发
 
 ## 文件索引
-- 主页面：`课堂积分系统.html`
-  - WebSocket 地址常量：`c:\Users\15765\Desktop\新建文件夹\课堂积分系统.html:781`
-  - 广播调用点：加分、改名、增删队伍、重置、初始化等（例如 `:842`, `:858`, `:866`, `:880`, `:908`, `:924`）
-- 排行页面：`排行榜.html`
-  - WebSocket 地址常量：`c:\Users\15765\Desktop\新建文件夹\排行榜.html:31`
-  - 自动请求与按钮：`c:\Users\15765\Desktop\新建文件夹\排行榜.html:31–48`
+- 主页面：`admin.html`
+  - WebSocket 地址常量：`admin.html:792`
+  - 广播调用点：加分、改名、增删队伍、重置、初始化等
+- 排行页面：`index.html`
+  - WebSocket 地址常量：`index.html:39`
+  - 自动请求与按钮：`index.html:39–51`
 - 服务端：`sync-server.js`
-  - 快照缓存与推送：`c:\Users\15765\Desktop\新建文件夹\sync-server.js:5–31`
-  - 每秒广播：`c:\Users\15765\Desktop\新建文件夹\sync-server.js:32–41`
+  - 快照缓存与推送：`sync-server.js:5–31`
+  - 每秒广播：`sync-server.js:32–41`
 
 # luchenxi
