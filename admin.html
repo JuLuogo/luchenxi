@@ -788,7 +788,10 @@
             <div class="global-card">
                 <h3 class="global-title">系统重置</h3>
                 <p>清空所有积分并恢复到初始状态</p>
-                <button class="big-btn small-btn" style="background: rgba(255, 193, 7, 0.6)" onclick="resetAll()">重置所有数据</button>
+                <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+                    <button class="big-btn small-btn" style="background: rgba(255, 193, 7, 0.6)" onclick="resetAll()">重置所有数据</button>
+                    <button class="big-btn small-btn" style="background: rgba(52, 152, 219, 0.6)" onclick="openLogs()">查看操作日志</button>
+                </div>
             </div>
         </section>
         
@@ -796,6 +799,21 @@
             <p>数据已本地保存 &bull; © 2025 课堂比赛积分系统</p>
             <div class="icp"><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">冀ICP备2025122485号-1</a></div>
         </footer>
+    </div>
+    <div id="logsModal" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:1000">
+        <div style="background:#fff;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,0.2);width:90%;max-width:720px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(0,0,0,0.1)">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.08)">
+                <div style="font-weight:600">操作日志</div>
+                <button onclick="closeLogs()" style="border:none;background:transparent;font-size:18px;cursor:pointer">✕</button>
+            </div>
+            <div style="padding:12px;overflow:auto">
+                <ul id="logsList" style="list-style:none;margin:0;padding:0"></ul>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;padding:12px;border-top:1px solid rgba(0,0,0,0.08)">
+                <button class="big-btn small-btn" onclick="clearLogs()">清空日志</button>
+                <button class="big-btn small-btn" onclick="closeLogs()">关闭</button>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -874,6 +892,40 @@
                 setStatus('实时同步');
             }
         }
+        function escapeHTML(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function logAction(type, detail) {
+            var logs = [];
+            try { logs = JSON.parse(localStorage.getItem('opLogs') || '[]'); } catch {}
+            logs.push({ ts: Date.now(), type: type, detail: detail });
+            if (logs.length > 500) logs = logs.slice(logs.length - 500);
+            localStorage.setItem('opLogs', JSON.stringify(logs));
+        }
+        function openLogs() {
+            var modal = document.getElementById('logsModal');
+            var list = document.getElementById('logsList');
+            var logs = [];
+            try { logs = JSON.parse(localStorage.getItem('opLogs') || '[]'); } catch {}
+            if (!list) return;
+            if (logs.length === 0) {
+                list.innerHTML = '<div class="empty">暂无操作日志</div>';
+            } else {
+                list.innerHTML = logs.slice().reverse().map(function(l){
+                    var d = new Date(l.ts).toLocaleString();
+                    return '<li style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06)"><span style="opacity:.8">' + d + '</span><span style="font-weight:600">' + escapeHTML(l.type) + '</span><span>' + escapeHTML(l.detail) + '</span></li>';
+                }).join('');
+            }
+            if (modal) modal.style.display = 'flex';
+        }
+        function closeLogs() {
+            var modal = document.getElementById('logsModal');
+            if (modal) modal.style.display = 'none';
+        }
+        function clearLogs() {
+            localStorage.removeItem('opLogs');
+            openLogs();
+        }
         
         // 渲染队伍卡片
         function renderTeams() {
@@ -926,6 +978,7 @@
             scoreEl.classList.remove('score-change');
             void scoreEl.offsetWidth; // 触发重绘
             scoreEl.classList.add('score-change');
+            logAction('修改积分', teams[index].name + ' ' + (delta > 0 ? ('+' + delta) : delta) + ' => ' + teams[index].score);
             renderLeaderboard();
             broadcastLeaderboard();
         }
@@ -940,14 +993,17 @@
                 void scoreEl.offsetWidth;
                 scoreEl.classList.add('score-change');
             }
+            logAction('归零', teams[index].name);
             renderLeaderboard();
             broadcastLeaderboard();
         }
 
         // 更新队伍名称
         function updateTeamName(index, newName) {
+            const oldName = teams[index].name;
             teams[index].name = newName;
             localStorage.setItem('teams', JSON.stringify(teams));
+            logAction('改名', oldName + ' -> ' + newName);
             renderLeaderboard();
             broadcastLeaderboard();
         }
@@ -961,6 +1017,7 @@
                 icon: randomIcon
             });
             localStorage.setItem('teams', JSON.stringify(teams));
+            logAction('添加队伍', teams[teams.length - 1].name);
             renderTeams();
             renderLeaderboard();
             broadcastLeaderboard();
@@ -969,8 +1026,10 @@
         // 删除队伍
         function removeTeam(index) {
             if (teams.length <= 2) return;
+            const removedName = teams[index].name;
             teams.splice(index, 1);
             localStorage.setItem('teams', JSON.stringify(teams));
+            logAction('删除队伍', removedName);
             renderTeams();
             renderLeaderboard();
             broadcastLeaderboard();
@@ -999,6 +1058,7 @@
             if (confirm("确定重置所有数据？积分将清零且无法恢复！")) {
                 teams.forEach(t => t.score = 0);
                 localStorage.setItem('teams', JSON.stringify(teams));
+                logAction('重置所有数据', '全部队伍积分清零');
                 renderTeams();
                 renderLeaderboard();
                 broadcastLeaderboard();
