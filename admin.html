@@ -251,22 +251,30 @@
         /* 大按钮 */
         .big-btn {
             width: 100%;
-            padding: 16px 0;
+            padding: 14px 22px;
             margin-top: 8px;
             font-size: 1.2rem;
             background: rgba(92, 107, 192, 0.6);
             font-weight: bold;
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+            transition: var(--transition);
         }
         /* 小按钮变体，用于需要缩小尺寸的场景 */
         .small-btn {
             width: auto;
-            padding: 8px 12px;
+            padding: 10px 16px;
             font-size: 1rem;
             align-self: center;
+            border-radius: 999px;
         }
         
         .big-btn:hover {
             background: rgba(92, 107, 192, 0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 18px rgba(0, 0, 0, 0.16);
         }
         
         /* 计时器区域 */
