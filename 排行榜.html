@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>积分排名共享</title>
+<style>
+body{background:#eef2f5;margin:0;font-family:Segoe UI,Tahoma,Verdana,sans-serif;color:#2c3e50;padding:20px}
+.wrap{max-width:700px;margin:0 auto}
+.card{background:#fff;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:16px;border:1px solid rgba(0,0,0,.08)}
+.title{font-size:1.4rem;margin:0 0 12px;text-align:center}
+.hint{opacity:.7;text-align:center;margin-bottom:12px;font-size:.9rem}
+.list{padding:8px;background:rgba(52,73,94,.05);border-radius:6px}
+.item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-bottom:6px;background:#fff;border-radius:6px;border-left:3px solid #66bb6a}
+.rank{font-weight:700;color:#66bb6a;min-width:32px}
+.name{flex:1;margin:0 8px;font-weight:600}
+.score{font-weight:700}
+.footer{margin-top:10px;text-align:center;font-size:.85rem;opacity:.7}
+.actions{text-align:center;margin-bottom:8px}
+.btn{display:inline-block;padding:6px 12px;border-radius:6px;border:1px solid rgba(0,0,0,.12);background:#eef2f5;color:#2c3e50;cursor:pointer}
+.btn:hover{background:#e3e8ee}
+.empty{opacity:.6;text-align:center;padding:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h2 class="title">积分排名共享</h2>
+    <div class="hint" id="status">等待数据</div>
+    <div class="actions"><button class="btn" onclick="requestNow()">重新请求</button></div>
+    <div class="list" id="list"></div>
+    <div class="footer" id="footer"></div>
+  </div>
+</div>
+<script>
+var WS_URL='ws://localhost:8080';
+var ws;
+var hasData=false;
+var reqTimer=null;
+function requestNow(){ if(ws && ws.readyState===1){ hasData=false; ws.send(JSON.stringify({type:'request'})); document.getElementById('status').textContent='已连接，已请求'; } }
+function connect(){
+  try{
+    ws=new WebSocket(WS_URL);
+    ws.onopen=function(){
+      document.getElementById('status').textContent='已连接';
+      if(ws.readyState===1){ ws.send(JSON.stringify({type:'request'})); }
+      if(reqTimer) clearInterval(reqTimer);
+      reqTimer=setInterval(function(){ if(!hasData && ws && ws.readyState===1){ ws.send(JSON.stringify({type:'request'})); } }, 2000);
+    };
+    ws.onmessage=function(e){
+      try{
+        var m=JSON.parse(e.data);
+        if(m&&m.type==='leaderboard'&&m.payload&&Array.isArray(m.payload.teams)){
+          hasData=true;
+          render(m.payload.teams);
+          document.getElementById('status').textContent='实时同步';
+        }
+      }catch{}
+    };
+    ws.onclose=function(){
+      document.getElementById('status').textContent='连接断开，重试中…';
+      hasData=false;
+      if(reqTimer) clearInterval(reqTimer);
+      setTimeout(connect,2000);
+    };
+  }catch{}
+}
+connect();
+function render(teams){
+  var list=document.getElementById('list');
+  var sorted=(teams||[]).slice().sort(function(a,b){ return (b.score||0)-(a.score||0); });
+  if(sorted.length===0){ list.innerHTML='<div class="empty">暂无数据</div>'; }
+  else{ list.innerHTML=sorted.map(function(t,i){ return '<div class="item"><span class="rank">'+String(i+1).padStart(2,'0')+'</span><span class="name">'+(t.name||'')+'</span><span class="score">'+(t.score||0)+'</span></div>'; }).join(''); }
+  var d=new Date();
+  document.getElementById('footer').textContent='最后更新 '+d.toLocaleString();
+}
+</script>
+</body>
+</html>

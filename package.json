@@ -1,0 +1,6 @@
+{
+  "description": "",
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}

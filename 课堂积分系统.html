@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课堂比赛积分系统</title>
+    <style>
+        :root {
+            --primary: #5c6bc0;
+            --secondary: #4db6ac;
+            --accent: #ff6b6b; /* 强调色用于设置按钮 */
+            --dark: #37474f;
+            --light: #f5f5f5;
+            --success: #66bb6a;
+            --warning: #ffca28;
+            --error: #ff6b6b;
+            --border-radius: 12px;
+            --box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+            color: #2c3e50;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-top: 20px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(90deg, #2c3e50, #34495e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            opacity: 0.9;
+            font-weight: 300;
+            max-width: 600px;
+            margin: 0 auto 20px;
+        }
+
+        /* 队伍区域 */
+        .teams-section {
+            margin-bottom: 40px;
+        }
+        
+        .teams-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .teams-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 20px;
+            max-width: 100%;
+        }
+        
+        /* 根据队伍数量动态调整宽度 */
+        .teams-container[data-team-count="1"] {
+            grid-template-columns: minmax(280px, 500px);
+            justify-content: center;
+        }
+        
+        .teams-container[data-team-count="2"] {
+            grid-template-columns: repeat(2, minmax(280px, 450px));
+            justify-content: center;
+        }
+        
+        .teams-container[data-team-count="3"] {
+            grid-template-columns: repeat(3, minmax(280px, 380px));
+            justify-content: center;
+        }
+        
+        .team-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .team-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .team-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .team-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 24px;
+            color: var(--warning);
+        }
+        
+        .team-name {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #2c3e50;
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-bottom: 2px solid transparent;
+            transition: var(--transition);
+        }
+        
+        .team-name:focus {
+            border-bottom: 2px solid var(--warning);
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+        
+        .remove-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(231, 76, 60, 0.25);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .remove-btn:hover {
+            background: rgba(231, 76, 60, 0.8);
+            transform: scale(1.1);
+        }
+        
+        /* 分数区域 */
+        .score-container {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .score-label {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .score-display {
+            font-size: 3.5rem;
+            font-weight: bold;
+            padding: 10px 25px;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.15);
+            display: inline-block;
+            transition: var(--transition);
+            min-width: 120px;
+        }
+        
+        .score-change {
+            animation: pulse 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); box-shadow: 0 0 40px rgba(255, 255, 255, 0.5); }
+            100% { transform: scale(1); }
+        }
+        
+        /* 按钮区域 */
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            padding: 12px 0;
+            border: none;
+            border-radius: 8px;
+            background: rgba(52, 73, 94, 0.1);
+            color: #2c3e50;
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 1.1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:hover {
+            background: rgba(52, 73, 94, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-plus {
+            background: rgba(102, 187, 106, 0.4);
+        }
+        
+        .btn-plus:hover {
+            background: rgba(102, 187, 106, 0.6);
+        }
+        
+        .btn-minus {
+            background: rgba(255, 202, 40, 0.4);
+        }
+        
+        .btn-minus:hover {
+            background: rgba(255, 202, 40, 0.6);
+        }
+        
+        /* 大按钮 */
+        .big-btn {
+            width: 100%;
+            padding: 16px 0;
+            margin-top: 8px;
+            font-size: 1.2rem;
+            background: rgba(92, 107, 192, 0.6);
+            font-weight: bold;
+        }
+        /* 小按钮变体，用于需要缩小尺寸的场景 */
+        .small-btn {
+            width: auto;
+            padding: 8px 12px;
+            font-size: 1rem;
+            align-self: center;
+        }
+        
+        .big-btn:hover {
+            background: rgba(92, 107, 192, 0.9);
+        }
+        
+        /* 计时器区域 */
+        .timers-section {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 40px;
+            box-shadow: var(--box-shadow);
+            position: relative;
+        }
+        
+        .timers-header {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.6rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #2c3e50, #34495e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .timers-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        
+        .timer-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .timer-label {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        
+        .timer-display {
+            font-size: 4rem;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 10px;
+            letter-spacing: 3px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .timer-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%) !important;
+            color: white !important;
+            animation: danger-pulse 1.5s infinite;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.5) !important;
+        }
+        
+        @keyframes danger-pulse {
+            0% { 
+                box-shadow: 0 4px 15px rgba(255, 107, 107, 0.5), 0 0 10px rgba(255, 107, 107, 0.7);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 4px 20px rgba(255, 107, 107, 0.8), 0 0 25px rgba(255, 107, 107, 1);
+                transform: scale(1.02);
+            }
+            100% { 
+                box-shadow: 0 4px 15px rgba(255, 107, 107, 0.5), 0 0 10px rgba(255, 107, 107, 0.7);
+                transform: scale(1);
+            }
+        }
+        
+        .timer-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        .timer-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 12px;
+        }
+        
+        /* 分段记录样式 */
+        .segments-container {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px solid rgba(52, 73, 94, 0.1);
+        }
+        
+        .segments-header {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .segments-list {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(52, 73, 94, 0.05);
+            border-radius: 8px;
+        }
+        
+        .segment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .segment-number {
+            font-weight: bold;
+            color: #3498db;
+            min-width: 60px;
+        }
+        
+        .segment-time {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .segments-empty {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 20px;
+        }
+        
+        /* 设置按钮优化 */
+        .settings-btn-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .settings-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid var(--accent);
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        .settings-btn:hover {
+            background: var(--accent);
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.7);
+        }
+        
+        /* 时间设置模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--box-shadow);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            position: relative;
+            color: #2c3e50;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #2c3e50;
+            background: rgba(52, 73, 94, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        
+        .close-btn:hover {
+            background: rgba(52, 73, 94, 0.2);
+            transform: rotate(90deg);
+        }
+        
+        .modal-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        /* 时间设置面板 */
+        .time-setup {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+        }
+        
+        .time-input {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .time-input label {
+            margin-bottom: 8px;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .time-input input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(52, 73, 94, 0.2);
+            text-align: center;
+            font-size: 1.3rem;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2c3e50;
+            outline: none;
+        }
+        
+        .segment-presets {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 10px;
+        }
+        
+        .preset-btn {
+            padding: 12px 10px;
+            border-radius: 8px;
+            background: rgba(77, 182, 172, 0.2);
+            border: none;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+        
+        .preset-btn:hover {
+            background: rgba(77, 182, 172, 0.4);
+        }
+        
+        .preset-btn.active {
+            background: rgba(77, 182, 172, 0.6);
+            transform: scale(1.03);
+            color: white;
+        }
+        
+        /* 全局功能 */
+        .global-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .global-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: var(--box-shadow);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .global-title {
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .leaderboard-list {
+            max-height: 220px;
+            overflow-y: auto;
+            padding: 8px;
+            background: rgba(52, 73, 94, 0.05);
+            border-radius: 6px;
+        }
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            margin-bottom: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 6px;
+            border-left: 3px solid #66bb6a;
+        }
+        .leaderboard-rank {
+            font-weight: bold;
+            color: #66bb6a;
+            min-width: 32px;
+        }
+        .leaderboard-name {
+            flex: 1;
+            margin: 0 8px;
+            font-weight: 600;
+        }
+        .leaderboard-score {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .settings-btn {
+            position: absolute;
+            top: 12px;
+            right: 54px;
+            background: rgba(77, 182, 172, 0.25);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .settings-btn:hover {
+            background: rgba(77, 182, 172, 0.8);
+            transform: scale(1.1);
+        }
+        
+        .add-team-btn {
+            padding: 16px 25px;
+            font-size: 1.1rem;
+            background: rgba(156, 39, 176, 0.6);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .add-team-btn:hover {
+            background: rgba(156, 39, 176, 0.9);
+            transform: translateY(-3px);
+        }
+        
+        /* 页脚 */
+        footer {
+            text-align: center;
+            padding: 30px 0 20px;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        /* 中等屏幕适配 */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .teams-container[data-team-count="1"] {
+                grid-template-columns: minmax(280px, 600px);
+            }
+            
+            .teams-container[data-team-count="2"] {
+                grid-template-columns: repeat(2, minmax(280px, 1fr));
+            }
+            
+            .teams-container[data-team-count="3"] {
+                grid-template-columns: repeat(3, minmax(280px, 1fr));
+            }
+        }
+        
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .teams-container,
+            .teams-container[data-team-count="1"],
+            .teams-container[data-team-count="2"],
+            .teams-container[data-team-count="3"] {
+                grid-template-columns: 1fr;
+                justify-content: stretch;
+            }
+            
+            .score-display {
+                font-size: 3rem;
+                padding: 8px 20px;
+            }
+            
+            .timer-display {
+                font-size: 3rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .time-setup {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .segment-presets {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .settings-btn-container {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .settings-btn {
+                width: 38px;
+                height: 38px;
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    
+    <div class="container">
+        <header>
+            <h1>课堂比赛积分系统 V4</h1>
+            <p class="subtitle">课堂活动管理 | 实时积分跟踪 | 分段计时控制</p>
+        </header>
+        
+        <!-- 队伍区域 -->
+        <section class="teams-section">
+            <div class="teams-header">
+                <h2>队伍管理</h2>
+            </div>
+            
+            <div class="teams-container" id="teamsContainer">
+                <!-- 队伍卡片通过JS动态生成 -->
+            </div>
+            
+            <button class="add-team-btn" onclick="addTeam()">+ 添加新队伍</button>
+        </section>
+        
+        
+        
+        <!-- 全局功能 -->
+        <section class="global-section">
+            
+            
+            <div class="global-card">
+                <h3 class="global-title">系统重置</h3>
+                <p>清空所有积分并恢复到初始状态</p>
+                <button class="big-btn small-btn" style="background: rgba(255, 193, 7, 0.6)" onclick="resetAll()">重置所有数据</button>
+            </div>
+            <div class="global-card">
+                <h3 class="global-title">积分排名</h3>
+                <div class="leaderboard-list" id="leaderboardContainer"></div>
+            </div>
+        </section>
+        
+        <footer>
+            <p>数据已本地保存 &bull; © 2025 课堂比赛积分系统</p>
+        </footer>
+    </div>
+    
+    <script>
+        // 初始化数据
+        let teams = JSON.parse(localStorage.getItem('teams')) || [
+            { name: "红队", score: 0, icon: "⭐" },
+            { name: "蓝队", score: 0, icon: "📚" }
+        ];
+        
+        const icons = ["⭐", "📚", "✏️", "📝", "🧠", "🏆", "🔴", "🔵", "🟢", "🟡"];
+        const WS_URL = 'ws://localhost:8080';
+        let ws;
+        function connectWS() {
+            try {
+                ws = new WebSocket(WS_URL);
+                ws.onopen = function() { broadcastLeaderboard(); };
+                ws.onmessage = function(evt) {
+                    try {
+                        const msg = JSON.parse(evt.data);
+                        if (msg && msg.type === 'request') broadcastLeaderboard();
+                    } catch {}
+                };
+                ws.onclose = function() { setTimeout(connectWS, 2000); };
+            } catch {}
+        }
+        connectWS();
+        function broadcastLeaderboard() {
+            if (ws && ws.readyState === 1) {
+                ws.send(JSON.stringify({ type: 'leaderboard', payload: { teams } }));
+            }
+        }
+        
+        // 渲染队伍卡片
+        function renderTeams() {
+            const container = document.getElementById('teamsContainer');
+            container.innerHTML = '';
+            
+            // 设置队伍数量属性，用于CSS动态调整布局
+            container.setAttribute('data-team-count', teams.length);
+            
+            teams.forEach((team, index) => {
+                const card = document.createElement('div');
+                card.className = 'team-card';
+                card.innerHTML = `
+                    <div class="team-header">
+                        <div class="team-icon">${team.icon || "⭐"}</div>
+                        <input type="text" class="team-name" value="${team.name}" 
+                            onchange="updateTeamName(${index}, this.value)">
+                        ${teams.length > 2 ? `<button class="remove-btn" onclick="removeTeam(${index})">✕</button>` : ''}
+                    </div>
+                    
+                    <div class="score-container">
+                        <div class="score-label">当前积分</div>
+                        <div class="score-display" id="score-${index}">${team.score}</div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button class="btn btn-minus" onclick="changeScore(${index}, -2)">-2</button>
+                        <button class="btn btn-minus" onclick="changeScore(${index}, -1)">-1</button>
+                        <button class="btn" onclick="changeScore(${index}, 1)">+1</button>
+                        <button class="btn btn-plus" onclick="changeScore(${index}, 3)">+3</button>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+            renderLeaderboard();
+        }
+
+        // 分数变更（含动画）
+        function changeScore(index, delta) {
+            teams[index].score += delta;
+            localStorage.setItem('teams', JSON.stringify(teams));
+            
+            // 动画效果
+            const scoreEl = document.getElementById(`score-${index}`);
+            scoreEl.textContent = teams[index].score;
+            
+            // 重置并重新添加动画
+            scoreEl.classList.remove('score-change');
+            void scoreEl.offsetWidth; // 触发重绘
+            scoreEl.classList.add('score-change');
+            renderLeaderboard();
+            broadcastLeaderboard();
+        }
+
+        // 更新队伍名称
+        function updateTeamName(index, newName) {
+            teams[index].name = newName;
+            localStorage.setItem('teams', JSON.stringify(teams));
+            renderLeaderboard();
+            broadcastLeaderboard();
+        }
+
+        // 添加队伍
+        function addTeam() {
+            const randomIcon = icons[Math.floor(Math.random() * icons.length)];
+            teams.push({ 
+                name: `队伍${teams.length + 1}`, 
+                score: 0,
+                icon: randomIcon
+            });
+            localStorage.setItem('teams', JSON.stringify(teams));
+            renderTeams();
+            renderLeaderboard();
+            broadcastLeaderboard();
+        }
+
+        // 删除队伍
+        function removeTeam(index) {
+            if (teams.length <= 2) return;
+            teams.splice(index, 1);
+            localStorage.setItem('teams', JSON.stringify(teams));
+            renderTeams();
+            renderLeaderboard();
+            broadcastLeaderboard();
+        }
+
+        
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboardContainer');
+            if (!container) return;
+            const sorted = teams.slice().sort((a, b) => b.score - a.score);
+            container.innerHTML = sorted.map((t, i) => `
+                <div class="leaderboard-item">
+                    <span class="leaderboard-rank">${String(i + 1).padStart(2, '0')}</span>
+                    <span class="leaderboard-name">${t.name}</span>
+                    <span class="leaderboard-score">${t.score}</span>
+                </div>
+            `).join('');
+        }
+        
+        
+
+        // 全局功能
+        
+
+        function resetAll() {
+            if (confirm("确定重置所有数据？积分将清零且无法恢复！")) {
+                teams.forEach(t => t.score = 0);
+                localStorage.setItem('teams', JSON.stringify(teams));
+                renderTeams();
+                renderLeaderboard();
+                broadcastLeaderboard();
+            }
+        }
+
+        // 页面加载时恢复状态
+        function restoreState() {
+            renderLeaderboard();
+        }
+
+        // 初始化
+        window.onload = function() {
+            renderTeams();
+            restoreState();
+            renderLeaderboard();
+            broadcastLeaderboard();
+        };
+    </script>
+</body>
+</html>
