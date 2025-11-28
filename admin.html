@@ -789,7 +789,8 @@
         ];
         
         const icons = ["⭐", "📚", "✏️", "📝", "🧠", "🏆", "🔴", "🔵", "🟢", "🟡"];
-        const WS_URL = 'ws://localhost:8080';
+        const WS_HOST = '154.37.212.180:8888';
+        const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + WS_HOST;
         let ws;
         function connectWS() {
             try {
