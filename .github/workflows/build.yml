@@ -189,11 +189,15 @@ jobs:
         working-directory: apps/student
         run: |
           if [ -f android-build.log ]; then
-            # Gradle / cargo 的错误行都抓出来变成注解，否则只能看到 "exit code 1"
-            grep -nE "FAILURE:|What went wrong|Caused by:|^error(\[|:)|error: |Execution failed" android-build.log \
-              | head -20 | while IFS= read -r l; do echo "::error file=apps/student::$l"; done || true
+            # Gradle/cargo 的错误行常常带缩进，所以不锚定行首
+            grep -nE "FAILURE:|What went wrong|Caused by:|error(\[|:)|error: |Execution failed|linker|not found|NDK|toolchain" android-build.log \
+              | head -30 | while IFS= read -r l; do echo "::error file=apps/student::$l"; done || true
+            echo "==== 环境 ===="
+            echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT NDK_HOME=$NDK_HOME"
+            ls "$ANDROID_SDK_ROOT/ndk" 2>/dev/null || true
+            rustup target list --installed 2>/dev/null || true
             echo "==== android-build.log 尾部 ===="
-            tail -60 android-build.log || true
+            tail -80 android-build.log || true
           else
             echo "::error::没有生成 android-build.log（失败发生在更早的步骤）"
           fi
@@ -224,7 +228,16 @@ jobs:
       - name: 列出产物（便于排查）
         run: ls -R dist | head -50
 
+      - name: 清理同名旧 Draft（避免资产冲突）
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete "${{ github.ref_name }}" --yes --cleanup-tag=false || true
+
       - name: 创建 Draft Release
+        # 安装包已由各矩阵作业上传为 artifact（运行页面可直接下载）；
+        # Release 只是打包展示，出问题不该把整条流水线判红。
+        continue-on-error: true
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
