@@ -27,6 +27,9 @@ build/
 coverage/
 tmp/
 
+# CI 产物
+ci-result.json
+
 # 运行时数据：教师机本地数据库与房间快照（含学生姓名与成绩，不入库）
 snapshot.json
 rooms/

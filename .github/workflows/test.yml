@@ -28,17 +28,23 @@ jobs:
       - name: 安装依赖
         run: npm install
 
+      # 用官方 action 装**真正的 Chrome**：ubuntu 24.04 仓库里的 chromium-browser 是 snap 壳，
+      # 装上了也跑不起来（之前的 test 工作流就是卡在浏览器端到端这一步）。
       - name: 准备无头浏览器（端到端要用）
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium || true
-          for p in /usr/bin/chromium-browser /usr/bin/chromium /usr/bin/google-chrome /snap/bin/chromium; do
-            if [ -x "$p" ]; then echo "CHROME_PATH=$p" >> $GITHUB_ENV; break; fi
-          done
-          echo "CHROME_PATH=${CHROME_PATH:-未找到（端到端会跳过/失败）}"
+        uses: browser-actions/setup-chrome@v2
+        id: chrome
+        with:
+          chrome-version: stable
+
+      - name: 记录浏览器路径
+        run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> $GITHUB_ENV
 
       - name: 运行 CI（产物生成 → 十二组断言 → 文档审计 → 两条端到端）
         run: node scripts/ci-local.mjs
+
+      - name: 失败时把结论写进 Job Summary（无需授权即可查看）
+        if: failure()
+        run: node scripts/ci-summary.mjs || true
 
       - name: 失败时上传截图等工件
         if: failure()

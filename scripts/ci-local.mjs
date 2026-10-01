@@ -57,7 +57,8 @@ function run(title, args, opts) {
   results.push({ title, pass, ms });
   if (!pass) {
     const out = (res.stdout || '') + (res.stderr || '');
-    const tail = out.split(/\r?\n/).filter((l) => l.trim() && !/^\s*▶/.test(l)).slice(-12).join('\n');
+    const tail = out.split(/\r?\n/).filter((l) => l.trim() && !/^\s*▶/.test(l)).slice(-18).join('\n');
+    results[results.length - 1].tail = tail;
     annotate('CI 步骤失败：' + title, tail || ('退出码 ' + res.status));
   }
   console.log((pass ? C.ok + '✔ ' : C.bad + '✘ ') + title + C.x + C.dim + '  ' + (ms / 1000).toFixed(1) + 's' + C.x + '\n');
@@ -201,6 +202,25 @@ if (cargoAvailable) {
 
 const failed = results.filter((r) => !r.pass);
 const total = results.length;
+
+/* ------------------------------------------------------------------ *
+ * 落盘结果：给 scripts/ci-summary.mjs 生成 Job Summary 用
+ * （Actions 的作业日志要授权才能读，Summary 与注解是公开可见的两个出口）
+ * ------------------------------------------------------------------ */
+try {
+  fs.writeFileSync(path.join(ROOT, 'ci-result.json'), JSON.stringify({
+    ok: failed.length === 0,
+    node: process.version,
+    ms: Date.now() - t0,
+    steps: results.map((r) => ({
+      title: r.title,
+      pass: r.pass,
+      ms: r.ms,
+      tail: (r.tail || '').split(/\r?\n/).filter((l) => l.trim()).slice(-18).join('\n')
+    }))
+  }, null, 2), 'utf8');
+} catch (e) { /* 写不了也不影响 CI 结论 */ }
+
 console.log(C.b + '══════════════════════════════════════════════' + C.x);
 console.log(C.b + ' CI 本地复现结果' + C.x + C.dim + '（耗时 ' + ((Date.now() - t0) / 1000).toFixed(1) + 's）' + C.x);
 results.forEach((r) => {

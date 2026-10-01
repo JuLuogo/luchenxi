@@ -22,16 +22,22 @@ jobs:
       - name: 安装依赖
         run: npm install
 
+      # 同 test.yml：用官方 action 装真 Chrome（ubuntu 24.04 的 chromium-browser 是 snap 壳）
       - name: 准备无头浏览器
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium || true
-          for p in /usr/bin/chromium-browser /usr/bin/chromium /usr/bin/google-chrome /snap/bin/chromium; do
-            if [ -x "$p" ]; then echo "CHROME_PATH=$p" >> $GITHUB_ENV; break; fi
-          done
+        uses: browser-actions/setup-chrome@v2
+        id: chrome
+        with:
+          chrome-version: stable
+
+      - name: 记录浏览器路径
+        run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> $GITHUB_ENV
 
       - name: 跑演示（自起枢纽 + 教师端/学生端/大屏）
         run: node tests/demo.js
+
+      - name: 失败时写 Job Summary
+        if: failure()
+        run: node scripts/ci-summary.mjs || true
 
       - name: 上传截图与实录
         uses: actions/upload-artifact@v7
