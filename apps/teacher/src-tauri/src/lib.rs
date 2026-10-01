@@ -9,10 +9,23 @@
 //!   · 前端（apps/teacher/ui）＝ 现有网页版，零改动复用；通过 invoke 或 /api/state 读写数据
 //!   · Rust（本 crate）＝ 本地 SQLite + 内置枢纽（HTTP/WS，协议同 v3）+ EasyTier 组网 sidecar
 
-pub mod db;
-pub mod hub;
-pub mod net;
-pub mod protocol_gen;
+// 业务核心已迁到 crates/*（v5）；这里保留同名模块做再导出，
+// 这样本文件下面的 Tauri 命令与集成测试无需改动。
+pub mod db {
+    pub use ci_store::*;
+}
+pub mod hub {
+    pub use ci_hub::*;
+}
+pub mod net {
+    pub use ci_core::net::*;
+}
+pub mod protocol_gen {
+    pub use ci_protocol::*;
+}
+
+/// 门面入口：需要领域规则/存储/枢纽时从这里拿
+pub use ci_core as core;
 
 use std::collections::HashMap;
 use std::path::PathBuf;

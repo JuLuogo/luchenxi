@@ -23,8 +23,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex, RwLock};
 
-use crate::db::{now_ms, Store};
-use crate::protocol_gen as proto;
+use ci_store::{now_ms, Store};
+use ci_protocol as proto;
 
 /// 离线命令队列上限（与 Node 版 CMD_QUEUE_MAX 一致）
 pub const CMD_QUEUE_MAX: usize = 60;

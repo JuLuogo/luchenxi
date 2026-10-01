@@ -133,6 +133,7 @@ run('应用图标齐备（PNG/ICO/ICNS）', ['-e', `
 // 1) 纯 Node 断言（八组）
 const NODE_TESTS = [
   ['逻辑断言（教师端 + 多端协同）', 'tests/logic.test.js'],
+  ['v5 工作区结构（crate 划分 / 依赖方向 / 迁移进度）', 'tests/v5-workspace.test.js'],
   ['教师端本地 SQLite', 'tests/db.test.js'],
   ['持久化适配层（浏览器 / 枢纽 / Tauri）', 'tests/storage.test.js'],
   ['EasyTier 组网参数与 Rust 源码一致性', 'tests/net.test.js'],
@@ -226,24 +227,24 @@ if (cargoAvailable) {
   }
 
   const t0r = Date.now();
-  process.stdout.write(C.b + '▶ Rust：教师端 cargo test（含枢纽一致性）' + C.x + '\n');
-  const rt = spawnSync(cargoBin, ['test', '--all-targets'], { cwd: path.join(ROOT, teacherSrc), stdio: 'inherit', env: cargoEnv });
+  process.stdout.write(C.b + '▶ Rust：cargo test --workspace（五个 crate + 两套客户端）' + C.x + '\n');
+  const rt = spawnSync(cargoBin, ['test', '--workspace'], { cwd: ROOT, stdio: 'inherit', env: cargoEnv });
   const rustOut = (rt.stdout || '') + (rt.stderr || '');
   results.push({
-    title: 'Rust：教师端 cargo test（含枢纽一致性）',
+    title: 'Rust：cargo test --workspace（含枢纽一致性）',
     pass: rt.status === 0,
     ms: Date.now() - t0r,
     tail: rt.status === 0 ? '' : rustOut.split(/\r?\n/).filter((l) => /error|FAILED|panicked|not found|pkg-config/i.test(l)).slice(-10).join('\n')
   });
-  if (rt.status !== 0) annotate('CI 步骤失败：Rust 教师端 cargo test', (results[results.length - 1].tail || '退出码 ' + rt.status));
-  console.log((rt.status === 0 ? C.ok + '✔ ' : C.bad + '✘ ') + 'Rust：教师端 cargo test' + C.x + '\n');
+  if (rt.status !== 0) annotate('CI 步骤失败：cargo test --workspace', (results[results.length - 1].tail || '退出码 ' + rt.status));
+  console.log((rt.status === 0 ? C.ok + '✔ ' : C.bad + '✘ ') + 'Rust：cargo test --workspace' + C.x + '\n');
 
   const t0s = Date.now();
-  process.stdout.write(C.b + '▶ Rust：学生端 cargo check' + C.x + '\n');
-  const rs = spawnSync(cargoBin, ['check', '--all-targets'], { cwd: path.join(ROOT, studentSrc), stdio: 'inherit', env: cargoEnv });
-  results.push({ title: 'Rust：学生端 cargo check', pass: rs.status === 0, ms: Date.now() - t0s });
-  if (rs.status !== 0) annotate('CI 步骤失败：Rust 学生端 cargo check', '退出码 ' + rs.status);
-  console.log((rs.status === 0 ? C.ok + '✔ ' : C.bad + '✘ ') + 'Rust：学生端 cargo check' + C.x + '\n');
+  process.stdout.write(C.b + '▶ Rust：cargo check --workspace' + C.x + '\n');
+  const rs = spawnSync(cargoBin, ['check', '--workspace', '--all-targets'], { cwd: ROOT, stdio: 'inherit', env: cargoEnv });
+  results.push({ title: 'Rust：cargo check --workspace', pass: rs.status === 0, ms: Date.now() - t0s });
+  if (rs.status !== 0) annotate('CI 步骤失败：cargo check --workspace', '退出码 ' + rs.status);
+  console.log((rs.status === 0 ? C.ok + '✔ ' : C.bad + '✘ ') + 'Rust：cargo check --workspace' + C.x + '\n');
 } else {
   console.log(C.dim + (process.env.SKIP_CARGO === '1'
     ? '▶ 跳过 Rust（SKIP_CARGO=1；Rust 由 .github/workflows/rust.yml 负责，那边装了 Linux 依赖）'

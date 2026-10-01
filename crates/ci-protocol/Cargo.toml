@@ -1,0 +1,9 @@
+[package]
+name = "ci-protocol"
+description = "v3 报文契约的 Rust 常量（由 packages/protocol/messages.js 生成，勿手改）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[dependencies]

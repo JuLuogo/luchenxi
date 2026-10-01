@@ -43,40 +43,38 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: 'apps/teacher/src-tauri'
+          # v5：workspace 根统一缓存（覆盖 crates/* 与两套客户端）
+          workspaces: '.'
 
       - name: 生成前端资源与契约常量（generate_context! 会检查 ui/ 与 icons/）
         run: |
           node scripts/sync-ui.mjs teacher
+          node scripts/sync-ui.mjs student
           node scripts/gen-protocol.mjs --check
 
       # 本机实测：缺 sidecar 时 tauri-build 会直接失败
-      # （resource path `binaries\easytier-core-<triple>.exe` doesn't exist），
+      # （resource path `binaries/easytier-core-<triple>.exe` doesn't exist），
       # 所以 cargo test 之前必须先把 EasyTier 放好，否则报错信息会指向构建脚本而不是真原因。
       - name: 放置 EasyTier sidecar（tauri-build 会检查它存在）
         run: node scripts/fetch-easytier.mjs x86_64-unknown-linux-gnu
 
-      - name: 单元测试 + 枢纽一致性测试
-        working-directory: apps/teacher/src-tauri
+      - name: 测试整个工作区（五个 crate + 两套客户端 + 枢纽一致性）
         run: |
           set -o pipefail
-          cargo test --all-targets -- --nocapture 2>&1 | tee cargo-test.log
+          cargo test --workspace -- --nocapture 2>&1 | tee cargo-test.log
 
-      - name: 编译检查（学生端）
-        working-directory: apps/student/src-tauri
+      - name: 编译检查（全工作区，含测试目标）
         run: |
           set -o pipefail
-          node ../../../scripts/sync-ui.mjs student
-          cargo check --all-targets 2>&1 | tee cargo-check.log
+          cargo check --workspace --all-targets 2>&1 | tee cargo-check.log
 
       - name: 失败时把编译错误写成注解
         if: failure()
-        working-directory: apps/teacher/src-tauri
         run: |
-          for f in cargo-test.log ../student/src-tauri/cargo-check.log; do
+          for f in cargo-test.log cargo-check.log; do
             [ -f "$f" ] || continue
             echo "==== $f 的错误行 ===="
-            grep -nE '^error(\[|:)|^error: ' "$f" | head -30 | while IFS= read -r l; do echo "::error file=$f::$l"; done || true
+            grep -nE '^error(\[|:)|^error: |error\[' "$f" | head -30 | while IFS= read -r l; do echo "::error file=$f::$l"; done || true
             echo "==== $f 日志尾部 ===="
             tail -50 "$f" || true
           done

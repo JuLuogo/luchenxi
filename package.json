@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node scripts/start.mjs",
     "start:hub": "node sync-server.js",
-    "test": "node tests/logic.test.js && node tests/db.test.js && node tests/storage.test.js && node tests/net.test.js && node tests/protocol.test.js && node tests/hub-spec.test.js && node tests/tauri-config.test.js && node tests/crates.test.js && node tests/client.test.js && node tests/android-manifest.test.js && node tests/ci.test.js && node tests/dom-check.js",
+    "test": "node tests/logic.test.js && node tests/v5-workspace.test.js && node tests/db.test.js && node tests/storage.test.js && node tests/net.test.js && node tests/protocol.test.js && node tests/hub-spec.test.js && node tests/tauri-config.test.js && node tests/crates.test.js && node tests/client.test.js && node tests/android-manifest.test.js && node tests/ci.test.js && node tests/dom-check.js",
+    "test:v5": "node tests/v5-workspace.test.js",
     "test:logic": "node tests/logic.test.js",
     "test:db": "node tests/db.test.js",
     "test:storage": "node tests/storage.test.js",

@@ -49,12 +49,15 @@ data/
 apps/*/ui/
 
 # Rust 编译产物
+# workspace 根（v5 起 cargo 在仓库根生成 target/）
+/target/
 apps/*/src-tauri/target/
 
 # tauri android init 生成的 Android 工程
 apps/*/src-tauri/gen/
 
-# 由 sync-ui 从 packages/db/schema.sql 拷贝
+# 由 sync-ui 从 packages/db/schema.sql 拷贝（v5 起消费方是 crates/ci-store）
+crates/ci-store/schema.sql
 apps/*/src-tauri/schema.sql
 
 # EasyTier sidecar，由 scripts/fetch-easytier.mjs 下载

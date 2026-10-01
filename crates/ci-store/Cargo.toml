@@ -1,0 +1,11 @@
+[package]
+name = "ci-store"
+description = "教师端本地 SQLite 持久层（rooms + 投影表 + 视图）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[dependencies]
+rusqlite = { workspace = true }
+serde_json = { workspace = true }

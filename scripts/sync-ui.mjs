@@ -70,6 +70,9 @@ for (const name of names) {
   const rustSrc = path.join(ROOT, 'apps', name, 'src-tauri', 'src');
   if (fs.existsSync(rustSrc)) {
     fs.copyFileSync(path.join(ROOT, 'packages', 'db', 'schema.sql'), path.join(ROOT, 'apps', name, 'src-tauri', 'schema.sql'));
+  // v5：建表脚本的消费方是 crates/ci-store（include_str! 相对 crate 根）
+  fs.mkdirSync(path.join(ROOT, 'crates', 'ci-store'), { recursive: true });
+  fs.copyFileSync(path.join(ROOT, 'packages', 'db', 'schema.sql'), path.join(ROOT, 'crates', 'ci-store', 'schema.sql'));
     n++;
   }
   console.log('✔ ' + name + ' → ' + cfg.out + '（' + n + ' 个文件）');

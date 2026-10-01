@@ -1,0 +1,42 @@
+# v5 工作区：Rust 为核心，前端只做展示
+#
+# 依赖方向（严格单向，禁止反向）：
+#   ci-protocol ← ci-store ← ci-hub ← ci-core ← apps/*
+#   ci-domain  ← ci-hub
+# 展示层（apps/*/ui、web/）不得包含业务判断 —— 规则一律调用 ci-domain / ci-core。
+
+[workspace]
+resolver = "2"
+members = [
+  "crates/ci-protocol",
+  "crates/ci-domain",
+  "crates/ci-store",
+  "crates/ci-hub",
+  "crates/ci-core",
+  "apps/teacher/src-tauri",
+  "apps/student/src-tauri",
+]
+
+[workspace.package]
+version = "4.0.0"
+edition = "2021"
+rust-version = "1.77"
+authors = ["luchenxi"]
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# 本地数据库：bundled 表示自带 SQLite 源码，目标机无需另装 sqlite3
+# 注意 rusqlite 是 0.x，每个小版本都是 breaking 边界；这里用到的 API 子集
+# （open/execute_batch/execute/query_row/prepare/transaction/params!/optional）在 0.3x 稳定。
+rusqlite = { version = "0.37", features = ["bundled"] }
+# ⚠️ axum 锁 0.7：0.8 把 ws 的 Message::Text(String) 改成了 Utf8Bytes
+axum = { version = "0.7", features = ["ws"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "time", "process", "io-util"] }
+tower-http = { version = "0.6", features = ["cors"] }
+futures-util = "0.3"
+tokio-tungstenite = { version = "0.24", default-features = false, features = ["connect", "handshake"] }
+
+[profile.release]
+# 出包体积与速度的折中（Tauri 默认值基础上略微优化）
+strip = true

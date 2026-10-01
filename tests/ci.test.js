@@ -94,11 +94,11 @@ const teacherMain = read('apps/teacher/src-tauri/src/lib.rs');   // 业务代码
 ok(teacherMain.indexOf('tauri::generate_handler!') >= 0, '教师端使用 generate_handler 注册命令');
 ok(teacherMain.indexOf('hub::serve') >= 0, '教师端启动内置枢纽');
 
-const teacherDb = read('apps/teacher/src-tauri/src/db.rs');
+const teacherDb = read('crates/ci-store/src/lib.rs');
 ok(teacherDb.indexOf('include_str!("../schema.sql")') >= 0, 'db.rs 引用与 Node 共用的 schema.sql');
 ok(teacherDb.indexOf('v_student_tier') >= 0, 'db.rs 使用统计视图做学情下推');
 
-const teacherNet = read('apps/teacher/src-tauri/src/net.rs');
+const teacherNet = read('crates/ci-core/src/net.rs');
 ['--network-name', '--network-secret', '-p', '-w', '--config-server', '--no-tun'].forEach((flag) => {
   ok(teacherNet.indexOf('"' + flag + '"') >= 0, 'net.rs 支持 EasyTier 参数 ' + flag);
 });
@@ -129,8 +129,13 @@ APPS.forEach((app) => {
 group('Rust 源码自查（易错点）');
 
 const cargoTeacher = read('apps/teacher/src-tauri/Cargo.toml');
-ok(/tokio\s*=\s*\{[^}]*"process"/.test(cargoTeacher), 'Cargo.toml 启用 tokio process（net.rs 需要）');
-ok(/tokio\s*=\s*\{[^}]*"io-util"/.test(cargoTeacher), 'Cargo.toml 启用 tokio io-util');
+// v5：tokio 的 feature 统一声明在 workspace 根，各 crate 用 tokio = { workspace = true }
+const cargoRoot = read('Cargo.toml');
+const tokioDecl = (cargoRoot.match(/^tokio\s*=\s*\{[^}]*\}/m) || [''])[0];
+ok(tokioDecl.length > 0, 'workspace 根声明 tokio');
+ok(/"process"/.test(tokioDecl), 'tokio 启用 process（ci-core 的 net.rs 需要）');
+ok(/"io-util"/.test(tokioDecl), 'tokio 启用 io-util');
+ok(/tokio\s*=\s*\{\s*workspace\s*=\s*true\s*\}/.test(cargoTeacher), '教师端引用 workspace 的 tokio');
 const teacherMainSrc = read('apps/teacher/src-tauri/src/lib.rs');
 // 只看业务代码：`#[cfg(test)]` 里也有 Store::open，会干扰"只开一个连接"这类计数断言
 const libProdSrc = teacherMainSrc.split('#[cfg(test)]')[0];
@@ -141,11 +146,11 @@ ok(libProdSrc.indexOf('.into()') >= 0, 'setup 里错误类型转换为 Box<dyn E
 ok(libProdSrc.indexOf('generate_context!') >= 0, 'lib.rs 使用 generate_context!（需要 tauri.conf.json 与图标齐备）');
 ok(libProdSrc.indexOf('tauri::async_runtime::spawn') >= 0, '枢纽跑在 Tauri 的 tokio 运行时里');
 
-const teacherDbSrc = read('apps/teacher/src-tauri/src/db.rs');
+const teacherDbSrc = read('crates/ci-store/src/lib.rs');
 ok(teacherDbSrc.indexOf('serde_json::to_string(q.get("options")') < 0, 'db.rs 不再对临时值取引用（改用预先绑定的 empty）');
 ok(teacherDbSrc.indexOf('let empty = Value::Array(Vec::new())') >= 0, 'db.rs 用绑定变量承载默认空数组');
 
-const hubSrc = read('apps/teacher/src-tauri/src/hub.rs');
+const hubSrc = read('crates/ci-hub/src/lib.rs');
 ok(hubSrc.indexOf('routing::{get, put}') < 0, 'hub.rs 不再导入未使用的 put');
 ok(hubSrc.indexOf('mpsc::unbounded_channel') >= 0, 'hub.rs 用每连接 mpsc 精确投递（cmd→host、ack→发起者）');
 ok(hubSrc.indexOf('CMD_QUEUE_MAX') >= 0, 'hub.rs 有离线命令队列上限（与 Node 版一致）');

@@ -1,0 +1,20 @@
+[package]
+name = "ci-hub"
+description = "内置枢纽：房间状态机 / WebSocket 广播 / HTTP API（协议同 v3 的 sync-server.js）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[dependencies]
+ci-protocol = { path = "../ci-protocol" }
+ci-store = { path = "../ci-store" }
+axum = { workspace = true }
+tokio = { workspace = true }
+tower-http = { workspace = true }
+futures-util = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+tokio-tungstenite = { workspace = true }

@@ -8,7 +8,7 @@
 > ⚙️ **机器可读契约**：报文类型、必填字段、快照字段、命令种类都写在
 > [`packages/protocol/messages.js`](../packages/protocol/messages.js)，并由
 > [`tests/protocol.test.js`](../tests/protocol.test.js) 在**四端之间做静态对照**
-> （Node 枢纽 `sync-server.js`、Rust 枢纽 `apps/teacher/src-tauri/src/hub.rs`、教师端 `sync.js`、学生端 `student.js`、大屏 `index.html`、以及本文）。
+> （Node 枢纽 `sync-server.js`、Rust 枢纽 `crates/ci-hub/src/lib.rs`、教师端 `sync.js`、学生端 `student.js`、大屏 `index.html`、以及本文）。
 > 改协议的正确姿势：**先改契约 → 再改实现与本文 → 跑 `node tests/protocol.test.js`**。两版枢纽必须逐字一致，否则课堂上的表现是"连上了但不动"。
 
 ## 1. 传输与端点

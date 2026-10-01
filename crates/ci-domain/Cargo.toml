@@ -1,0 +1,11 @@
+[package]
+name = "ci-domain"
+description = "业务规则（纯逻辑，无 IO）：加权计分 / 题型权重 / 客观题判分 / 能力评价 / 点名 / 课堂环节"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }

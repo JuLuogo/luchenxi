@@ -36,7 +36,7 @@ function parseCargo(rel) {
     if (!line || line.startsWith('#')) return;
     const sec = line.match(/^\[([^\]]+)\]$/);
     if (sec) { section = sec[1]; return; }
-    if (!section || !/^(dependencies|dev-dependencies)$/.test(section)) return;
+    if (!section || !/^(dependencies|dev-dependencies|workspace\.dependencies)$/.test(section)) return;
     const m = line.match(/^([A-Za-z0-9_-]+)\s*=\s*(.+)$/);
     if (!m) return;
     const name = m[1];
@@ -50,7 +50,7 @@ function parseCargo(rel) {
       const f = rest.match(/features\s*=\s*\[([^\]]*)\]/);
       if (f) features = f[1].split(',').map((s) => s.trim().replace(/"/g, '')).filter(Boolean);
     }
-    const target = section === 'dependencies' ? out.dependencies : out.devDependencies;
+    const target = section === 'dev-dependencies' ? out.devDependencies : out.dependencies;
     target[name] = { version: version, features: features, raw: rest };
   });
   return out;
@@ -73,11 +73,15 @@ function satisfies(version, req) {
 
 const teacherCargo = parseCargo('apps/teacher/src-tauri/Cargo.toml');
 const studentCargo = parseCargo('apps/student/src-tauri/Cargo.toml');
+// v5：枢纽与存储成了独立 crate，依赖断言要读它们自己的 manifest
+const hubCargo = parseCargo('crates/ci-hub/Cargo.toml');
+const storeCargo = parseCargo('crates/ci-store/Cargo.toml');
 
 group('Cargo.toml 解析');
-ok(Object.keys(teacherCargo.dependencies).length >= 8, '教师端解析出 ' + Object.keys(teacherCargo.dependencies).length + ' 个依赖');
-ok(Object.keys(studentCargo.dependencies).length >= 4, '学生端解析出 ' + Object.keys(studentCargo.dependencies).length + ' 个依赖');
-ok(teacherCargo.devDependencies['tokio-tungstenite'], '教师端 dev-dependencies 含 tokio-tungstenite（一致性测试用）');
+ok(Object.keys(teacherCargo.dependencies).length >= 5, '教师端解析出 ' + Object.keys(teacherCargo.dependencies).length + ' 个依赖');
+ok(Object.keys(studentCargo.dependencies).length >= 3, '学生端解析出 ' + Object.keys(studentCargo.dependencies).length + ' 个依赖');
+// v5：一致性测试搬到 crates/ci-hub，dev 依赖跟着走
+ok(hubCargo.devDependencies['tokio-tungstenite'], 'ci-hub dev-dependencies 含 tokio-tungstenite（一致性测试用）');
 
 /* ------------------------------------------------------------------ *
  * 2. 与代码 API 假设的一致性（离线也能查）
@@ -98,8 +102,10 @@ group('版本与代码 API 假设一致');
 });
 
 // axum 0.7 与 hub.rs 的 Message::Text(String) 是配套的；0.8 改成了 Utf8Bytes
-const hubRs = read('apps/teacher/src-tauri/src/hub.rs');
-const axumVer = teacherCargo.dependencies.axum.version;
+// v5：axum / rusqlite / tokio 的版本与特性统一声明在 workspace 根，各 crate 引用之
+const hubRs = read('crates/ci-hub/src/lib.rs');
+const wsDeps = parseCargo('Cargo.toml').dependencies;
+const axumVer = (wsDeps.axum && wsDeps.axum.version) || (hubCargo.dependencies.axum || {}).version || '（缺）';
 ok(/^0\.7(\.|$)/.test(axumVer), 'axum 锁在 0.7.x（当前 ' + axumVer + '）');
 ok(/Message::Text\(\s*\n?\s*json!/.test(hubRs) || /Message::Text\(json!/.test(hubRs) || /Message::Text\(/ .test(hubRs),
   'hub.rs 使用 Message::Text(...)');
@@ -108,23 +114,24 @@ ok(hubRs.indexOf('.to_string(),') >= 0 || /\.to_string\(\)\s*\)/.test(hubRs),
 ok(/Message::Text\(t\)/.test(hubRs), 'hub.rs 用 Message::Text(t) 匹配入站文本');
 
 // rusqlite 必须带 bundled（目标机器不装 sqlite3）
-const rusqlite = teacherCargo.dependencies.rusqlite;
+const rusqlite = wsDeps.rusqlite || parseCargo('crates/ci-store/Cargo.toml').dependencies.rusqlite;
 ok(!!rusqlite && rusqlite.features.indexOf('bundled') >= 0, 'rusqlite 启用 bundled 特性（自带 SQLite 源码）');
 
 // tokio 特性：net/sync（枢纽）+ process/io-util（EasyTier sidecar）
-const tokio = teacherCargo.dependencies.tokio;
-ok(!!tokio, '教师端依赖 tokio');
+const tokio = wsDeps.tokio || {};
+ok(!!tokio.version || !!tokio.features, 'workspace 根声明 tokio（含特性）');
 ['rt-multi-thread', 'macros', 'net', 'sync'].forEach((f) => {
   ok(tokio.features.indexOf(f) >= 0, 'tokio 启用 ' + f);
 });
-ok(/tokio\s*=\s*\{[^}]*"process"/.test(read('apps/teacher/src-tauri/Cargo.toml')), 'tokio 启用 process（net.rs 需要）');
+ok((tokio.features || []).indexOf('process') >= 0, 'tokio 启用 process（ci-core 的 net.rs 需要）');
 
 // dev 依赖 tokio-tungstenite 关闭默认特性（免 openssl），且与测试用法对应
-const tts = teacherCargo.devDependencies['tokio-tungstenite'];
+// v5：特性集中声明在 workspace 根，crate 里只写 { workspace = true }
+const tts = wsDeps['tokio-tungstenite'] || hubCargo.devDependencies['tokio-tungstenite'] || {};
 ok(/default-features\s*=\s*false/.test(tts.raw), 'tokio-tungstenite 关闭默认特性（不引入 TLS/openssl）');
 ok(tts.features.indexOf('connect') >= 0 && tts.features.indexOf('handshake') >= 0,
   'tokio-tungstenite 启用 connect + handshake');
-const conformance = read('apps/teacher/src-tauri/tests/hub_conformance.rs');
+const conformance = read('crates/ci-hub/tests/hub_conformance.rs');
 ok(conformance.indexOf('connect_async') >= 0, '一致性测试用 connect_async');
 ok(conformance.indexOf('MaybeTlsStream') >= 0, '一致性测试引用 MaybeTlsStream（关闭 TLS 后仍是该类型）');
 // lib crate-type：移动端必需

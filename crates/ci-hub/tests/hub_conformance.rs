@@ -20,8 +20,8 @@ use tokio::sync::{Mutex, RwLock};
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 
-use luchenxi_teacher_lib::db::Store;
-use luchenxi_teacher_lib::hub::{self, HubState, Room};
+use ci_store::Store;
+use ci_hub::{self as hub, HubState, Room};
 
 /* ------------------------------------------------------------------ *
  * 测试用客户端

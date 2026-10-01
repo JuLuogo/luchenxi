@@ -1,0 +1,16 @@
+[package]
+name = "ci-core"
+description = "对客户端的门面：枢纽 + 存储 + 领域规则 + EasyTier 组网"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[dependencies]
+ci-protocol = { path = "../ci-protocol" }
+ci-domain = { path = "../ci-domain" }
+ci-store = { path = "../ci-store" }
+ci-hub = { path = "../ci-hub" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }

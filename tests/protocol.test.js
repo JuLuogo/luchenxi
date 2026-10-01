@@ -67,7 +67,7 @@ ok(dumpBlock.indexOf('broadcast') < 0, 'dump 分支不广播（只回教师端�
 /* ================= 3. Rust 枢纽（hub.rs） ================= */
 group('Rust 枢纽（apps/teacher）');
 
-const rustHub = read('apps/teacher/src-tauri/src/hub.rs');
+const rustHub = read('crates/ci-hub/src/lib.rs');
 types.forEach((t) => {
   ok(rustHub.indexOf('"' + t + '"') >= 0, 'hub.rs 提到报文 ' + t);
 });
@@ -155,7 +155,7 @@ ok(rustHub.indexOf('api_restore') >= 0 && nodeHub.indexOf("'/api/restore'") >= 0
 /* ================= 9. 生成的 Rust 常量必须是最新的 ================= */
 group('Rust 协议常量（代码生成）');
 
-const genPath = 'apps/teacher/src-tauri/src/protocol_gen.rs';
+const genPath = 'crates/ci-protocol/src/lib.rs';
 ok(fs.existsSync(path.join(ROOT, genPath)), '存在生成的 ' + genPath);
 const genSrc = read(genPath);
 ok(genSrc.indexOf('@generated') >= 0, '生成文件带 @generated 标记（提示勿手改）');
@@ -163,10 +163,14 @@ types.forEach((t) => ok(genSrc.indexOf('"' + t + '"') >= 0, '生成文件含报�
 Object.keys(P.CMD_KINDS).forEach((k) => ok(genSrc.indexOf('"' + k + '"') >= 0, '生成文件含命令种类 ' + k));
 Object.keys(P.SNAPSHOT_FIELDS).forEach((f) => ok(genSrc.indexOf('"' + f + '"') >= 0, '生成文件含快照字段 ' + f));
 // Rust 枢纽必须引用生成常量而不是手写一份
-const hubUseGen = read('apps/teacher/src-tauri/src/hub.rs');
-ok(hubUseGen.indexOf('use crate::protocol_gen as proto;') >= 0, 'hub.rs 引用生成的契约常量');
+const hubUseGen = read('crates/ci-hub/src/lib.rs');
+// v5：契约常量独立成 crate（ci-protocol），枢纽直接 use 它
+ok(/use ci_protocol as proto;/.test(hubUseGen), 'ci-hub 引用生成的契约常量（ci-protocol）');
 ok(hubUseGen.indexOf('proto::ALL_TYPES') >= 0, 'hub.rs 的 SUPPORTED_TYPES 来自生成文件');
-ok(read('apps/teacher/src-tauri/src/lib.rs').indexOf('pub mod protocol_gen;') >= 0, 'lib.rs 声明 protocol_gen 模块');
+const teacherLibSrc = read('apps/teacher/src-tauri/src/lib.rs');
+ok(/pub mod protocol_gen\s*\{/.test(teacherLibSrc) || teacherLibSrc.indexOf('pub mod protocol_gen;') >= 0,
+  'lib.rs 暴露 protocol_gen（v5 为对 ci-protocol 的再导出）');
+ok(/pub use ci_protocol::\*;/.test(teacherLibSrc), 'lib.rs 的 protocol_gen 再导出 ci-protocol');
 
 // 真正跑一次 --check：不一致（有人改了契约没重新生成）就会红
 const { spawnSync } = require('child_process');
@@ -181,7 +185,7 @@ ok(scenarios.version === P.version, '场景清单版本与协议一致');
 ok(Array.isArray(scenarios.scenarios) && scenarios.scenarios.length >= 13, '场景数量 ' + scenarios.scenarios.length);
 
 const jsSpec = read('tests/hub-spec.test.js');
-const rustTests = read('apps/teacher/src-tauri/tests/hub_conformance.rs');
+const rustTests = read('crates/ci-hub/tests/hub_conformance.rs');
 
 scenarios.scenarios.forEach((s) => {
   ok(!!s.id && !!s.title, '场景 ' + s.id + ' 有 id 与 title');

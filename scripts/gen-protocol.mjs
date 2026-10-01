@@ -2,7 +2,7 @@
  * scripts/gen-protocol.mjs — 从契约生成 Rust 常量，杜绝"两端报文名漂移"
  *
  *  契约来源：packages/protocol/messages.js
- *  生成目标：apps/teacher/src-tauri/src/protocol_gen.rs
+ *  生成目标：crates/ci-protocol/src/lib.rs
  *
  *  为什么要有代码生成：报文名/字段名在 JS 侧是字符串，在 Rust 侧也是字符串，
  *  编译器管不到。让 Rust 侧只使用生成出来的常量，再让测试校验"生成文件是最新的"，
@@ -21,7 +21,7 @@ const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const P = require(path.join(ROOT, 'packages', 'protocol', 'messages.js'));
 
-const TARGET = path.join(ROOT, 'apps', 'teacher', 'src-tauri', 'src', 'protocol_gen.rs');
+const TARGET = path.join(ROOT, 'crates', 'ci-protocol', 'src', 'lib.rs');
 
 function rustStrArray(name, items, doc) {
   const rows = items.map((s) => '    "' + s + '",').join('\n');

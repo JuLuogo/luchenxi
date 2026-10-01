@@ -18,7 +18,7 @@ function ok(cond, label) { if (cond) passed++; else failures.push(label); }
 function eq(a, b, label) { if (JSON.stringify(a) === JSON.stringify(b)) passed++; else failures.push(label + '  →  期望 ' + JSON.stringify(b) + '\n        实际 ' + JSON.stringify(a)); }
 function group(n) { console.log('\n== ' + n + ' =='); }
 
-/** 与 apps/teacher/src-tauri/src/net.rs 的 build_args 一一对应的 JS 版本 */
+/** 与 crates/ci-core/src/net.rs 的 build_args 一一对应的 JS 版本 */
 function buildArgs(cfg) {
   const args = [];
   if (cfg.virtual_ip && cfg.virtual_ip.trim()) { args.push('-i'); args.push(cfg.virtual_ip.trim()); }
@@ -82,7 +82,8 @@ eq(noTun[noTun.length - 1], '--no-tun', '无 TUN 模式追加 --no-tun');
 
 /* ================= 6. 与 Rust 源码不漂移 ================= */
 group('与 Rust 源码一致性（net.rs）');
-const net = fs.readFileSync(path.join(ROOT, 'apps', 'teacher', 'src-tauri', 'src', 'net.rs'), 'utf8');
+// v5 起 net.rs 在 crates/ci-core（原先在 apps/teacher/src-tauri/src）
+const net = fs.readFileSync(path.join(ROOT, 'crates', 'ci-core', 'src', 'net.rs'), 'utf8');
 ['-i', '-d', '--network-name', '--network-secret', '-p', '-l', '--config-server', '-w', '--no-tun'].forEach((flag) => {
   ok(net.indexOf('"' + flag + '"') >= 0, 'net.rs 含参数 ' + flag);
 });
