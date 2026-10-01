@@ -25,3 +25,21 @@ dist/
 build/
 coverage/
 tmp/
+
+# 运行时数据：教师机本地数据库与房间快照（含学生姓名与成绩，不入库）
+snapshot.json
+rooms/
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# 客户端（Tauri）构建产物
+apps/*/ui/                       # 由 scripts/sync-ui.mjs 从仓库根目录生成，勿提交
+apps/*/src-tauri/target/
+apps/*/src-tauri/gen/            # tauri android init 生成的 Android 工程
+apps/*/src-tauri/schema.sql      # 由 sync-ui 从 packages/db/schema.sql 拷贝
+apps/*/src-tauri/binaries/*      # EasyTier sidecar，由 scripts/fetch-easytier.mjs 下载
+!apps/*/src-tauri/binaries/.gitkeep
+apps/*/node_modules/
+

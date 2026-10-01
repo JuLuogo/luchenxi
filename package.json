@@ -1,6 +1,45 @@
 {
-  "description": "",
+  "name": "classroom-points",
+  "version": "4.0.0",
+  "private": true,
+  "description": "课堂积分系统：教师机本地枢纽 + 学生小组端协同（加权记分 / 题库组卷 / 点名 / 学情分析），数据落本机 SQLite；跨平台客户端见 apps/",
+  "scripts": {
+    "start": "node sync-server.js",
+    "test": "node tests/logic.test.js && node tests/db.test.js && node tests/storage.test.js && node tests/net.test.js && node tests/protocol.test.js && node tests/hub-spec.test.js && node tests/tauri-config.test.js && node tests/crates.test.js && node tests/client.test.js && node tests/android-manifest.test.js && node tests/ci.test.js && node tests/dom-check.js",
+    "test:logic": "node tests/logic.test.js",
+    "test:db": "node tests/db.test.js",
+    "test:storage": "node tests/storage.test.js",
+    "test:net": "node tests/net.test.js",
+    "test:protocol": "node tests/protocol.test.js",
+    "test:hub": "node tests/hub-spec.test.js",
+    "test:tauri": "node tests/tauri-config.test.js",
+    "test:crates": "node tests/crates.test.js",
+    "test:ci": "node tests/ci.test.js",
+    "test:wiring": "node tests/dom-check.js",
+    "ci": "node scripts/ci-local.mjs",
+    "ci:quick": "node scripts/ci-local.mjs --quick",
+    "gen:protocol": "node scripts/gen-protocol.mjs",
+    "test:docs": "node tests/doc-refs.js --broken",
+    "test:e2e": "node tests/run-smoke.js",
+    "test:e2e:class": "node tests/run-smoke.js http://127.0.0.1:8123/tests/smoke-class.html",
+    "screenshots": "node tests/shot.js",
+    "probe": "node tests/probe.js",
+    "ui": "node scripts/sync-ui.mjs",
+    "easytier": "node scripts/fetch-easytier.mjs",
+    "schema": "node scripts/fetch-schema.mjs",
+    "demo": "node tests/demo.js",
+    "test:client": "node tests/client.test.js",
+    "test:android": "node tests/android-manifest.test.js",
+    "web:dev": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build",
+    "screenshots:next": "node tests/shot-next.js"
+  },
   "dependencies": {
+    "qrcode": "^1.5.4",
     "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "yaml": "^2.9.1"
   }
 }
