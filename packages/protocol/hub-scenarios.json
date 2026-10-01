@@ -1,0 +1,19 @@
+{
+  "version": 3,
+  "note": "枢纽行为规格的场景清单（唯一来源）。tests/hub-spec.test.js 在 Node 枢纽上执行这些场景；apps/teacher/src-tauri/tests/hub_conformance.rs 在 Rust 枢纽上执行同名用例；tests/ci.test.js 校验两边覆盖一致，防止某一边悄悄少测。",
+  "scenarios": [
+    { "id": "welcome_fields", "title": "welcome 字段完整（room/role/clientId/hasState/hasDump/hostOnline/serverTime）" },
+    { "id": "state_broadcast", "title": "host 推 state → 其他端收到，host 自己不回环" },
+    { "id": "request_backfill", "title": "新连接立刻补发快照；request 可再取；空房间报 error" },
+    { "id": "dump_privacy", "title": "dump 只在 host 与枢纽之间往返：学生端/大屏永不收到；非 host 请求被拒" },
+    { "id": "permission_guard", "title": "非 host 推 state/dump 一律回 error（不静默失败）" },
+    { "id": "cmd_forward_ack", "title": "学生命令转发给 host 并回 ack(ok=true, cmdId)" },
+    { "id": "offline_queue_backlog", "title": "教师端离线时命令入队并回 ack(teacher-offline)，上线补发 cmd-backlog" },
+    { "id": "presence_dedupe", "title": "在线小组按队去重；hello 更新 label/队；hostOnline 正确" },
+    { "id": "presence_disconnect_keeps_entry", "title": "断开不移除条目，只把 online 置 false 并保留 label" },
+    { "id": "leaderboard_alias", "title": "leaderboard 作为 v2 兼容别名等价于 state" },
+    { "id": "room_isolation", "title": "房间之间互不串数据" },
+    { "id": "room_name_sanitize", "title": "非法房间号被清洗为 [A-Za-z0-9_-]{1,32}，不会路径穿越" },
+    { "id": "http_api", "title": "HTTP 面：/health、/api/state 读写、/api/stats、/api/backup 导出、/api/restore 导入（含坏格式 400 与空房 404）" }
+  ]
+}
