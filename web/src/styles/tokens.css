@@ -1,0 +1,95 @@
+/* ============================================================
+ * 设计令牌（三端共用）：现代、浅色、高对比
+ *
+ * 参考的成熟案例与借用点：
+ *   · Kahoot       —— 浅色底 + 超大题干 + 四色选项块（投影环境可读性最好）
+ *   · 班级优化大师/希沃 —— 置顶光荣榜实时刷新、随机抽选、多维度评价矩阵
+ *   · ClassDojo    —— 大色块头像/徽章、超大手感按钮、鼓励式文案
+ *   · shadcn/Radix —— 中性色阶、1px 细边框、柔和阴影、圆角一致、留白克制
+ * ============================================================ */
+
+:root {
+  /* 中性色阶（浅色主题：投影不反光、打印不糊） */
+  --c-bg: #f6f7f9;
+  --c-surface: #ffffff;
+  --c-surface-2: #fbfcfd;
+  --c-line: #e6e8ec;
+  --c-line-strong: #d3d7de;
+  --c-text: #1a1d24;
+  --c-text-2: #5b6472;
+  --c-text-3: #8b93a1;
+
+  /* 品牌与语义色 */
+  --c-brand: #4f46e5;
+  --c-brand-2: #6366f1;
+  --c-brand-weak: #eef0ff;
+  --c-ok: #0ea472;
+  --c-ok-weak: #e7f8f1;
+  --c-warn: #d97706;
+  --c-warn-weak: #fdf3e3;
+  --c-bad: #dc2626;
+  --c-bad-weak: #fdecec;
+  --c-gold: #d4a017;
+
+  /* Kahoot 式选项四色（浅底上足够深，投影可辨） */
+  --opt-a: #e21b3c;
+  --opt-b: #1368ce;
+  --opt-c: #d89e00;
+  --opt-d: #26890c;
+
+  /* 圆角 / 阴影 / 间距 */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --sh-1: 0 1px 2px rgb(16 24 40 / 6%);
+  --sh-2: 0 4px 16px rgb(16 24 40 / 8%);
+  --sh-3: 0 12px 32px rgb(16 24 40 / 12%);
+
+  /* 字号阶（大屏会再放大一档） */
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 26px;
+}
+
+* { box-sizing: border-box; }
+
+/* 通用卡片/徽章：三端视觉统一 */
+.ci-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-1);
+}
+
+.ci-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--c-line);
+  background: var(--c-surface-2);
+  color: var(--c-text-2);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+.ci-chip.is-ok { color: var(--c-ok); background: var(--c-ok-weak); border-color: #bfe9d8; }
+.ci-chip.is-warn { color: var(--c-warn); background: var(--c-warn-weak); border-color: #f5dcb4; }
+.ci-chip.is-bad { color: var(--c-bad); background: var(--c-bad-weak); border-color: #f6c9c9; }
+
+/* 键盘提示（现代后台常见） */
+.ci-kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--c-line-strong);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--c-text-2);
+  font-size: 11px;
+  font-family: ui-monospace, Consolas, monospace;
+}

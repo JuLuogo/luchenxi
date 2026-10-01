@@ -1,0 +1,150 @@
+/* ============================================================
+ * 教师端样式：Element Plus 之上的现代外观
+ *
+ * 设计参考：shadcn/Radix 的中性色阶与细边框、Kahoot 的浅色高对比、
+ * 班级优化大师的"一键加分"大按钮与实时光荣榜。
+ * 组件内样式仍写在各自 <style scoped> 里；这里只放全局令牌、布局与 EP 覆盖。
+ * ============================================================ */
+
+* { box-sizing: border-box; }
+
+html, body, #app { height: 100%; margin: 0; }
+
+body {
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Element Plus 主题对齐设计令牌 */
+:root {
+  --el-color-primary: var(--c-brand);
+  --el-color-success: var(--c-ok);
+  --el-color-warning: var(--c-warn);
+  --el-color-danger: var(--c-bad);
+  --el-border-radius-base: var(--r-sm);
+  --el-border-color: var(--c-line);
+  --el-text-color-primary: var(--c-text);
+  --el-text-color-regular: var(--c-text-2);
+  --el-fill-color-light: var(--c-surface-2);
+}
+
+/* ---------- 页面骨架 ---------- */
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.page-head h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+.page-head .desc {
+  color: var(--c-text-2);
+  font-size: 13px;
+  margin-top: 5px;
+  line-height: 1.7;
+}
+.page-head .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- 卡片 ---------- */
+.panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: var(--sh-1);
+}
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-text);
+}
+.panel-title .sub {
+  color: var(--c-text-3);
+  font-weight: 400;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sub-title { margin: 18px 0 10px; font-size: 14px; font-weight: 700; }
+
+/* ---------- 空状态 ---------- */
+.empty-hint {
+  color: var(--c-text-3);
+  font-size: 13px;
+  padding: 26px 0;
+  text-align: center;
+  line-height: 1.8;
+}
+
+/* ---------- 数字与分数 ---------- */
+.score-num { font-variant-numeric: tabular-nums; font-weight: 700; }
+.score-pos { color: var(--c-ok); }
+.score-neg { color: var(--c-bad); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- 题型色点 ---------- */
+.tier-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+
+/* ---------- 建设中占位 ---------- */
+.todo-box {
+  border: 1px dashed var(--c-line-strong);
+  border-radius: var(--r-lg);
+  padding: 30px;
+  text-align: center;
+  color: var(--c-text-2);
+  background: var(--c-surface-2);
+}
+.todo-box strong { color: var(--c-text); display: block; margin-bottom: 6px; font-size: 15px; }
+
+/* ---------- 表格：更紧凑、表头更轻 ---------- */
+.el-table { --el-table-border-color: var(--c-line); }
+.el-table th.el-table__cell {
+  background: var(--c-surface-2) !important;
+  color: var(--c-text-2) !important;
+  font-weight: 600 !important;
+}
+.el-table .cell { line-height: 1.55; }
+.el-table__row:hover > td.el-table__cell { background: #f8f9fc !important; }
+
+/* ---------- 按钮/标签微调（现代观感：圆角一致、无重阴影） ---------- */
+.el-button { border-radius: var(--r-sm); font-weight: 500; }
+.el-button--primary { box-shadow: 0 1px 2px rgb(79 70 229 / 22%); }
+.el-tag { border-radius: 6px; }
+.el-card { border-radius: var(--r-lg); }
+.el-dialog { border-radius: var(--r-lg); }
+.el-drawer__header { margin-bottom: 12px; font-weight: 700; }
+
+/* 键盘提示 */
+.kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--c-line-strong);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--c-text-2);
+  font-size: 11px;
+  font-family: ui-monospace, Consolas, monospace;
+}

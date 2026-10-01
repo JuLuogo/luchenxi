@@ -1,0 +1,23 @@
+/* 大屏基础样式（浅色主题：投影/电视上比暗色更清楚，也不反光） */
+:root {
+  --stage-bg: var(--c-bg);
+  --stage-fg: var(--c-text);
+  --stage-line: var(--c-line);
+  --stage-brand: var(--c-brand);
+  --stage-ok: var(--c-ok);
+  --stage-bad: var(--c-bad);
+  --stage-gold: var(--c-gold);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app { height: 100%; margin: 0; }
+
+body {
+  background: var(--stage-bg);
+  color: var(--stage-fg);
+  font-family: system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  overflow: hidden;
+}
+
+.num { font-variant-numeric: tabular-nums; }
