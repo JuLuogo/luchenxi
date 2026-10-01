@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课堂积分主控台 · 加权记分 / 题库组卷 / 点名 / 学情分析</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1 id="courseTitle">课堂积分系统</h1>
+        <p class="subtitle">按题型加权记分 · 题库组卷答题 · 随机点名 · 学情分析 · 大屏实时同步</p>
+        <div class="status-bar" id="classBar"></div>
+        <div id="status" class="hint-inline" style="margin-top:4px">正在连接同步服务…</div>
+    </header>
+
+    <div id="errBar"></div>
+
+    <nav class="tab-bar">
+        <button class="tab-btn active" data-tab="tab-class">① 班级与积分</button>
+        <button class="tab-btn" data-tab="tab-quiz">② 组卷与答题</button>
+        <button class="tab-btn" data-tab="tab-roll">③ 点名</button>
+        <button class="tab-btn" data-tab="tab-bank">④ 题库与题型</button>
+        <button class="tab-btn" data-tab="tab-analysis">⑤ 学情分析</button>
+        <button class="tab-btn" data-tab="tab-board">⑥ 排行与数据</button>
+        <button class="tab-btn" data-tab="tab-classroom">⑦ 课堂协同</button>
+    </nav>
+
+    <!-- ============ ① 班级与积分 ============ -->
+    <section class="tab-panel active" id="tab-class">
+        <div class="panel">
+            <div class="panel-title">队伍管理 <span class="panel-sub">（队伍分 = 成员积分之和，学生是计分主体）</span></div>
+            <div class="teams-container" id="teamsContainer"></div>
+            <div style="text-align:center">
+                <button class="add-team-btn" onclick="CI.admin.addTeam()">＋ 添加新队伍</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">学生名单与积分 <span class="panel-sub">（点击题型按钮 = 该生该题型答对，按题型权重加分）</span></div>
+            <div class="bank-toolbar-row" id="studentToolbar"></div>
+            <div class="students-container" id="studentsContainer"></div>
+        </div>
+    </section>
+
+    <!-- ============ ② 组卷与答题 ============ -->
+    <section class="tab-panel" id="tab-quiz">
+        <div class="panel">
+            <div class="panel-title">试卷管理</div>
+            <div id="quizToolbar"></div>
+            <div id="quizSummary"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">当前题目与判分</div>
+            <div id="quizCurrent"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">本套题题目列表 <span class="panel-sub">（可调整顺序、设为当前题）</span></div>
+            <div id="quizQuestions"></div>
+        </div>
+
+        <div class="panel">
+            <div id="quizPicker"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">本套题积分流水 <span class="panel-sub">（最近 100 条，可撤销）</span></div>
+            <div id="quizRecords"></div>
+        </div>
+    </section>
+
+    <!-- ============ ③ 点名 ============ -->
+    <section class="tab-panel" id="tab-roll">
+        <div class="panel">
+            <div class="panel-title">随机点名 <span class="panel-sub">（点完可直接判分，自动记入当前题与当前试卷）</span></div>
+            <div id="rcSetup"></div>
+            <div class="rc-stage" id="rcStage"></div>
+            <div style="text-align:center;margin-bottom:12px">
+                <button class="btn btn-plus" style="font-size:1.25rem;padding:14px 36px" onclick="CI.rollUI.spin()">开始点名（空格键）</button>
+            </div>
+            <div class="rc-stats" id="rcStats"></div>
+            <div id="rcJudge"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">点名记录
+                <span class="panel-sub">（显示该次点名后的判定结果）</span>
+                <button class="mini-btn" style="margin-left:auto" onclick="CI.admin.clearRolls()">清空点名记录</button>
+            </div>
+            <ul class="rc-history" id="rcHistory"></ul>
+        </div>
+    </section>
+
+    <!-- ============ ④ 题库与题型 ============ -->
+    <section class="tab-panel" id="tab-bank">
+        <div class="panel" id="tierPanel"></div>
+
+        <div class="panel">
+            <div class="panel-title">题库 <span class="panel-sub">（题干、题型、分值、知识点、答案均可维护）</span></div>
+            <div id="bankToolbar"></div>
+            <div id="bankImport" style="display:none"></div>
+            <div id="bankList"></div>
+        </div>
+    </section>
+
+    <!-- ============ ⑤ 学情分析 ============ -->
+    <section class="tab-panel" id="tab-analysis">
+        <div class="panel">
+            <div class="analysis-toolbar" id="analysisScope"></div>
+        </div>
+        <div class="panel" id="analysisOverview"></div>
+        <div class="panel" id="analysisMatrix"></div>
+        <div class="panel" id="analysisStudents"></div>
+        <div class="panel" id="analysisSummary"></div>
+    </section>
+
+    <!-- ============ ⑥ 排行与数据 ============ -->
+    <section class="tab-panel" id="tab-board">
+        <div class="panel board-grid" id="boardContainer"></div>
+
+        <div class="panel">
+            <div class="panel-title">数据与同步</div>
+            <div class="bank-toolbar-row">
+                <button class="btn" onclick="CI.admin.exportBackup()">导出全部数据（备份）</button>
+                <button class="btn" onclick="CI.admin.importBackup()">导入备份</button>
+                <button class="btn" onclick="CI.admin.exportClassCSV()">导出学情 CSV</button>
+                <button class="btn" onclick="CI.admin.openLogs()">查看操作日志</button>
+                <button class="btn btn-minus" onclick="CI.admin.resetAllScores()">清空全部积分</button>
+                <button class="btn btn-danger" onclick="CI.admin.factoryReset()">恢复初始状态</button>
+            </div>
+            <div class="fld-row" style="align-items:flex-end">
+                <label class="fld"><span>大屏同步服务器（WebSocket 地址，可填 IP:端口 或完整 ws:// / wss:// 地址）</span>
+                    <input id="wsHostInput" placeholder="ws.peroe.top">
+                </label>
+                <button class="btn btn-plus" onclick="CI.admin.saveWsHost()">保存并重连</button>
+                <a class="btn" href="index.html" target="_blank" style="text-decoration:none;text-align:center">打开大屏页 ↗</a>
+            </div>
+            <div class="hint-inline">数据保存在本机浏览器（localStorage）并实时推送到同步服务器；换设备或清缓存前请先「导出全部数据」。</div>
+        </div>
+    </section>
+
+    <!-- ============ ⑦ 课堂协同 ============ -->
+    <section class="tab-panel" id="tab-classroom">
+        <div class="panel" id="classRoom"></div>
+        <div class="panel" id="classTeams"></div>
+        <div class="panel">
+            <div class="panel-title">作答控制 <span class="panel-sub">（控制学生端能否提交、是否公布答案）</span></div>
+            <div id="classControl"></div>
+        </div>
+        <div class="panel board-grid">
+            <div>
+                <div class="panel-title">抢答榜 <span class="panel-sub">（按抢到的时间排序）</span></div>
+                <div id="classBuzz"></div>
+            </div>
+            <div>
+                <div class="panel-title">待确认提交 <span class="panel-sub">（主观题由你判定）</span></div>
+                <div id="classPending"></div>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">课堂实时流</div>
+            <div id="classFeed"></div>
+        </div>
+        <div class="panel" id="classNet"></div>
+    </section>
+
+    <footer>
+        <p>数据本地保存并实时同步 &bull; © 2025 课堂积分系统 v3（教师机本地枢纽 + 学生小组端）</p>
+        <div class="icp"><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">冀ICP备2025122485号-1</a></div>
+    </footer>
+</div>
+
+<!-- ============ 弹窗容器 ============ -->
+<div data-modal id="logsModal">
+    <div class="modal-mask" onclick="CI.admin.closeLogs()"></div>
+    <div class="modal-box">
+        <div class="modal-head"><b>操作日志</b><button class="mini-btn" onclick="CI.admin.closeLogs()">✕</button></div>
+        <div class="modal-body"><ul id="logsList" style="list-style:none"></ul></div>
+        <div class="modal-foot">
+            <button class="btn" onclick="CI.admin.clearLogs()">清空日志</button>
+            <button class="btn" onclick="CI.admin.closeLogs()">关闭</button>
+        </div>
+    </div>
+</div>
+
+<div data-modal id="bankModal"></div>
+<div data-modal id="bulkModal"></div>
+<div data-modal id="analysisModal"></div>
+
+<!-- ============ 脚本（顺序不可调换：store 是唯一数据源，admin 最后装配） ============ -->
+<script src="assets/js/store.js"></script>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/analysis.js"></script>
+<script src="assets/js/grade.js"></script>
+<script src="assets/js/sync.js"></script>
+<script src="assets/js/classroom.js"></script>
+<script src="assets/js/net.js"></script>
+<script src="assets/js/rollcall.js"></script>
+<script src="assets/js/bank.js"></script>
+<script src="assets/js/quiz.js"></script>
+<script src="assets/js/analysis-ui.js"></script>
+<script src="assets/js/admin.js"></script>
+</body>
+</html>

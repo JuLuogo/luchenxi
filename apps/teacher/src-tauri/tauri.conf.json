@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "课堂积分-教师端",
+  "version": "4.0.0",
+  "identifier": "top.peroe.luchenxi.teacher",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "课堂积分 · 教师端",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "resizable": true,
+        "center": true,
+        "useHttpsScheme": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data: http: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss: http: https:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "externalBin": [
+      "binaries/easytier-core",
+      "binaries/easytier-cli"
+    ],
+    "resources": [],
+    "shortDescription": "课堂积分 · 教师端",
+    "longDescription": "课堂积分系统教师端：加权记分、题库组卷、点名、学情分析、多端协同；数据存本机 SQLite，内置局域网枢纽与 EasyTier 组网。",
+    "windows": {
+      "nsis": {
+        "languages": ["SimpChinese"]
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0"]
+      }
+    }
+  },
+  "plugins": {}
+}

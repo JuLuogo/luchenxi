@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "教师端默认权限：允许调用本机数据库命令、shell 打开浏览器、文件对话框选择备份",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:allow-open",
+    "dialog:default"
+  ]
+}

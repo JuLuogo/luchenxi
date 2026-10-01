@@ -1,0 +1,54 @@
+[package]
+name = "luchenxi-teacher"
+version = "4.0.0"
+description = "课堂积分系统 · 教师端（本地 SQLite + 内置枢纽 + EasyTier 组网）"
+authors = ["luchenxi"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "luchenxi_teacher_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# 本地数据库：bundled 表示自带 SQLite 源码，目标机器无需另装 sqlite3
+# 注意：rusqlite 是 0.x，每个小版本都是 breaking 边界；这里用的 API 子集
+# （open/execute_batch/execute/query_row/prepare/transaction/params!/optional）在 0.3x 稳定。
+rusqlite = { version = "0.37", features = ["bundled"] }
+
+# 内置枢纽（与大屏/学生端通信；协议与 v3 的 sync-server.js 完全一致）
+# ⚠️ axum 锁 0.7：0.8 把 ws 的 `Message::Text(String)` 改成了 `Utf8Bytes`，
+#    hub.rs 是按 0.7 API 写的；升级需同步改 hub.rs 与本文件的 dev 依赖。
+axum = { version = "0.7", features = ["ws"] }
+# process/io-util：net.rs 用 tokio::process 管理 easytier-core；time：心跳与超时
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "time", "process", "io-util"] }
+# tower-http 与 axum 0.7 配套的版本是 0.6（用 0.5 会同时编两份 tower-http）
+tower-http = { version = "0.6", features = ["cors"] }
+futures-util = "0.3"
+
+[features]
+# 由 tauri-build 使用；默认开启自定义协议
+custom-protocol = ["tauri/custom-protocol"]
+
+[dev-dependencies]
+# 一致性测试（tests/hub_conformance.rs）用真实 WebSocket 跑场景矩阵。
+# 关掉默认特性即可去掉 TLS：我们只连 127.0.0.1 的 ws://，不需要 openssl/native-tls（CI 更省事）。
+tokio-tungstenite = { version = "0.24", default-features = false, features = ["connect", "handshake"] }
+tokio = { version = "1", features = ["full"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

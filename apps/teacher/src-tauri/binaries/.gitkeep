@@ -1,0 +1,9 @@
+EasyTier 的 sidecar（easytier-core / easytier-cli）由 `node scripts/fetch-easytier.mjs <target-triple>` 下载到本目录，
+文件名必须是 `<name>-<target-triple>[.exe]`（Tauri 的 externalBin 约定），例如：
+
+    easytier-core-x86_64-pc-windows-msvc.exe
+    easytier-cli-x86_64-pc-windows-msvc.exe
+    easytier-core-aarch64-apple-darwin
+    easytier-core-x86_64-unknown-linux-gnu
+
+本目录内容不入库（见 .gitignore）。EasyTier 为 Apache-2.0 项目，随包分发请在「关于」页标注来源与许可证。

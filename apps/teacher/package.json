@@ -1,0 +1,22 @@
+{
+  "name": "luchenxi-teacher",
+  "private": true,
+  "version": "4.0.0",
+  "description": "课堂积分系统 · 教师端桌面客户端（Tauri v2：本地 SQLite + 内置枢纽 + EasyTier 组网）",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "build:debug": "tauri build --debug",
+    "android:init": "tauri android init",
+    "android:build": "tauri android build --apk",
+    "ui": "node ../../scripts/sync-ui.mjs teacher"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-shell": "^2.0.0"
+  }
+}
