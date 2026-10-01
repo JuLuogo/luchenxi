@@ -13,10 +13,15 @@
 
 pub mod ability;
 pub mod grade;
+pub mod rollcall;
 
 pub use ability::{
     ability_comment, ability_of_tiers, grade_by_key, pct, Ability, Axis, Bucket, Grade, TierStat,
     GRADES,
+};
+pub use rollcall::{
+    apply_pick, called_count, candidates as rollcall_candidates, pick as rollcall_pick, recent_ids,
+    Pick, PickOpts, RollEntry, RollcallSettings, Student, XorShift64,
 };
 pub use grade::{
     answer_key, auto, describe_submission, normalize_text, parse_choice, validate_question,

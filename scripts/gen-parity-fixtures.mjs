@@ -188,19 +188,131 @@ gradeCase('选择题答案字母越界', Q_BADLETTER, { choice: ['D'] });
 gradeCase('选择题答案写成选项原文', Q_NOLETTER, { choice: ['B'] });
 gradeCase('填空题用逗号分隔多解', Q_COMMA, { text: '八' });
 
+
+/* ---------- 用例集：随机点名（rollcall.js）---------- *
+ * 随机性靠"把 Math.random 钉成固定序列"来复现：两边都只消费一次随机数，
+ * 下标算法也一致（floor(r × len)），所以抽选结果必须逐字段相同。 */
+const rollcall = [];
+
+function withRandom(vals, fn) {
+  const old = Math.random;
+  let i = 0;
+  Math.random = () => vals[Math.min(i++, vals.length - 1)];
+  try { return fn(); } finally { Math.random = old; }
+}
+
+function rollCase(name, setup, draws) {
+  globalThis.localStorage.clear();
+  S.replaceState(S.defaultState());
+  const team = S.get().teams[0].id;
+  const made = setup.students.map((n) => {
+    const st = S.addStudent(n, team);
+    return typeof st === 'string' ? st : st.id;
+  });
+  S.setRollSettings({
+    mode: setup.mode, scope: 'all',
+    excludeAnswered: !!setup.excludeAnswered,
+    recentExclude: setup.recentExclude || 0
+  });
+
+  let answered = [];
+  if (setup.answered && setup.answered.length) {
+    const q = S.addQuestion({ stem: '点名用题', tier: 'basic' });
+    const quiz = S.createQuiz('点名用卷', [q.id], '');
+    S.setRuntime({ quizId: quiz.id, qid: q.id });
+    setup.answered.forEach((i) => S.recordResult({ sid: made[i], qid: q.id, quizId: quiz.id, result: 'correct' }));
+    answered = setup.answered.map((i) => made[i]);
+  } else {
+    S.setRuntime({ quizId: null, qid: null });
+  }
+
+  // id 归一化：uid() 基于时间戳，不归一化的话每次生成的基准都不同（--check 永远红）
+  const idMap = new Map(made.map((id, i) => [id, 's' + (i + 1)]));
+  const N = (id) => (idMap.has(id) ? idMap.get(id) : id);
+  const normalizeRollIds = (rec) => {
+    rec.steps.forEach((step) => {
+      step.students.forEach((s) => { s.id = N(s.id); });
+      step.answered = step.answered.map(N);
+      step.settings_before.history = step.settings_before.history.map((h) => ({ sid: N(h.sid), at: 0 }));
+      step.settings_before.round_pool = step.settings_before.round_pool.map(N);
+      step.expect.sid = N(step.expect.sid);
+      if (step.expect.pool) step.expect.pool = step.expect.pool.map(N);
+      step.settings_after.round_pool = step.settings_after.round_pool.map(N);
+      step.settings_after.history = step.settings_after.history.map(N);
+    });
+    return rec;
+  };
+
+  const rec = {
+    name, mode: setup.mode,
+    hasCurrentQuestion: !!(setup.answered && setup.answered.length),
+    steps: []
+  };
+
+  draws.forEach((draw) => {
+    const st = S.get();
+    const students = st.students.map((s) => ({
+      id: s.id, name: s.name, active: s.active !== false, called: S.calledCount(st, s.id)
+    }));
+    const settingsBefore = {
+      mode: st.rollcall.mode,
+      scope: 'all',
+      exclude_answered: !!st.rollcall.excludeAnswered,
+      recent_exclude: Number(st.rollcall.recentExclude) || 0,
+      round: Number(st.rollcall.round) || 1,
+      round_pool: (st.rollcall.roundPool || []).slice(),
+      history: (st.rollcall.history || []).map((h) => ({ sid: h.sid, at: 0 }))
+    };
+    const pick = withRandom([draw], () => CI.rollcall.pick(S.get(), {
+      scope: 'all', recentExclude: settingsBefore.recent_exclude, excludeAnswered: settingsBefore.exclude_answered
+    }));
+    withRandom([draw], () => CI.rollcall.applyPick(pick));
+    const after = S.get();
+    rec.steps.push({
+      students,
+      answered,
+      settings_before: settingsBefore,
+      draw,
+      expect: {
+        sid: pick.sid, name: pick.name, mode: pick.mode, note: pick.note,
+        candidateCount: pick.candidateCount, newRound: !!pick.newRound,
+        pool: pick.pool || null,
+        round: pick.round === undefined || pick.round === null ? null : pick.round
+      },
+      settings_after: {
+        round: Number(after.rollcall.round) || 1,
+        round_pool: (after.rollcall.roundPool || []).slice(),
+        history: (after.rollcall.history || []).map((h) => h.sid)
+      }
+    });
+  });
+
+  rollcall.push(normalizeRollIds(rec));
+}
+
+const R5 = ['甲', '乙', '丙', '丁', '戊'];
+rollCase('均匀模式：5 人连点 6 次（一轮覆盖后开新一轮）', { students: R5, mode: 'even' },
+  [0.0, 0.5, 0.25, 0.75, 0.99, 0.4]);
+rollCase('最少被点优先：点 3 次', { students: R5, mode: 'least' }, [0.9, 0.9, 0.0]);
+rollCase('纯随机：点 2 次', { students: R5, mode: 'random' }, [0.3, 0.6]);
+rollCase('排除已答当前题（只剩 4 人）', { students: R5, mode: 'even', excludeAnswered: true, answered: [0] },
+  [0.1, 0.2]);
+rollCase('防连点：最近 1 次不重复', { students: R5, mode: 'even', recentExclude: 1 }, [0.7, 0.7, 0.7]);
+
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
   generatedBy: 'JS 参考实现（assets/js/analysis.js + assets/js/grade.js）',
   ability: cases,
-  grading
+  grading,
+  rollcall
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
 
 if (CHECK) {
   if (current === text) {
-    console.log('[ok] parity.json 与 JS 参考实现一致（' + cases.length + ' 组用例）');
+    console.log('[ok] parity.json 与 JS 参考实现一致（能力 ' + cases.length + ' + 判分 ' + grading.length + ' + 点名 ' + rollcall.length + ' 组）');
     process.exit(0);
   }
   console.error('[stale] parity.json 与 JS 参考实现不一致 —— 运行 node scripts/gen-parity-fixtures.mjs 重新生成');
@@ -210,6 +322,7 @@ if (CHECK) {
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, text, 'utf8');
 console.log('[ok] 已生成 ' + path.relative(ROOT, OUT) +
-  '（能力 ' + cases.length + ' + 判分 ' + grading.length + ' 组用例）');
+  '（能力 ' + cases.length + ' + 判分 ' + grading.length + ' + 点名 ' + rollcall.length + ' 组用例）');
 cases.forEach((c) => console.log('   · ' + c.name.padEnd(28) + c.expect.grade + '  overall=' + c.expect.overall));
 grading.forEach((g) => console.log('   · ' + g.name.padEnd(28) + (g.expect ? g.expect.result : 'null（主观题）')));
+rollcall.forEach((r) => console.log('   · ' + r.name.padEnd(34) + r.mode + '  ' + r.steps.length + ' 步'));

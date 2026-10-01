@@ -11,7 +11,10 @@
 //! 重新生成基准：`node scripts/gen-parity-fixtures.mjs`
 //! CI 校验基准是否过期：`node scripts/gen-parity-fixtures.mjs --check`
 
-use ci_domain::{ability_of_tiers, answer_key, auto, describe_submission, validate_question, Question, Submission, TierStat};
+use ci_domain::{
+    ability_of_tiers, answer_key, apply_pick, auto, describe_submission, rollcall_pick,
+    validate_question, PickOpts, Question, RollcallSettings, Student, Submission, TierStat,
+};
 use serde::Deserialize;
 use serde_json::Value;
 use std::path::PathBuf;
@@ -20,6 +23,7 @@ use std::path::PathBuf;
 struct Fixture {
     ability: Vec<Case>,
     grading: Vec<GradeCase>,
+    rollcall: Vec<RollCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -55,6 +59,47 @@ struct Case {
     total_attempts: u32,
     tiers: Vec<TierStat>,
     expect: Value,
+}
+
+
+#[derive(Debug, Deserialize)]
+struct RollCase {
+    name: String,
+    mode: String,
+    #[serde(rename = "hasCurrentQuestion")]
+    has_current_question: bool,
+    steps: Vec<RollStep>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RollStep {
+    students: Vec<Student>,
+    answered: Vec<String>,
+    settings_before: RollcallSettings,
+    draw: f64,
+    expect: RollExpect,
+    settings_after: RollAfter,
+}
+
+#[derive(Debug, Deserialize)]
+struct RollExpect {
+    sid: String,
+    name: String,
+    mode: String,
+    note: String,
+    #[serde(rename = "candidateCount")]
+    candidate_count: usize,
+    #[serde(rename = "newRound")]
+    new_round: bool,
+    pool: Option<Vec<String>>,
+    round: Option<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RollAfter {
+    round: u32,
+    round_pool: Vec<String>,
+    history: Vec<String>,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -187,4 +232,57 @@ fn grading_matches_js_reference() {
     }
 
     println!("\n✅ 判分：{} 组用例与 JS 参考实现逐字段一致", fx.grading.len());
+}
+
+/// 随机点名：喂同一串随机数（fixture 里的 draw），两边必须选出同一个人、
+/// 同样的 note / 轮次池 / 新一轮标记，并且 apply 之后的状态也一致
+#[test]
+fn rollcall_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.rollcall.is_empty(), "基准里没有点名用例");
+
+    for case in &fx.rollcall {
+        let mut settings = RollcallSettings::default();
+        for (i, step) in case.steps.iter().enumerate() {
+            let n = format!("{} #{ }", case.name, i + 1);
+            // 用 fixture 里记录的"这一步开始前的状态"
+            settings = step.settings_before.clone();
+            let answered: std::collections::BTreeSet<String> = step.answered.iter().cloned().collect();
+            let opts = PickOpts {
+                scope: Some("all".to_string()),
+                mode: Some(case.mode.clone()),
+                exclude_answered: Some(settings.exclude_answered),
+                recent_exclude: Some(settings.recent_exclude),
+                has_current_question: case.has_current_question,
+            };
+
+            // draw 与 JS 的 Math.floor(Math.random() * len) 完全同构
+            let draw = step.draw;
+            let got = rollcall_pick(&step.students, &answered, &settings, &opts, |len| {
+                if len == 0 { 0 } else { ((draw * len as f64) as usize).min(len - 1) }
+            });
+
+            let got = got.unwrap_or_else(|| panic!("[{}] Rust 侧没有选出人", n));
+            let want = &step.expect;
+            assert_eq!(got.sid, want.sid, "[{}] 选中的人不一致", n);
+            assert_eq!(got.name, want.name, "[{}] 姓名不一致", n);
+            assert_eq!(got.mode, want.mode, "[{}] 模式不一致", n);
+            assert_eq!(got.note, want.note, "[{}] 提示语不一致", n);
+            assert_eq!(got.candidate_count, want.candidate_count, "[{}] 候选人数不一致", n);
+            assert_eq!(got.new_round, want.new_round, "[{}] 新一轮标记不一致", n);
+            assert_eq!(got.round, want.round, "[{}] 轮次号不一致", n);
+            assert_eq!(got.pool, want.pool, "[{}] 轮次池不一致", n);
+
+            // apply 之后：轮次池与历史都要一致
+            apply_pick(&mut settings, &got, 0);
+            assert_eq!(settings.round, step.settings_after.round, "[{}] apply 后轮次不一致", n);
+            assert_eq!(settings.round_pool, step.settings_after.round_pool, "[{}] apply 后池子不一致", n);
+            let hist: Vec<String> = settings.history.iter().map(|h| h.sid.clone()).collect();
+            assert_eq!(hist, step.settings_after.history, "[{}] apply 后历史不一致", n);
+
+            println!("  ✔ {} → {}（{}）", n, got.name, got.note);
+        }
+    }
+
+    println!("\n✅ 随机点名：{} 组用例与 JS 参考实现逐步一致", fx.rollcall.len());
 }

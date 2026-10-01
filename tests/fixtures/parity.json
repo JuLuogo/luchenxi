@@ -1359,5 +1359,1267 @@
       "type": "fill",
       "typeLabel": "填空题"
     }
+  ],
+  "rollcall": [
+    {
+      "name": "均匀模式：5 人连点 6 次（一轮覆盖后开新一轮）",
+      "mode": "even",
+      "hasCurrentQuestion": false,
+      "steps": [
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 0
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "even",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 0,
+            "round": 1,
+            "round_pool": [],
+            "history": []
+          },
+          "draw": 0,
+          "expect": {
+            "sid": "s1",
+            "name": "甲",
+            "mode": "even",
+            "note": "新一轮开始",
+            "candidateCount": 5,
+            "newRound": false,
+            "pool": [
+              "s2",
+              "s3",
+              "s4",
+              "s5"
+            ],
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [
+              "s2",
+              "s3",
+              "s4",
+              "s5"
+            ],
+            "history": [
+              "s1"
+            ]
+          }
+        },
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 0
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "even",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 0,
+            "round": 1,
+            "round_pool": [
+              "s2",
+              "s3",
+              "s4",
+              "s5"
+            ],
+            "history": [
+              {
+                "sid": "s1",
+                "at": 0
+              }
+            ]
+          },
+          "draw": 0.5,
+          "expect": {
+            "sid": "s4",
+            "name": "丁",
+            "mode": "even",
+            "note": "",
+            "candidateCount": 5,
+            "newRound": false,
+            "pool": [
+              "s2",
+              "s3",
+              "s5"
+            ],
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [
+              "s2",
+              "s3",
+              "s5"
+            ],
+            "history": [
+              "s1",
+              "s4"
+            ]
+          }
+        },
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 0
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "even",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 0,
+            "round": 1,
+            "round_pool": [
+              "s2",
+              "s3",
+              "s5"
+            ],
+            "history": [
+              {
+                "sid": "s1",
+                "at": 0
+              },
+              {
+                "sid": "s4",
+                "at": 0
+              }
+            ]
+          },
+          "draw": 0.25,
+          "expect": {
+            "sid": "s2",
+            "name": "乙",
+            "mode": "even",
+            "note": "",
+            "candidateCount": 5,
+            "newRound": false,
+            "pool": [
+              "s3",
+              "s5"
+            ],
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [
+              "s3",
+              "s5"
+            ],
+            "history": [
+              "s1",
+              "s4",
+              "s2"
+            ]
+          }
+        },
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 0
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "even",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 0,
+            "round": 1,
+            "round_pool": [
+              "s3",
+              "s5"
+            ],
+            "history": [
+              {
+                "sid": "s1",
+                "at": 0
+              },
+              {
+                "sid": "s4",
+                "at": 0
+              },
+              {
+                "sid": "s2",
+                "at": 0
+              }
+            ]
+          },
+          "draw": 0.75,
+          "expect": {
+            "sid": "s5",
+            "name": "戊",
+            "mode": "even",
+            "note": "",
+            "candidateCount": 5,
+            "newRound": false,
+            "pool": [
+              "s3"
+            ],
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [
+              "s3"
+            ],
+            "history": [
+              "s1",
+              "s4",
+              "s2",
+              "s5"
+            ]
+          }
+        },
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 1
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "even",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 0,
+            "round": 1,
+            "round_pool": [
+              "s3"
+            ],
+            "history": [
+              {
+                "sid": "s1",
+                "at": 0
+              },
+              {
+                "sid": "s4",
+                "at": 0
+              },
+              {
+                "sid": "s2",
+                "at": 0
+              },
+              {
+                "sid": "s5",
+                "at": 0
+              }
+            ]
+          },
+          "draw": 0.99,
+          "expect": {
+            "sid": "s3",
+            "name": "丙",
+            "mode": "even",
+            "note": "",
+            "candidateCount": 5,
+            "newRound": false,
+            "pool": [],
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [],
+            "history": [
+              "s1",
+              "s4",
+              "s2",
+              "s5",
+              "s3"
+            ]
+          }
+        },
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 1
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "even",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 0,
+            "round": 1,
+            "round_pool": [],
+            "history": [
+              {
+                "sid": "s1",
+                "at": 0
+              },
+              {
+                "sid": "s4",
+                "at": 0
+              },
+              {
+                "sid": "s2",
+                "at": 0
+              },
+              {
+                "sid": "s5",
+                "at": 0
+              },
+              {
+                "sid": "s3",
+                "at": 0
+              }
+            ]
+          },
+          "draw": 0.4,
+          "expect": {
+            "sid": "s3",
+            "name": "丙",
+            "mode": "even",
+            "note": "本轮已全部点到，开启新一轮",
+            "candidateCount": 5,
+            "newRound": true,
+            "pool": [
+              "s1",
+              "s2",
+              "s4",
+              "s5"
+            ],
+            "round": 2
+          },
+          "settings_after": {
+            "round": 2,
+            "round_pool": [
+              "s1",
+              "s2",
+              "s4",
+              "s5"
+            ],
+            "history": [
+              "s1",
+              "s4",
+              "s2",
+              "s5",
+              "s3",
+              "s3"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "最少被点优先：点 3 次",
+      "mode": "least",
+      "hasCurrentQuestion": false,
+      "steps": [
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 0
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "least",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 0,
+            "round": 1,
+            "round_pool": [],
+            "history": []
+          },
+          "draw": 0.9,
+          "expect": {
+            "sid": "s5",
+            "name": "戊",
+            "mode": "least",
+            "note": "最少被点优先（本轮候选最少 0 次）",
+            "candidateCount": 5,
+            "newRound": false,
+            "pool": null,
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [],
+            "history": [
+              "s5"
+            ]
+          }
+        },
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 1
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "least",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 0,
+            "round": 1,
+            "round_pool": [],
+            "history": [
+              {
+                "sid": "s5",
+                "at": 0
+              }
+            ]
+          },
+          "draw": 0.9,
+          "expect": {
+            "sid": "s4",
+            "name": "丁",
+            "mode": "least",
+            "note": "最少被点优先（本轮候选最少 0 次）",
+            "candidateCount": 5,
+            "newRound": false,
+            "pool": null,
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [],
+            "history": [
+              "s5",
+              "s4"
+            ]
+          }
+        },
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 1
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "least",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 0,
+            "round": 1,
+            "round_pool": [],
+            "history": [
+              {
+                "sid": "s5",
+                "at": 0
+              },
+              {
+                "sid": "s4",
+                "at": 0
+              }
+            ]
+          },
+          "draw": 0,
+          "expect": {
+            "sid": "s1",
+            "name": "甲",
+            "mode": "least",
+            "note": "最少被点优先（本轮候选最少 0 次）",
+            "candidateCount": 5,
+            "newRound": false,
+            "pool": null,
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [],
+            "history": [
+              "s5",
+              "s4",
+              "s1"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "纯随机：点 2 次",
+      "mode": "random",
+      "hasCurrentQuestion": false,
+      "steps": [
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 0
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "random",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 0,
+            "round": 1,
+            "round_pool": [],
+            "history": []
+          },
+          "draw": 0.3,
+          "expect": {
+            "sid": "s2",
+            "name": "乙",
+            "mode": "random",
+            "note": "纯随机模式",
+            "candidateCount": 5,
+            "newRound": false,
+            "pool": null,
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [],
+            "history": [
+              "s2"
+            ]
+          }
+        },
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 0
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "random",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 0,
+            "round": 1,
+            "round_pool": [],
+            "history": [
+              {
+                "sid": "s2",
+                "at": 0
+              }
+            ]
+          },
+          "draw": 0.6,
+          "expect": {
+            "sid": "s4",
+            "name": "丁",
+            "mode": "random",
+            "note": "纯随机模式",
+            "candidateCount": 5,
+            "newRound": false,
+            "pool": null,
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [],
+            "history": [
+              "s2",
+              "s4"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "排除已答当前题（只剩 4 人）",
+      "mode": "even",
+      "hasCurrentQuestion": true,
+      "steps": [
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 0
+            }
+          ],
+          "answered": [
+            "s1"
+          ],
+          "settings_before": {
+            "mode": "even",
+            "scope": "all",
+            "exclude_answered": true,
+            "recent_exclude": 0,
+            "round": 1,
+            "round_pool": [],
+            "history": []
+          },
+          "draw": 0.1,
+          "expect": {
+            "sid": "s2",
+            "name": "乙",
+            "mode": "even",
+            "note": "新一轮开始",
+            "candidateCount": 4,
+            "newRound": false,
+            "pool": [
+              "s3",
+              "s4",
+              "s5"
+            ],
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [
+              "s3",
+              "s4",
+              "s5"
+            ],
+            "history": [
+              "s2"
+            ]
+          }
+        },
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 0
+            }
+          ],
+          "answered": [
+            "s1"
+          ],
+          "settings_before": {
+            "mode": "even",
+            "scope": "all",
+            "exclude_answered": true,
+            "recent_exclude": 0,
+            "round": 1,
+            "round_pool": [
+              "s3",
+              "s4",
+              "s5"
+            ],
+            "history": [
+              {
+                "sid": "s2",
+                "at": 0
+              }
+            ]
+          },
+          "draw": 0.2,
+          "expect": {
+            "sid": "s3",
+            "name": "丙",
+            "mode": "even",
+            "note": "",
+            "candidateCount": 4,
+            "newRound": false,
+            "pool": [
+              "s4",
+              "s5"
+            ],
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [
+              "s4",
+              "s5"
+            ],
+            "history": [
+              "s2",
+              "s3"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "防连点：最近 1 次不重复",
+      "mode": "even",
+      "hasCurrentQuestion": false,
+      "steps": [
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 0
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "even",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 1,
+            "round": 1,
+            "round_pool": [],
+            "history": []
+          },
+          "draw": 0.7,
+          "expect": {
+            "sid": "s4",
+            "name": "丁",
+            "mode": "even",
+            "note": "新一轮开始",
+            "candidateCount": 5,
+            "newRound": false,
+            "pool": [
+              "s1",
+              "s2",
+              "s3",
+              "s5"
+            ],
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [
+              "s1",
+              "s2",
+              "s3",
+              "s5"
+            ],
+            "history": [
+              "s4"
+            ]
+          }
+        },
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 0
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "even",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 1,
+            "round": 1,
+            "round_pool": [
+              "s1",
+              "s2",
+              "s3",
+              "s5"
+            ],
+            "history": [
+              {
+                "sid": "s4",
+                "at": 0
+              }
+            ]
+          },
+          "draw": 0.7,
+          "expect": {
+            "sid": "s3",
+            "name": "丙",
+            "mode": "even",
+            "note": "",
+            "candidateCount": 4,
+            "newRound": false,
+            "pool": [
+              "s1",
+              "s2",
+              "s5"
+            ],
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [
+              "s1",
+              "s2",
+              "s5"
+            ],
+            "history": [
+              "s4",
+              "s3"
+            ]
+          }
+        },
+        {
+          "students": [
+            {
+              "id": "s1",
+              "name": "甲",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s2",
+              "name": "乙",
+              "active": true,
+              "called": 0
+            },
+            {
+              "id": "s3",
+              "name": "丙",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s4",
+              "name": "丁",
+              "active": true,
+              "called": 1
+            },
+            {
+              "id": "s5",
+              "name": "戊",
+              "active": true,
+              "called": 0
+            }
+          ],
+          "answered": [],
+          "settings_before": {
+            "mode": "even",
+            "scope": "all",
+            "exclude_answered": false,
+            "recent_exclude": 1,
+            "round": 1,
+            "round_pool": [
+              "s1",
+              "s2",
+              "s5"
+            ],
+            "history": [
+              {
+                "sid": "s4",
+                "at": 0
+              },
+              {
+                "sid": "s3",
+                "at": 0
+              }
+            ]
+          },
+          "draw": 0.7,
+          "expect": {
+            "sid": "s5",
+            "name": "戊",
+            "mode": "even",
+            "note": "",
+            "candidateCount": 4,
+            "newRound": false,
+            "pool": [
+              "s1",
+              "s2"
+            ],
+            "round": null
+          },
+          "settings_after": {
+            "round": 1,
+            "round_pool": [
+              "s1",
+              "s2"
+            ],
+            "history": [
+              "s4",
+              "s3",
+              "s5"
+            ]
+          }
+        }
+      ]
+    }
   ]
 }
