@@ -18,9 +18,14 @@ function loadSqlite() {
 
 const { DatabaseSync } = loadSqlite() || {};
 
+const NODE_HINT = '当前 Node 不支持 node:sqlite。' +
+  '它在 Node 22.x 仍需要 --experimental-sqlite 开关，Node 24 起默认可用；' +
+  '请升级到 Node 24（或临时用 `node --experimental-sqlite sync-server.js` 启动）——' +
+  '枢纽检测不到 SQLite 时会自动退回 rooms/*.json 文件缓存，功能仍可用但不再是数据库。';
+
 /** 打开数据库并建表；返回 { db, file, close, ... } */
 function open(file, schemaPath) {
-  if (!DatabaseSync) throw new Error('当前 Node 不支持 node:sqlite（需要 Node 22+）');
+  if (!DatabaseSync) throw new Error(NODE_HINT);
   const dir = path.dirname(file);
   if (dir && !fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   const db = new DatabaseSync(file);

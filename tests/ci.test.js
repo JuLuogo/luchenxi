@@ -233,8 +233,18 @@ workflows.forEach((f) => {
     }
   }
   ok(/runs-on:/.test(text), f + ' 指定 runs-on');
-  ok(/actions\/checkout@v4/.test(text), f + ' 检出代码');
-  ok(/setup-node@v4/.test(text), f + ' 配置 Node');
+  // 动作版本：只要求"有检出、有配 Node"，且**大版本号不能太旧**（旧版仍跑 Node 20，
+  // 在新运行器上会被强制切到 Node 24 而失败——android 的 setup-android 就是这么挂的）
+  const co = text.match(/actions\/checkout@v(\d+)/);
+  const sn = text.match(/actions\/setup-node@v(\d+)/);
+  ok(!!co, f + ' 检出代码（actions/checkout）');
+  ok(!!sn, f + ' 配置 Node（actions/setup-node）');
+  ok(!!co && Number(co[1]) >= 5, f + ' checkout 大版本 >= 5（当前 ' + (co ? 'v' + co[1] : '无') + '，v4 仍基于 Node 20）');
+  ok(!!sn && Number(sn[1]) >= 5, f + ' setup-node 大版本 >= 5（当前 ' + (sn ? 'v' + sn[1] : '无') + '）');
+  // Node 24：node:sqlite 在 Node 22 仍要 --experimental-sqlite，用 22 会让数据库断言全挂
+  ok(/node-version:\s*'?24'?/.test(text), f + ' 使用 Node 24（node:sqlite 在 22 需要实验开关）');
+  // 不再使用仍在 Node 20 的动作
+  ok(!/setup-android@v3/.test(text), f + ' 不再用 android-actions/setup-android@v3（Node 20，新运行器上会失败）');
 });
 
 // 语义检查：这些键写错**不会报错**，只会静默失效
@@ -285,21 +295,69 @@ workflows.forEach((f) => {
   eq(refs.filter((r) => !exists(r)), [], f + ' 引用的 Node 脚本全部存在');
 });
 
-// 工作流里 npm run xxx 引用的脚本必须在 package.json 中定义
+// 工作流里 npm run xxx 引用的脚本必须在 package.json 中定义。
+// 判定方式：对每个 `npm run X`，向上找最近的 working-directory 决定用哪个 package.json；
+// 目录里含 matrix 模板（apps/${{ matrix.app }}）时，任一客户端定义了该脚本即通过。
 const rootPkg = readJSON('package.json');
+const appPkgs = fs.readdirSync(path.join(ROOT, 'apps'))
+  .filter((d) => fs.existsSync(path.join(ROOT, 'apps', d, 'package.json')))
+  .map((d) => readJSON('apps/' + d + '/package.json').scripts || {});
+
+function pkgScriptsFor(dir) {
+  let d = String(dir || '').replace(/\/$/, '');
+  while (d && d.indexOf('/') > 0) {
+    if (fs.existsSync(path.join(ROOT, d, 'package.json'))) return readJSON(d + '/package.json').scripts || {};
+    d = d.slice(0, d.lastIndexOf('/'));
+  }
+  return null;
+}
+
 workflows.forEach((f) => {
-  const text = read('.github/workflows/' + f);
-  const runs = [...text.matchAll(/npm run ([\w:.-]+)/g)].map((m) => m[1]);
-  const missing = runs.filter((r) => !rootPkg.scripts[r]);
+  // 去掉注释行：否则注释里提到的命令会被当成真实命令（本轮就踩到过）
+  const text = workflowCode(read('.github/workflows/' + f));
+  const missing = [];
+  [...text.matchAll(/npm run ([\w:.-]+)/g)].forEach((m) => {
+    const script = m[1];
+    const before = text.slice(0, m.index);
+    const dirMatch = [...before.matchAll(/working-directory:\s*([^\s]+)/g)].pop();
+    const dir = dirMatch ? dirMatch[1] : '';
+    if (dir.indexOf('${{') >= 0) {
+      if (!appPkgs.some((s) => s[script])) missing.push(dir + ' → ' + script);
+      return;
+    }
+    const scripts = dir ? pkgScriptsFor(dir) : rootPkg.scripts;
+    if (!scripts || !scripts[script]) missing.push((dir ? dir + ' → ' : '') + script);
+  });
   eq(missing, [], f + ' 引用的 npm script 全部存在');
 });
 
+/** 去掉注释行后的工作流正文（断言包名/动作时不受注释里提到的名字干扰） */
+function workflowCode(text) {
+  return text.split(/\r?\n/).filter((l) => !/^\s*#/.test(l) && !/\s#\s/.test(l)).join('\n');
+}
+
 const buildYml = read('.github/workflows/build.yml');
-ok(/tauri-apps\/tauri-action@v0/.test(buildYml), 'build.yml 使用 tauri-action 出包');['windows-latest', 'macos-14', 'ubuntu-22.04'].forEach((os) => ok(buildYml.indexOf(os) >= 0, 'build.yml 覆盖 ' + os));
-ok(/setup-java@v4/.test(buildYml), 'build.yml 为 Android 准备 JDK');
-ok(/android-actions\/setup-android@v3/.test(buildYml), 'build.yml 准备 Android SDK');
+const buildCode = workflowCode(buildYml);
+// 显式在客户端目录跑 `npm run build`（= tauri build），而不是 tauri-action：
+// 前者失败时能 tee 日志并把 error[..] 写成注解。注意客户端 package.json 里的脚本名是 build，
+// 不是 tauri（写成 npm run tauri 会直接 "Missing script" 失败）。
+ok(/npm run build -- --target/.test(buildYml), 'build.yml 在客户端目录执行 npm run build（= tauri build）');
+ok(!/npm run tauri\b/.test(buildCode), 'build.yml 不写 npm run tauri（客户端没有这个脚本）');
+ok(/::error/.test(buildYml), 'build.yml 失败时把编译错误写成 GitHub 注解');
+['windows-latest', 'macos-14', 'ubuntu-22.04'].forEach((os) => ok(buildYml.indexOf(os) >= 0, 'build.yml 覆盖 ' + os));
+ok(/setup-java@v(\d+)/.test(buildYml) && Number(buildYml.match(/setup-java@v(\d+)/)[1]) >= 5, 'build.yml 为 Android 准备 JDK（setup-java >= v5）');
+ok(!/uses:\s*android-actions\/setup-android/.test(buildYml), '不再依赖 setup-android（运行器已预装 SDK，且该 action 仍是 Node 20）');
+ok(/sdkmanager/.test(buildCode), 'build.yml 直接用 sdkmanager 装 NDK');
 ok(/aarch64-linux-android/.test(buildYml), 'build.yml 声明 Android Rust target');
 ok(/fetch-easytier\.mjs/.test(buildYml), 'build.yml 会放置 EasyTier sidecar');
+// Linux 依赖包名：libappindicator3-dev 在 22.04 不存在，会导致 apt exit 100
+// （只检查 apt 安装行，避免被注释里提到的包名误导）
+const aptLines = (t) => workflowCode(t).split(/\r?\n/).filter((l) => /apt-get install|libwebkit|librsvg|patchelf/.test(l)).join('\n');
+ok(!/libappindicator3-dev/.test(aptLines(buildYml)), 'build.yml 不再装 22.04 里不存在的 libappindicator3-dev');
+ok(/libwebkit2gtk-4\.1-dev/.test(aptLines(buildYml)), 'build.yml 装 webkit2gtk-4.1（Tauri v2 需要）');
+const rustYml = read('.github/workflows/rust.yml');
+ok(!/libappindicator3-dev/.test(aptLines(rustYml)), 'rust.yml 不再装 22.04 里不存在的 libappindicator3-dev');
+ok(/::error/.test(rustYml), 'rust.yml 失败时把编译错误写成注解');
 
 /* ================= 9. 套壳链路自洽 ================= */group('套壳链路（sync-ui / 忽略规则）');
 

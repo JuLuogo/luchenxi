@@ -3,21 +3,27 @@ name: test
 # 每次推送/PR 都跑。
 # 步骤集中在一个脚本里（scripts/ci-local.mjs），本地 `npm run ci` 与 CI 用的是同一份逻辑，
 # 不会出现"CI 里是另一套命令"的漂移。
+#
+# 注意：Node 用 24。枢纽的 SQLite 走 node:sqlite —— 它在 Node 22.x 仍需要
+# --experimental-sqlite 开关（未开时会抛错，数据库断言全挂），Node 24 起才默认可用。
 on:
   push:
     branches: ['**']
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   ci:
-    name: 十一组断言 + 两条浏览器端到端
+    name: 十二组断言 + 两条浏览器端到端
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: 安装依赖
         run: npm install
@@ -25,23 +31,21 @@ jobs:
       - name: 准备无头浏览器（端到端要用）
         run: |
           sudo apt-get update
-          sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium
-          which chromium-browser || which chromium || ls -l /usr/bin | grep -i chrom
+          sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium || true
+          for p in /usr/bin/chromium-browser /usr/bin/chromium /usr/bin/google-chrome /snap/bin/chromium; do
+            if [ -x "$p" ]; then echo "CHROME_PATH=$p" >> $GITHUB_ENV; break; fi
+          done
+          echo "CHROME_PATH=${CHROME_PATH:-未找到（端到端会跳过/失败）}"
 
-      - name: 运行 CI（脚本内含：产物生成 → 十一组断言 → 文档审计 → 两条端到端）
-        env:
-          CHROME_PATH: ${{ env.CHROME_PATH }}
-        run: |
-          # 让 run-smoke.js 能找到 ubuntu 上的 chromium
-          if [ -x /usr/bin/chromium-browser ]; then echo "CHROME_PATH=/usr/bin/chromium-browser" >> $GITHUB_ENV; fi
-          if [ -x /usr/bin/chromium ]; then echo "CHROME_PATH=/usr/bin/chromium" >> $GITHUB_ENV; fi
-          node scripts/ci-local.mjs
+      - name: 运行 CI（产物生成 → 十二组断言 → 文档审计 → 两条端到端）
+        run: node scripts/ci-local.mjs
 
-      - name: 失败时上传枢纽日志与截图
+      - name: 失败时上传截图等工件
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-failure-artifacts
           path: |
             docs/screenshots
+            docs/screenshots-next
           if-no-files-found: ignore

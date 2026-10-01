@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const QUICK = process.argv.includes('--quick');
+const IN_CI = !!process.env.GITHUB_ACTIONS || process.argv.includes('--annotate');
 const results = [];
 const t0 = Date.now();
 
@@ -27,13 +28,38 @@ const C = {
 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * 在 GitHub Actions 上把失败步骤写成注解（::error::）。
+ *
+ * 为什么需要：作业日志要凭据才能看，而注解是公开可读的。
+ * 于是"哪一组断言挂了"能直接从 check-run 注解里看到，不必翻日志。
+ */
+function annotate(title, detail) {
+  if (!IN_CI) return;
+  const one = String(detail || '').replace(/\r?\n/g, ' ⏎ ').slice(0, 900);
+  console.log('::error title=' + title.replace(/[%\n\r]/g, ' ') + '::' + one);
+}
+
 function run(title, args, opts) {
   const started = Date.now();
   process.stdout.write(C.b + '▶ ' + title + C.x + C.dim + '  (' + args.join(' ') + ')' + C.x + '\n');
-  const res = spawnSync(process.execPath, args, { cwd: ROOT, stdio: 'inherit', env: Object.assign({}, process.env, (opts && opts.env) || {}) });
+  // CI 上把输出同时收进缓冲区：失败时好写成注解
+  const res = spawnSync(process.execPath, args, {
+    cwd: ROOT,
+    stdio: IN_CI ? 'pipe' : 'inherit',
+    encoding: 'utf8',
+    env: Object.assign({}, process.env, (opts && opts.env) || {})
+  });
+  if (IN_CI && res.stdout) process.stdout.write(res.stdout);
+  if (IN_CI && res.stderr) process.stderr.write(res.stderr);
   const ms = Date.now() - started;
   const pass = res.status === 0;
   results.push({ title, pass, ms });
+  if (!pass) {
+    const out = (res.stdout || '') + (res.stderr || '');
+    const tail = out.split(/\r?\n/).filter((l) => l.trim() && !/^\s*▶/.test(l)).slice(-12).join('\n');
+    annotate('CI 步骤失败：' + title, tail || ('退出码 ' + res.status));
+  }
   console.log((pass ? C.ok + '✔ ' : C.bad + '✘ ') + title + C.x + C.dim + '  ' + (ms / 1000).toFixed(1) + 's' + C.x + '\n');
   return pass;
 }

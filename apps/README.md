@@ -82,7 +82,23 @@ npm run android:build                    # 产出 APK（内部就是 tauri andro
 - 学生端（Android）**不能内置 EasyTier**（官方 Android 只有 GUI APK，无 CLI）：同一局域网直连，或先装官方 EasyTier App 加入同一虚拟网，再在小组端填教师机的虚拟 IP。
 - 权限：TUN 模式在 Windows 需管理员、Linux 需 root/CAP_NET_ADMIN；无权限时可用无 TUN 模式（App 内可勾选）。
 
-## 首次跑 CI 的排查清单（重要）
+## 首次 CI 实跑结果（v4.0.0，2026-10-01）
+
+三个工作流都跑起来了（push main + tag v4.0.0），失败点如下 —— 已全部修掉：
+
+| 症状 | 真实原因 | 修法 |
+| --- | --- | --- |
+| `test.yml` 十二组断言失败 | CI 用 **Node 22**，而 `node:sqlite` 在 22.x 仍需 `--experimental-sqlite`，数据库断言全挂 | 所有工作流改用 **Node 24**（`setup-node@v7`）；`hub-db.js` 的错误信息也写清了升级提示 |
+| `rust.yml` / Linux 桌面构建 exit 100 | `apt-get install libappindicator3-dev` —— **Ubuntu 22.04 没有这个包名**，apt 直接失败 | 改用 Tauri v2 官方清单：`libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf` |
+| `android` 作业在 `android-actions/setup-android@v3` 失败 | 该 action 仍基于 **Node 20**，在新的 runner 上被强制跑 Node 24 → 失败 | 删掉它：ubuntu runner **已预装 Android SDK**，直接用 `sdkmanager` 装 NDK 并接受许可 |
+| `desktop` 的 `tauri-action` 失败信息只有 "exit code 1" | 看不到真正的编译错误，无法定位 | 不再用 tauri-action：显式 `npm run build -- --target <triple>` + `tee` 日志，并把 `error[..]` 行写成 **GitHub 注解**（`::error::`），注解匿名可读 |
+| 工作流里 `npm run tauri build` | 客户端 package.json 的脚本名是 **build**（`tauri build`）而不是 `tauri` | 改为 `npm run build -- --target <triple>`；`tests/ci.test.js` 增加了"引用的 npm script 必须存在"的校验（会把注释里的命令也排除掉） |
+| 动作都提示 "Node.js 20 is deprecated" | `checkout@v4`/`setup-node@v4`/`setup-java@v4` 等仍是 Node 20 | 统一升到 `checkout@v7` / `setup-node@v7` / `setup-java@v6` / `upload-artifact@v7` / `softprops/action-gh-release@v3` |
+
+> 教训：**工作流的失败信息要能被读到**。注解（`::error::`）与 `tee` 日志是这次能定位问题的关键，
+> 所以 `ci-local.mjs` 现在在 Actions 上会把失败步骤的最后十几行直接写成注解。
+
+## 首次跑 CI 的排查清单（保留：下次换环境时仍适用）
 
 本机没有 Rust 工具链，也没有 MSVC/MinGW 链接器，所以 **`apps/` 下的 Rust 只有在 GitHub Actions 上才第一次真正编译**。
 首次失败属正常，按下面的顺序看日志即可（每条都对应一个已存在的检查点）：
