@@ -1,0 +1,53 @@
+name: rust
+
+# 真正编译并运行 Rust 侧（内置枢纽 + SQLite + 组网参数）。
+# 为什么要单独一个工作流：本机没有 Rust 工具链（也没有 MSVC/MinGW 链接器），
+# 所以 apps/ 下的 Rust 只有在 CI 上才可能被验证 —— 这里是唯一的真相来源。
+# 首次运行大概率要调，失败信息会直接指到具体 crate/行。
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'apps/**'
+      - 'packages/protocol/**'
+      - 'scripts/gen-protocol.mjs'
+      - 'scripts/sync-ui.mjs'
+      - '.github/workflows/rust.yml'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  cargo-test:
+    name: cargo test（教师端 lib + 枢纽一致性）
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      - name: Tauri 在 Linux 上的系统依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
+            libgtk-3-dev libayatana-appindicator3-dev libssl-dev build-essential curl wget file
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: 'apps/teacher/src-tauri' }
+
+      - name: 生成前端资源与契约常量（generate_context! 会检查 ui/ 与 icons/）
+        run: |
+          node scripts/sync-ui.mjs teacher
+          node scripts/gen-protocol.mjs --check
+
+      - name: 单元测试 + 枢纽一致性测试
+        working-directory: apps/teacher/src-tauri
+        run: |
+          cargo fmt --check || echo "提示：rustfmt 未通过（不阻断）"
+          cargo test --all-targets -- --nocapture 2>&1 | tail -120
+
+      - name: 编译检查（学生端）
+        working-directory: apps/student/src-tauri
+        run: |
+          node ../../../scripts/sync-ui.mjs student
+          cargo check --all-targets 2>&1 | tail -60

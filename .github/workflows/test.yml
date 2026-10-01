@@ -1,0 +1,47 @@
+name: test
+
+# 每次推送/PR 都跑。
+# 步骤集中在一个脚本里（scripts/ci-local.mjs），本地 `npm run ci` 与 CI 用的是同一份逻辑，
+# 不会出现"CI 里是另一套命令"的漂移。
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ci:
+    name: 十一组断言 + 两条浏览器端到端
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 安装依赖
+        run: npm install
+
+      - name: 准备无头浏览器（端到端要用）
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium
+          which chromium-browser || which chromium || ls -l /usr/bin | grep -i chrom
+
+      - name: 运行 CI（脚本内含：产物生成 → 十一组断言 → 文档审计 → 两条端到端）
+        env:
+          CHROME_PATH: ${{ env.CHROME_PATH }}
+        run: |
+          # 让 run-smoke.js 能找到 ubuntu 上的 chromium
+          if [ -x /usr/bin/chromium-browser ]; then echo "CHROME_PATH=/usr/bin/chromium-browser" >> $GITHUB_ENV; fi
+          if [ -x /usr/bin/chromium ]; then echo "CHROME_PATH=/usr/bin/chromium" >> $GITHUB_ENV; fi
+          node scripts/ci-local.mjs
+
+      - name: 失败时上传枢纽日志与截图
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-artifacts
+          path: |
+            docs/screenshots
+          if-no-files-found: ignore

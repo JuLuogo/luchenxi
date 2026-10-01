@@ -1,0 +1,155 @@
+name: build
+
+# 出安装包：推 tag（v*）或手动触发。
+# 产物：Windows .msi/.exe、macOS .dmg、Linux .deb/.AppImage、Android .apk。
+# 说明：Rust/Tauri 代码首次跑 CI 可能需要调试（本机未装 Rust，无法本地预编译验证）。
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      who:
+        description: '要构建哪个客户端'
+        type: choice
+        options: [both, teacher, student]
+        default: both
+
+env:
+  CARGO_TERM_COLOR: always
+  EASYTIER_VERSION: v2.2.2
+
+jobs:
+  # ------------------------------------------------------------------
+  # 先把两套客户端的前端资源（复用仓库根目录的网页版）拷进各自 ui/ 目录
+  # ------------------------------------------------------------------
+  prepare-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: node scripts/sync-ui.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui
+          path: |
+            apps/teacher/ui
+            apps/student/ui
+
+  desktop:
+    needs: prepare-ui
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            app: teacher
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            app: student
+          - os: macos-14
+            target: aarch64-apple-darwin
+            app: teacher
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            app: teacher
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: '${{ matrix.target }}' }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: 'apps/${{ matrix.app }}/src-tauri' }
+      - name: Linux 系统依赖（webkit2gtk 等）
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
+            libgtk-3-dev libayatana-appindicator3-dev
+      - name: 准备前端资源
+        run: node scripts/sync-ui.mjs ${{ matrix.app }}
+      - name: 下载 EasyTier sidecar（教师端内置组网）
+        if: matrix.app == 'teacher'
+        shell: bash
+        run: node scripts/fetch-easytier.mjs ${{ matrix.target }}
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: apps/${{ matrix.app }}
+          args: --target ${{ matrix.target }}
+          tagName: ${{ github.ref_name }}
+          releaseName: '课堂积分 ${{ github.ref_name }}'
+          releaseDraft: true
+          prerelease: false
+          includeDebug: false
+
+  android:
+    needs: prepare-ui
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.who != 'teacher' || github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: android-actions/setup-android@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: 'aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android' }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: 'apps/student/src-tauri' }
+      - name: NDK
+        run: |
+          sdkmanager --install "ndk;26.1.10909125"
+          echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
+      - name: 准备前端资源
+        run: node scripts/sync-ui.mjs student
+      - name: 初始化 Android 工程
+        working-directory: apps/student
+        run: |
+          npm install
+          npx tauri android init --ci || true
+      - name: 放行明文流量（真机连 ws://教师机IP 必需）
+        run: node scripts/patch-android-manifest.mjs --app student --require
+      - name: 构建 APK
+        working-directory: apps/student
+        env:
+          NDK_HOME: ${{ env.NDK_HOME }}
+        run: npx tauri android build --apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: apps/student/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+
+  # ------------------------------------------------------------------
+  # iOS：v4 只做"预留"。真正出包需要 macOS 运行器 + Apple 开发者证书/描述文件，
+  # 因此这里只做编译期检查（不签名），失败不阻断发布；配好证书后把 build 命令换成
+  # `tauri ios build` 并去掉 continue-on-error 即可。
+  # ------------------------------------------------------------------
+  ios:
+    needs: prepare-ui
+    continue-on-error: true
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: 'aarch64-apple-ios' }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: 'apps/student/src-tauri' }
+      - name: 准备前端资源
+        run: node scripts/sync-ui.mjs student
+      - name: 初始化 iOS 工程
+        working-directory: apps/student
+        run: |
+          npm install
+          npx tauri ios init --ci || true
+      - name: 编译检查（不做签名）
+        working-directory: apps/student
+        run: npx tauri ios build --debug --no-sign 2>&1 | tail -40 || echo "iOS 需要签名证书，跳过（见 docs/11 §7）"
