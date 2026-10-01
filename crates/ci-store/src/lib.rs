@@ -7,7 +7,7 @@
  *  更细的统计下推（学情视图）已在 schema.sql 里备好视图，P2 再接。
  */
 use rusqlite::{params, Connection, OptionalExtension};
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::path::Path;
 
 pub struct Store {
@@ -110,6 +110,45 @@ impl Store {
             .query_row("SELECT COUNT(*) FROM records WHERE room_id = ?1", params![room], |r| r.get(0))?;
         out.push(("records".to_string(), n));
         Ok(out)
+    }
+
+    /// 学生总分（含没有流水的新生，分数为 0）—— 与 Node 版 db.scores 同一条 SQL
+    ///
+    /// 为什么用 LEFT JOIN：刚入座还没答题的学生也要出现在榜单里（0 分），
+    /// 否则"新生一到就消失"。
+    pub fn scores(&self, room: &str) -> rusqlite::Result<Vec<Value>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT s.room_id, s.id AS sid, s.name, s.team_id, COALESCE(v.score, 0) AS score
+             FROM students s
+             LEFT JOIN v_student_score v ON v.room_id = s.room_id AND v.sid = s.id
+             WHERE s.room_id = ?1
+             ORDER BY score DESC, s.name",
+        )?;
+        let rows = stmt.query_map(params![room], |r| {
+            Ok(json!({
+                "room_id": r.get::<_, String>(0)?,
+                "sid": r.get::<_, String>(1)?,
+                "name": r.get::<_, Option<String>>(2)?.unwrap_or_default(),
+                "team_id": r.get::<_, Option<String>>(3)?,
+                "score": r.get::<_, f64>(4)?,
+            }))
+        })?;
+        rows.collect()
+    }
+
+    /// 房间列表（/api/stats 用；/health 里的 rooms 走内存态）
+    pub fn list_rooms(&self) -> rusqlite::Result<Vec<Value>> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT room_id, rev, updated_at FROM rooms ORDER BY updated_at DESC")?;
+        let rows = stmt.query_map([], |r| {
+            Ok(json!({
+                "room_id": r.get::<_, String>(0)?,
+                "rev": r.get::<_, i64>(1)?,
+                "updated_at": r.get::<_, i64>(2)?,
+            }))
+        })?;
+        rows.collect()
     }
 
     /// 学情：每生每题型（直接用 schema.sql 里的视图）

@@ -211,14 +211,17 @@ pub fn safe_room(id: Option<String>) -> String {
     if cleaned.is_empty() { "default".to_string() } else { cleaned }
 }
 
-/// 启动枢纽（在 Tauri 的 tokio 运行时里 spawn）
-pub async fn serve(state: HubState) -> Result<(), String> {
-    let app = Router::new()
+/// 枢纽的路由（不绑端口）：独立服务器模式要在这上面再挂静态文件服务
+pub fn router(state: HubState) -> Router {
+    Router::new()
         .route("/health", get(health))
         .route("/api/state", get(api_get_state).put(api_put_state))
         .route("/api/backup", get(api_backup))
         .route("/api/restore", axum::routing::post(api_restore))
         .route("/api/stats", get(api_stats))
+        // 二维码：与 Node 版同一路径与查询参数（?text=…）。
+        // 返回 SVG（浏览器 <img> 直接渲染），省掉 image/png 依赖。
+        .route("/qr.png", get(qr_image))
         // WebSocket 同时挂在 "/" 与 "/ws"。
         // 客户端（教师端/学生端/大屏）连的是 ws://host:port/?room=…&role=…，
         // 而 Node 版枢纽对任意路径都同意升级；只挂 /ws 会让桌面端连不上自己的界面
@@ -226,8 +229,12 @@ pub async fn serve(state: HubState) -> Result<(), String> {
         .route("/", get(ws_handler))
         .route("/ws", get(ws_handler))
         .layer(tower_http::cors::CorsLayer::permissive())
-        .with_state(state.clone());
+        .with_state(state)
+}
 
+/// 启动枢纽（在 Tauri 的 tokio 运行时里 spawn）
+pub async fn serve(state: HubState) -> Result<(), String> {
+    let app = router(state.clone());
     let listener = tokio::net::TcpListener::bind(("0.0.0.0", state.port))
         .await
         .map_err(|e| format!("端口 {} 绑定失败：{}", state.port, e))?;
@@ -236,13 +243,24 @@ pub async fn serve(state: HubState) -> Result<(), String> {
 
 async fn health(State(st): State<HubState>) -> impl IntoResponse {
     let rooms: Vec<String> = st.rooms.read().await.keys().cloned().collect();
+    // ips 与 Node 版一致：教师端用它拼"学生端地址"，自检也会判断是不是局域网/组网网段。
+    // 少了这个字段，界面只能退回 location.host（127.0.0.1），自检就会报"学生手机可能连不上"。
+    let ips = local_ips();
+    let counts = {
+        let db = st.db.lock().await;
+        let room = st.rooms.read().await.keys().next().cloned().unwrap_or_else(|| "default".to_string());
+        db.stats(&room).unwrap_or_default().into_iter().collect::<HashMap<String, i64>>()
+    };
     Json(json!({
         "ok": true,
         "service": "classroom-hub-rust",
         "port": st.port,
         "rooms": rooms,
+        "ips": ips,
         "qrcode": false,
-        "storage": "sqlite"
+        "storage": "sqlite",
+        "db": "classroom.db",
+        "counts": counts
     }))
 }
 
@@ -324,12 +342,19 @@ async fn api_stats(State(st): State<HubState>, Query(q): Query<RoomQuery>) -> im
     let db = st.db.lock().await;
     let counts = db.stats(&room).unwrap_or_default();
     let tier = db.student_tier(&room).unwrap_or_default();
+    // scores / rooms 与 Node 版 /api/stats 对齐：
+    // 教师端「排行榜」与"上课前自检"都会读这两个字段，缺了会在前端报 undefined.length
+    // —— 这是把端到端测试切到 Rust 枢纽时发现的
+    let scores = db.scores(&room).unwrap_or_default();
+    let rooms = db.list_rooms().unwrap_or_default();
     Json(json!({
         "ok": true, "room": room,
         "counts": counts.into_iter().collect::<HashMap<String, i64>>(),
+        "scores": scores.into_iter().take(100).collect::<Vec<_>>(),
         "studentTier": tier.into_iter().map(|(sid, t, a, c, e)| json!({
             "sid": sid, "tier": t, "attempts": a, "correct": c, "earned": e
-        })).collect::<Vec<_>>()
+        })).collect::<Vec<_>>(),
+        "rooms": rooms
     }))
 }
 
@@ -729,11 +754,77 @@ async fn broadcast_presence(st: &HubState, room_id: &str) {
 
 /* ================= 与 Node 版对齐的辅助接口 ================= */
 
-/// 供前端「学生端地址」展示用：本机所有 IPv4（局域网/组网地址优先）
+/// `/qr.png?text=…` —— 生成二维码（SVG）
+///
+/// 与 Node 版一致的语义：装不了/生成失败时前端会自动降级为文字地址，
+/// 所以这里出错返回 500 + 可读原因，而不是让页面白屏。
+async fn qr_image(Query(q): Query<QrQuery>) -> axum::response::Response {
+    use axum::body::Body;
+    use axum::http::{header, StatusCode};
+
+    let text = q.text.unwrap_or_else(|| "default".to_string());
+    match qrcode::QrCode::new(text.as_bytes()) {
+        Ok(code) => {
+            let svg = code
+                .render::<qrcode::render::svg::Color>()
+                .min_dimensions(260, 260)
+                .quiet_zone(true)
+                .build();
+            axum::response::Response::builder()
+                .status(StatusCode::OK)
+                .header(header::CONTENT_TYPE, "image/svg+xml; charset=utf-8")
+                .header(header::CACHE_CONTROL, "no-store")
+                .body(Body::from(svg))
+                .unwrap()
+        }
+        Err(e) => axum::response::Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .header(header::CONTENT_TYPE, "application/json; charset=utf-8")
+            .body(Body::from(
+                json!({ "ok": false, "message": format!("二维码生成失败：{}", e) }).to_string(),
+            ))
+            .unwrap(),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct QrQuery {
+    pub text: Option<String>,
+}
+
+/// 本机可用于学生端连接的 IP（局域网/组网网段优先）
+/// 枚举**所有**网卡，而不是只看默认出口 —— 教室里的教师机常同时有有线/无线/
+/// EasyTier 虚拟网卡，学生手机要连的那个往往不是默认路由那一个。
+/// （以前这里是空实现，前端只能退回 127.0.0.1，自检会误报"学生手机可能连不上"。）
 pub fn local_ips() -> Vec<String> {
-    // 简化实现：交给前端自己列（桌面端已有 webview 的网络能力），
-    // 需要时再引入 if-addrs crate；这里返回空数组不影响功能。
-    Vec::new()
+    let is_private = |ip: &str| {
+        ip.starts_with("192.168.") || ip.starts_with("10.") || {
+            if let Some(rest) = ip.strip_prefix("172.") {
+                let second: u32 = rest.split('.').next().and_then(|x| x.parse().ok()).unwrap_or(0);
+                (16..=31).contains(&second)
+            } else {
+                false
+            }
+        }
+    };
+
+    let mut out: Vec<String> = Vec::new();
+    if let Ok(ifaces) = if_addrs::get_if_addrs() {
+        for i in ifaces {
+            if let std::net::IpAddr::V4(v4) = i.addr.ip() {
+                // 排除回环与链路本地（169.254.x）
+                if !v4.is_loopback() && !v4.is_link_local() {
+                    let ip = v4.to_string();
+                    if !out.contains(&ip) {
+                        out.push(ip);
+                    }
+                }
+            }
+        }
+    }
+    // 局域网/组网网段排前面：前端取第一个当"学生端地址"
+    out.sort_by_key(|ip| if is_private(ip) { 0 } else { 1 });
+    out
 }
 
 /// 序列化辅助：给 UI 展示的房间摘要

@@ -112,6 +112,56 @@ async function withHub(fn) {
   }
 }
 
+/**
+ * 用 **Rust 枢纽**跑端到端（P2 的验收方式）。
+ *
+ * 为什么要单独一套：Node 枢纽是参考实现，Rust 枢纽才是要出货的那个。
+ * 两条 e2e 打 Rust 枢纽全绿，才说明"业务核心真的能在客户端里跑"。
+ * 需要先 `cargo build -p ci-core --bin ci-hub-server`（本脚本自动做）。
+ */
+async function withRustHub(cargoBin, cargoEnv, fn) {
+  const exe = path.join(
+    ROOT, 'target', 'debug',
+    process.platform === 'win32' ? 'ci-hub-server.exe' : 'ci-hub-server'
+  );
+  if (!fs.existsSync(exe)) {
+    console.log(C.bad + '✘ 没有找到 ' + exe + '（先 cargo build -p ci-core --bin ci-hub-server）' + C.x);
+    return false;
+  }
+  const port = await freePort(8500 + Math.floor(Math.random() * 100));
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-rust-hub-'));
+  const hub = spawn(exe, [], {
+    cwd: ROOT,
+    env: Object.assign({}, cargoEnv, {
+      PORT: String(port), HOST: '127.0.0.1', SERVE_TESTS: '1',
+      DATA_DIR: dataDir, STATIC_ROOT: ROOT
+    }),
+    stdio: 'ignore'
+  });
+  let ready = false;
+  for (let i = 0; i < 60; i++) {
+    await sleep(250);
+    try {
+      const r = await fetch('http://127.0.0.1:' + port + '/health');
+      if (r.ok) { const j = await r.json(); ready = !!j.ok && String(j.service || '').includes('rust'); break; }
+    } catch (e) { /* 还没起来 */ }
+  }
+  if (!ready) {
+    hub.kill();
+    annotate('CI 失败：Rust 枢纽未就绪', '端口 ' + port + ' 上 10 秒内没等到 /health（service 应含 rust）');
+    console.log(C.bad + '✘ Rust 枢纽未能在 10 秒内就绪（端口 ' + port + '）' + C.x);
+    return false;
+  }
+  console.log(C.dim + '  · Rust 枢纽已就绪：http://127.0.0.1:' + port + '（数据目录 ' + dataDir + '）' + C.x + '\n');
+  try {
+    return await fn(port);
+  } finally {
+    try { hub.kill(); } catch (e) { /* 忽略 */ }
+    await sleep(300);
+    try { fs.rmSync(dataDir, { recursive: true, force: true }); } catch (e) { /* 忽略 */ }
+  }
+}
+
 /* ------------------------------------------------------------------ *
  * 步骤（与 .github/workflows/test.yml 一一对应）
  * ------------------------------------------------------------------ */
@@ -241,6 +291,30 @@ if (cargoAvailable) {
   });
   if (rt.status !== 0) annotate('CI 步骤失败：cargo test --workspace', (results[results.length - 1].tail || '退出码 ' + rt.status));
   console.log((rt.status === 0 ? C.ok + '✔ ' : C.bad + '✘ ') + 'Rust：cargo test --workspace' + C.x + '\n');
+
+  // ---- P2：两条端到端改打 **Rust 枢纽** ----
+  {
+    const t0b = Date.now();
+    process.stdout.write(C.b + '▶ Rust：构建独立枢纽 ci-hub-server' + C.x + '\n');
+    const rb = spawnSync(cargoBin, ['build', '-p', 'ci-core', '--bin', 'ci-hub-server'], {
+      cwd: ROOT, stdio: 'inherit', env: cargoEnv
+    });
+    const okBuild = rb.status === 0;
+    results.push({ title: 'Rust：构建独立枢纽 ci-hub-server', pass: okBuild, ms: Date.now() - t0b });
+    console.log((okBuild ? C.ok + '✔ ' : C.bad + '✘ ') + 'Rust：构建 ci-hub-server' + C.x + '\n');
+
+    if (okBuild) {
+      const e2eRust = await withRustHub(cargoBin, cargoEnv, async (port) => {
+        const base = 'http://127.0.0.1:' + port;
+        const a = run('教师端端到端（Rust 枢纽）', ['tests/run-smoke.js', base + '/tests/smoke.html']);
+        const b = run('多端协同端到端（Rust 枢纽）', ['tests/run-smoke.js', base + '/tests/smoke-class.html']);
+        return a && b;
+      });
+      if (!e2eRust) {
+        results.push({ title: '浏览器端到端（打 Rust 枢纽）', pass: false, ms: 0 });
+      }
+    }
+  }
 
   const t0s = Date.now();
   process.stdout.write(C.b + '▶ Rust：cargo check --workspace' + C.x + '\n');

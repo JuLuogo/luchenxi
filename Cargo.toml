@@ -32,9 +32,13 @@ serde_json = "1"
 rusqlite = { version = "0.37", features = ["bundled"] }
 # ⚠️ axum 锁 0.7：0.8 把 ws 的 Message::Text(String) 改成了 Utf8Bytes
 axum = { version = "0.7", features = ["ws"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "time", "process", "io-util"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "time", "process", "io-util", "fs"] }
 tower-http = { version = "0.6", features = ["cors"] }
 futures-util = "0.3"
+# 枚举本机网卡：/health 的 ips 字段（教师端据此拼"学生端地址"，自检也会判断网段）
+if-addrs = "0.15"
+# 二维码（/qr.png）：只开 svg 特性，避免为一张图拖进整个 image/png 依赖
+qrcode = { version = "0.14", default-features = false, features = ["svg"] }
 tokio-tungstenite = { version = "0.24", default-features = false, features = ["connect", "handshake"] }
 
 [profile.release]

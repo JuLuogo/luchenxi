@@ -5,6 +5,7 @@
 //! **不得**在前端复写业务规则。
 
 pub mod net;
+pub mod server;
 
 pub use ci_domain as domain;
 pub use ci_hub as hub;
