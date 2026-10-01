@@ -24,11 +24,17 @@ function Warn($msg) { Write-Output "  ! $msg" }
 # 原生命令（rustup / rustc / sdkmanager / java）会把进度写到 stderr；
 # 在 $ErrorActionPreference='Stop' 下这会被当成"致命错误"直接打断脚本（本轮就踩到了）。
 # 因此统一走这个包装：临时放宽错误策略，并返回退出码。
-function Native($exe, [string[]]$argv) {
+function Native($exe, [string[]]$argv, [string[]]$StdinLines) {
   $prev = $ErrorActionPreference
   $ErrorActionPreference = 'Continue'
   try {
-    & $exe @argv 2>&1 | ForEach-Object { "    $_" }
+    if ($StdinLines) {
+      # 需要喂 stdin 的场景（sdkmanager --licenses 要逐条回 y）：
+      # 注意不能用 `echo y | …` —— 管道会被 PowerShell 解释掉，许可就永远接受不了
+      $StdinLines | & $exe @argv 2>&1 | ForEach-Object { "    $_" }
+    } else {
+      & $exe @argv 2>&1 | ForEach-Object { "    $_" }
+    }
     return $LASTEXITCODE
   } finally { $ErrorActionPreference = $prev }
 }
@@ -121,10 +127,12 @@ if ($Only -eq 'all' -or $Only -eq 'android') {
   Step "接受许可并安装 platform-tools / platform 34 / build-tools 34 / NDK 26.1"
   # sdkmanager 需要 JDK：把 JAVA_HOME 塞进当前进程环境
   $env:Path = (Join-Path $JdkRoot 'bin') + ';' + $env:Path
-  'y' * 30 -split '' | Where-Object { $_ } | Out-Null   # 该行仅用于避免空管道告警
-  $null = cmd /c "echo y| `"$sdkmanager`" --licenses" 2>&1
-  & $sdkmanager --install 'platform-tools' 'platforms;android-34' 'build-tools;34.0.0' 'ndk;26.1.10909125' 2>&1 |
-    Select-Object -Last 12 | ForEach-Object { "    $_" }
+  # 许可必须逐条回 y（约 10 个提示）。第一版用 `cmd /c "echo y| sdkmanager --licenses"`，
+  # 结果是许可没接受，随后 --install 全部报 "licenses ... were not accepted"。
+  $yes = @(); for ($i = 0; $i -lt 60; $i++) { $yes += 'y' }
+  Native $sdkmanager @('--licenses') $yes | Out-Null
+  $code = Native $sdkmanager @('--install', 'platform-tools', 'platforms;android-34', 'build-tools;34.0.0', 'ndk;26.1.10909125')
+  if ($code -ne 0) { Warn "sdkmanager 安装退出码 $code —— 若提示许可未接受，先跑 sdkmanager --licenses" }
   Done "Android SDK → $sdk"
 }
 

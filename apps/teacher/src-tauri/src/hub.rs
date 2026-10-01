@@ -17,7 +17,7 @@ use axum::{
     Json, Router,
 };
 use futures_util::{SinkExt, StreamExt};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -219,6 +219,11 @@ pub async fn serve(state: HubState) -> Result<(), String> {
         .route("/api/backup", get(api_backup))
         .route("/api/restore", axum::routing::post(api_restore))
         .route("/api/stats", get(api_stats))
+        // WebSocket 同时挂在 "/" 与 "/ws"。
+        // 客户端（教师端/学生端/大屏）连的是 ws://host:port/?room=…&role=…，
+        // 而 Node 版枢纽对任意路径都同意升级；只挂 /ws 会让桌面端连不上自己的界面
+        // —— 这是 hub_conformance 用例发现的（首轮 13 个用例全挂在 404）。
+        .route("/", get(ws_handler))
         .route("/ws", get(ws_handler))
         .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state.clone());

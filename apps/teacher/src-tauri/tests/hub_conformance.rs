@@ -84,7 +84,8 @@ impl Client {
         }
     }
 
-    /// 一段时间内收到的全部报文类型（用于断言"绝不该收到"）
+    /// 一段时间内收到的全部报文类型（用于断言"绝不该收到"）。
+    /// 注意：它**只收集、不清空** —— 想让后续 next_of 读到新消息，请用 settle()。
     async fn drain_types(&mut self, ms: u64) -> Vec<String> {
         let deadline = tokio::time::Instant::now() + Duration::from_millis(ms);
         loop {
@@ -106,6 +107,15 @@ impl Client {
         self.inbox.iter().map(|m| m["type"].as_str().unwrap_or("").to_string()).collect()
     }
 
+    /// 把当前收到的消息**全部丢掉**（含已在收件箱里的），让后续 next_of 拿到的一定是新消息。
+    /// 对应 JS 测试里的 `settle(ms)`。
+    /// 为什么需要：连接瞬间枢纽会补发 welcome/state/presence，与断言要等的"新"消息同类型，
+    /// 不先清掉就会读到旧的（本轮 3 个用例就是栽在这里）。
+    async fn settle(&mut self, ms: u64) {
+        let _ = self.drain_types(ms).await;
+        self.inbox.clear();
+    }
+
     async fn close(mut self) {
         let _ = self.tx.close().await;
     }
@@ -121,9 +131,14 @@ struct TestHub {
 }
 
 async fn start_hub(tag: &str) -> TestHub {
-    // 每个用例一个端口：用标签做散列，避免并行跑测试时撞端口
-    let seed: u32 = tag.bytes().fold(7u32, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u32));
-    let port = 8400 + (seed % 400) as u16;
+    // 每个用例一个端口。
+    // 早先用"标签散列 % 400"分配，会出现两个标签落到同一端口：并行跑时
+    // 先绑上的那个赢，另一个的 serve() 失败被忽略，客户端连到别的用例的枢纽上，
+    // 表现为随机的 404/超时（dump_privacy 单独跑必过、并行跑必挂就是这么来的）。
+    // 改为进程内自增，彻底避免碰撞。
+    use std::sync::atomic::{AtomicU16, Ordering};
+    static NEXT_PORT: AtomicU16 = AtomicU16::new(8400);
+    let port = NEXT_PORT.fetch_add(1, Ordering::SeqCst);
     let dir = std::env::temp_dir().join(format!("ci-rust-hub-{}-{}", std::process::id(), tag));
     let _ = std::fs::create_dir_all(&dir);
     let store = Store::open(&dir.join("classroom.db")).expect("建库");
@@ -315,6 +330,9 @@ async fn presence_dedupe() {
     let r = room("presence");
     let mut host = Client::connect(h.port, &r, "host", None, None).await;
     host.next_of("welcome").await;
+    // 教师端一连上枢纽就会收到一份"当前在线状态"（Node 版同样如此）；
+    // 先清掉，否则下面读到的是这份空列表而不是新队伍加入后的。
+    host.settle(250).await;
     let mut t1 = Client::connect(h.port, &r, "team", Some("tm_1"), Some("第一组")).await;
     t1.next_of("welcome").await;
 
@@ -329,8 +347,8 @@ async fn presence_dedupe() {
     let p2 = host.next_of("presence").await;
     assert_eq!(p2["teams"].as_array().unwrap().iter().filter(|t| t["teamId"] == json!("tm_1")).count(), 1);
 
-    // hello 换队 → 新队伍出现
-    let _ = host.drain_types(300).await;
+    // 换队/改 label：枢纽级 hello（扁平字段）后 presence 更新
+    host.settle(300).await;                            // 清掉之前的 presence，避免读到旧的那条
     t2.send(json!({ "type": "hello", "role": "team", "teamId": "tm_2", "label": "第二组" })).await;
     let p3 = host.next_of("presence").await;
     assert!(p3["teams"].as_array().unwrap().iter().any(|t| t["teamId"] == json!("tm_2")), "hello 后新队伍出现");
@@ -352,10 +370,10 @@ async fn presence_disconnect_keeps_entry() {
     let r = room("disconnect");
     let mut host = Client::connect(h.port, &r, "host", None, None).await;
     host.next_of("welcome").await;
-    let t = Client::connect(h.port, &r, "team", Some("tm_9"), Some("第九组")).await;
+    let mut t = Client::connect(h.port, &r, "team", Some("tm_9"), Some("第九组")).await;
     t.next_of("welcome").await;
-    let _ = host.next_of("presence").await;
-    let _ = host.drain_types(300).await;
+    // 清掉"入座时的 presence"，这样下一步读到的才是断开后的那条
+    host.settle(300).await;
     t.close().await;
 
     let p = host.next_of("presence").await;
@@ -452,7 +470,8 @@ async fn http_api() {
     // /api/restore：导入后内存态与数据库都要更新，并广播 state
     let mut stage = Client::connect(h.port, &r, "stage", None, None).await;
     stage.next_of("welcome").await;
-    let _ = stage.drain_types(300).await;
+    // 大屏一连上就会收到当前快照（courseName 还是旧的），必须清掉再断言"导入后广播"
+    stage.settle(300).await;
     let backup_text = serde_json::to_string(&json!({
         "type": "ci-backup", "version": 3,
         "state": { "courseName": "导入的课", "students": [{ "id": "st_9", "name": "李四" }], "quizzes": [] }
