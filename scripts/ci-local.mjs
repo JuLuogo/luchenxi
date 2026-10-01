@@ -98,6 +98,8 @@ async function withHub(fn) {
   }
   if (!ready) {
     hub.kill();
+    // 这条路径以前不产出注解，CI 上只会看到"exit code 1"，无从判断是枢纽起不来
+    annotate('CI 失败：测试枢纽未就绪', '枢纽未能在 10 秒内就绪（端口 ' + port + '）——检查 sync-server.js 启动输出与端口占用');
     throw new Error('枢纽未能在 10 秒内就绪（端口 ' + port + '）');
   }
   console.log(C.dim + '  · 测试枢纽已就绪：http://127.0.0.1:' + port + '（数据目录 ' + dataDir + '）' + C.x + '\n');
@@ -160,8 +162,9 @@ if (!QUICK) {
       return a && b;
     });
   } catch (e) {
-    results.push({ title: '浏览器端到端（枢纽启动失败）', pass: false, ms: 0 });
+    results.push({ title: '浏览器端到端（枢纽启动失败）', pass: false, ms: 0, tail: String(e && e.message || e) });
     console.error(C.bad + '✘ ' + e.message + C.x);
+    annotate('CI 失败：浏览器端到端无法开始', String(e && e.message || e));
     e2eOk = false;
   }
 } else {
@@ -225,16 +228,26 @@ if (cargoAvailable) {
   const t0r = Date.now();
   process.stdout.write(C.b + '▶ Rust：教师端 cargo test（含枢纽一致性）' + C.x + '\n');
   const rt = spawnSync(cargoBin, ['test', '--all-targets'], { cwd: path.join(ROOT, teacherSrc), stdio: 'inherit', env: cargoEnv });
-  results.push({ title: 'Rust：教师端 cargo test（含枢纽一致性）', pass: rt.status === 0, ms: Date.now() - t0r });
+  const rustOut = (rt.stdout || '') + (rt.stderr || '');
+  results.push({
+    title: 'Rust：教师端 cargo test（含枢纽一致性）',
+    pass: rt.status === 0,
+    ms: Date.now() - t0r,
+    tail: rt.status === 0 ? '' : rustOut.split(/\r?\n/).filter((l) => /error|FAILED|panicked|not found|pkg-config/i.test(l)).slice(-10).join('\n')
+  });
+  if (rt.status !== 0) annotate('CI 步骤失败：Rust 教师端 cargo test', (results[results.length - 1].tail || '退出码 ' + rt.status));
   console.log((rt.status === 0 ? C.ok + '✔ ' : C.bad + '✘ ') + 'Rust：教师端 cargo test' + C.x + '\n');
 
   const t0s = Date.now();
   process.stdout.write(C.b + '▶ Rust：学生端 cargo check' + C.x + '\n');
   const rs = spawnSync(cargoBin, ['check', '--all-targets'], { cwd: path.join(ROOT, studentSrc), stdio: 'inherit', env: cargoEnv });
   results.push({ title: 'Rust：学生端 cargo check', pass: rs.status === 0, ms: Date.now() - t0s });
+  if (rs.status !== 0) annotate('CI 步骤失败：Rust 学生端 cargo check', '退出码 ' + rs.status);
   console.log((rs.status === 0 ? C.ok + '✔ ' : C.bad + '✘ ') + 'Rust：学生端 cargo check' + C.x + '\n');
 } else {
-  console.log(C.dim + '▶ 跳过 Rust（本机没有 cargo；装了 rustup 后本脚本会自动包含，CI 上见 .github/workflows/rust.yml）' + C.x + '\n');
+  console.log(C.dim + (process.env.SKIP_CARGO === '1'
+    ? '▶ 跳过 Rust（SKIP_CARGO=1；Rust 由 .github/workflows/rust.yml 负责，那边装了 Linux 依赖）'
+    : '▶ 跳过 Rust（本机没有 cargo；装了 rustup 后本脚本会自动包含，CI 上见 .github/workflows/rust.yml）') + C.x + '\n');
 }
 
 /* ------------------------------------------------------------------ *
@@ -269,6 +282,9 @@ results.forEach((r) => {
 });
 console.log(C.b + '══════════════════════════════════════════════' + C.x);
 if (failed.length) {
+  // 兜底注解：不管失败发生在哪条路径，至少把"哪几步挂了 + 各自输出尾部"写进 check-run 注解
+  annotate('CI 失败步骤（共 ' + failed.length + '/' + total + '）',
+    failed.map((f) => '• ' + f.title + (f.tail ? '\n' + f.tail.split(/\r?\n/).slice(-6).join('\n') : '')).join('\n\n'));
   console.log(C.bad + '❌ ' + failed.length + '/' + total + ' 步失败：' + failed.map((f) => f.title).join('、') + C.x);
   console.log(C.dim + '提示：Rust 编译与 Android 出包不在本脚本范围（需 rustup / Android SDK，见 apps/README.md）' + C.x);
   process.exit(1);

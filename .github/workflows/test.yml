@@ -40,6 +40,11 @@ jobs:
         run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> $GITHUB_ENV
 
       - name: 运行 CI（产物生成 → 十二组断言 → 文档审计 → 两条端到端）
+        # SKIP_CARGO：本作业没装 Tauri 的 Linux 依赖（webkit2gtk 等），
+        # 而 ubuntu runner 自带 Rust，ci-local 会顺带跑 cargo test 并失败。
+        # Rust 由 rust.yml 负责（那边装了依赖）。这样两个作业职责清晰、都更快。
+        env:
+          SKIP_CARGO: '1'
         run: node scripts/ci-local.mjs
 
       - name: 失败时把结论写进 Job Summary（无需授权即可查看）
