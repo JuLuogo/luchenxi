@@ -3054,5 +3054,483 @@
         }
       ]
     }
+  ],
+  "classroom": [
+    {
+      "name": "环节切换序列",
+      "teams": [
+        {
+          "id": "tm1",
+          "name": "红队",
+          "color": "#e74c3c",
+          "icon": "🔴",
+          "memberIds": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "tm2",
+          "name": "蓝队",
+          "color": "#3498db",
+          "icon": "🔵",
+          "memberIds": [
+            "s3",
+            "s4"
+          ]
+        },
+        {
+          "id": "tm3",
+          "name": "空队",
+          "color": "#27ae60",
+          "icon": "✏️",
+          "memberIds": []
+        }
+      ],
+      "students": [
+        {
+          "id": "s1",
+          "name": "甲",
+          "teamId": "tm1",
+          "active": true
+        },
+        {
+          "id": "s2",
+          "name": "乙",
+          "teamId": "tm1",
+          "active": true
+        },
+        {
+          "id": "s3",
+          "name": "丙",
+          "teamId": "tm2",
+          "active": true
+        },
+        {
+          "id": "s4",
+          "name": "丁",
+          "teamId": "tm2",
+          "active": true
+        }
+      ],
+      "q1": {
+        "id": "q1",
+        "tier": "basic",
+        "options": [
+          "甲",
+          "乙"
+        ],
+        "answer": "A"
+      },
+      "q2": {
+        "id": "q2",
+        "tier": "advanced",
+        "options": [],
+        "answer": ""
+      },
+      "quizFirstQid": "q1",
+      "bankFirstQid": "q1",
+      "steps": [
+        {
+          "type": "setPhase",
+          "phase": "question",
+          "expect": {
+            "phase": "question",
+            "accepting": true,
+            "qid": "q1",
+            "reveal": false
+          }
+        },
+        {
+          "type": "setPhase",
+          "phase": "review",
+          "expect": {
+            "phase": "review",
+            "accepting": false,
+            "qid": "q1",
+            "reveal": false
+          }
+        },
+        {
+          "type": "setPhase",
+          "phase": "rollcall",
+          "expect": {
+            "phase": "rollcall",
+            "accepting": false,
+            "qid": "q1",
+            "reveal": false
+          }
+        },
+        {
+          "type": "setPhase",
+          "phase": "nonsense",
+          "expect": {
+            "phase": "rollcall",
+            "accepting": false,
+            "qid": "q1",
+            "reveal": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "学生命令：入座 / 抢答去重 / 客观题自动判分 / 主观题待确认 / 重复提交",
+      "teams": [
+        {
+          "id": "tm1",
+          "name": "红队",
+          "color": "#e74c3c",
+          "icon": "🔴",
+          "memberIds": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "tm2",
+          "name": "蓝队",
+          "color": "#3498db",
+          "icon": "🔵",
+          "memberIds": [
+            "s3",
+            "s4"
+          ]
+        },
+        {
+          "id": "tm3",
+          "name": "空队",
+          "color": "#27ae60",
+          "icon": "✏️",
+          "memberIds": []
+        }
+      ],
+      "students": [
+        {
+          "id": "s1",
+          "name": "甲",
+          "teamId": "tm1",
+          "active": true
+        },
+        {
+          "id": "s2",
+          "name": "乙",
+          "teamId": "tm1",
+          "active": true
+        },
+        {
+          "id": "s3",
+          "name": "丙",
+          "teamId": "tm2",
+          "active": true
+        },
+        {
+          "id": "s4",
+          "name": "丁",
+          "teamId": "tm2",
+          "active": true
+        }
+      ],
+      "q1": {
+        "id": "q1",
+        "tier": "basic",
+        "options": [
+          "甲",
+          "乙"
+        ],
+        "answer": "A"
+      },
+      "q2": {
+        "id": "q2",
+        "tier": "advanced",
+        "options": [],
+        "answer": ""
+      },
+      "quizFirstQid": "q1",
+      "bankFirstQid": "q1",
+      "steps": [
+        {
+          "type": "cmd",
+          "kind": "hello",
+          "cmd": {
+            "kind": "hello",
+            "teamId": "tm1",
+            "sid": null,
+            "qid": null,
+            "choice": [],
+            "text": "",
+            "skip": false
+          },
+          "answeredAlready": false,
+          "questionRef": null,
+          "currentQidRef": null,
+          "expect": {
+            "outcome": {
+              "kind": "hello",
+              "teamId": "tm1"
+            },
+            "feedText": "红队 已入座",
+            "feedKind": "hello"
+          }
+        },
+        {
+          "type": "cmd",
+          "kind": "buzz",
+          "cmd": {
+            "kind": "buzz",
+            "teamId": "tm1",
+            "sid": "s1",
+            "qid": "q1",
+            "choice": [],
+            "text": "",
+            "skip": false
+          },
+          "answeredAlready": false,
+          "questionRef": "q1",
+          "currentQidRef": "q1",
+          "expect": {
+            "outcome": {
+              "kind": "buzz",
+              "dup": false
+            },
+            "feedText": null,
+            "feedKind": null
+          }
+        },
+        {
+          "type": "cmd",
+          "kind": "buzz",
+          "cmd": {
+            "kind": "buzz",
+            "teamId": "tm1",
+            "sid": "s2",
+            "qid": "q1",
+            "choice": [],
+            "text": "",
+            "skip": false
+          },
+          "answeredAlready": false,
+          "questionRef": "q1",
+          "currentQidRef": "q1",
+          "expect": {
+            "outcome": {
+              "kind": "buzz",
+              "dup": true
+            },
+            "feedText": null,
+            "feedKind": null
+          }
+        },
+        {
+          "type": "cmd",
+          "kind": "buzz",
+          "cmd": {
+            "kind": "buzz",
+            "teamId": "tm2",
+            "sid": "s3",
+            "qid": "q1",
+            "choice": [],
+            "text": "",
+            "skip": false
+          },
+          "answeredAlready": false,
+          "questionRef": "q1",
+          "currentQidRef": "q1",
+          "expect": {
+            "outcome": {
+              "kind": "buzz",
+              "dup": false
+            },
+            "feedText": null,
+            "feedKind": null
+          }
+        },
+        {
+          "type": "cmd",
+          "kind": "answer",
+          "cmd": {
+            "kind": "answer",
+            "teamId": "tm1",
+            "sid": "s1",
+            "qid": "q1",
+            "choice": [
+              "A"
+            ],
+            "text": "",
+            "skip": false
+          },
+          "answeredAlready": false,
+          "questionRef": "q1",
+          "currentQidRef": "q1",
+          "expect": {
+            "outcome": {
+              "kind": "answer",
+              "ok": true,
+              "result": "correct",
+              "sid": "s1",
+              "points": 3
+            },
+            "feedText": "甲 A. 甲 → 答对（+3）",
+            "feedKind": "answer"
+          }
+        },
+        {
+          "type": "cmd",
+          "kind": "answer",
+          "cmd": {
+            "kind": "answer",
+            "teamId": "tm1",
+            "sid": "s2",
+            "qid": "q2",
+            "choice": [],
+            "text": "我的证明",
+            "skip": false
+          },
+          "answeredAlready": false,
+          "questionRef": "q2",
+          "currentQidRef": "q2",
+          "expect": {
+            "outcome": {
+              "kind": "answer",
+              "ok": true,
+              "result": "pending",
+              "sid": "s2"
+            },
+            "feedText": "乙 提交：我的证明（待确认）",
+            "feedKind": "pending"
+          }
+        },
+        {
+          "type": "cmd",
+          "kind": "answer",
+          "cmd": {
+            "kind": "answer",
+            "teamId": "tm1",
+            "sid": "s1",
+            "qid": "q1",
+            "choice": [
+              "A"
+            ],
+            "text": "",
+            "skip": false
+          },
+          "answeredAlready": true,
+          "questionRef": "q1",
+          "currentQidRef": "q1",
+          "expect": {
+            "outcome": {
+              "kind": "answer",
+              "ok": false,
+              "reason": "duplicate"
+            },
+            "feedText": "甲 重复提交，已忽略",
+            "feedKind": "dup"
+          }
+        }
+      ]
+    },
+    {
+      "name": "学生命令：没有成员的队伍（应写失败提示）",
+      "teams": [
+        {
+          "id": "tm1",
+          "name": "红队",
+          "color": "#e74c3c",
+          "icon": "🔴",
+          "memberIds": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "tm2",
+          "name": "蓝队",
+          "color": "#3498db",
+          "icon": "🔵",
+          "memberIds": [
+            "s3",
+            "s4"
+          ]
+        },
+        {
+          "id": "tm3",
+          "name": "空队",
+          "color": "#27ae60",
+          "icon": "✏️",
+          "memberIds": []
+        }
+      ],
+      "students": [
+        {
+          "id": "s1",
+          "name": "甲",
+          "teamId": "tm1",
+          "active": true
+        },
+        {
+          "id": "s2",
+          "name": "乙",
+          "teamId": "tm1",
+          "active": true
+        },
+        {
+          "id": "s3",
+          "name": "丙",
+          "teamId": "tm2",
+          "active": true
+        },
+        {
+          "id": "s4",
+          "name": "丁",
+          "teamId": "tm2",
+          "active": true
+        }
+      ],
+      "q1": {
+        "id": "q1",
+        "tier": "basic",
+        "options": [
+          "甲",
+          "乙"
+        ],
+        "answer": "A"
+      },
+      "q2": {
+        "id": "q2",
+        "tier": "advanced",
+        "options": [],
+        "answer": ""
+      },
+      "quizFirstQid": "q1",
+      "bankFirstQid": "q1",
+      "steps": [
+        {
+          "type": "cmd",
+          "kind": "answer",
+          "cmd": {
+            "kind": "answer",
+            "teamId": "tm3",
+            "sid": null,
+            "qid": "q1",
+            "choice": [
+              "A"
+            ],
+            "text": "",
+            "skip": false
+          },
+          "answeredAlready": false,
+          "questionRef": "q1",
+          "currentQidRef": "q1",
+          "expect": {
+            "outcome": {
+              "kind": "answer",
+              "ok": false,
+              "reason": "no-student"
+            },
+            "feedText": "空队 提交失败：队伍没有成员",
+            "feedKind": "error"
+          }
+        }
+      ]
+    }
   ]
 }

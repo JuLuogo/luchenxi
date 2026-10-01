@@ -71,22 +71,47 @@ impl Verdict {
     }
 }
 
-/// 题目（只保留判分需要的字段；其余字段仍在 dump 里，由前端展示）
+/// 题目（判分需要的字段 + 计分需要的题型/自定义分值；其余字段仍在 dump 里，由前端展示）
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Question {
+    #[serde(default)]
     pub options: Vec<String>,
+    #[serde(default)]
     pub answer: String,
+    /// 题型 key（basic/advanced/extended/improve），计分要用
+    #[serde(default)]
+    pub tier: String,
+    /// 题目自定义分值；为 None 时取题型权重
+    #[serde(default)]
+    pub points: Option<i64>,
 }
 
 impl Question {
+    /// 构造判分用的题目（题型留空，计分时由调用方补）
     pub fn new(options: &[&str], answer: &str) -> Self {
         Question {
             options: options.iter().map(|s| s.to_string()).collect(),
             answer: answer.to_string(),
+            tier: String::new(),
+            points: None,
         }
     }
 
-    /// 从 dump 里的题目 JSON 构造（options 数组 + answer 字符串）
+    /// 带题型的构造（计分与课堂协同时用）
+    pub fn with_tier(options: &[&str], answer: &str, tier: &str, points: Option<i64>) -> Self {
+        Question {
+            options: options.iter().map(|s| s.to_string()).collect(),
+            answer: answer.to_string(),
+            tier: tier.to_string(),
+            points,
+        }
+    }
+
+    pub fn tier_key(&self) -> String {
+        self.tier.clone()
+    }
+
+    /// 从 dump 里的题目 JSON 构造（options 数组 + answer 字符串 + tier/points）
     pub fn from_json(v: &Value) -> Self {
         let options = v
             .get("options")
@@ -106,7 +131,13 @@ impl Question {
             Some(Value::Null) | None => String::new(),
             Some(other) => other.to_string(),
         };
-        Question { options, answer }
+        let tier = v.get("tier").and_then(|t| t.as_str()).unwrap_or_default().to_string();
+        let points = v.get("points").and_then(|p| match p {
+            Value::Number(n) => n.as_i64(),
+            Value::String(s) => s.parse::<i64>().ok(),
+            _ => None,
+        });
+        Question { options, answer, tier, points }
     }
 
     pub fn type_of(&self) -> QuestionType {

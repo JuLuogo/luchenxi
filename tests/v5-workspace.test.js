@@ -105,7 +105,7 @@ const MIGRATION = [
   { js: 'assets/js/grade.js', rs: 'crates/ci-domain/src/grade.rs', name: '题型推断与客观题判分', migrated: true, parity: 'grading' },
   { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/ability.rs', name: '加权计分与能力评价', migrated: true, parity: 'ability' },
   { js: 'assets/js/rollcall.js', rs: 'crates/ci-domain/src/rollcall.rs', name: '随机点名', migrated: true, parity: 'rollcall' },
-  { js: 'assets/js/classroom.js', rs: 'crates/ci-domain/src/classroom.rs', name: '课堂环节与学生命令', migrated: false },
+  { js: 'assets/js/classroom.js', rs: 'crates/ci-domain/src/classroom.rs', name: '课堂环节与学生命令', migrated: true, parity: 'classroom', minParity: 3 },
   { js: 'assets/js/store.js', rs: 'crates/ci-domain/src/scoring.rs', name: '题型权重与计分引擎', migrated: true, parity: 'scoring', minParity: 3 }
 ];
 
@@ -126,7 +126,7 @@ MIGRATION.forEach((m) => {
   console.log('   ' + (m.migrated ? '✅' : '⏳') + ' ' + m.name.padEnd(16) + m.js + '  →  ' + m.rs);
 });
 console.log('\n   进度：' + done + '/' + MIGRATION.length + ' 个领域模块已迁移到 Rust');
-ok(done >= 1, '至少已迁移一个领域模块（判分/能力/点名/计分）');
+ok(done === MIGRATION.length, '五个领域模块全部迁到 Rust（当前 ' + done + '/' + MIGRATION.length + '）');
 
 // 已迁移的模块必须在 parity 基准里有对应用例集（否则"迁移"只是自称）
 const parityPath = path.join(ROOT, 'tests', 'fixtures', 'parity.json');
@@ -138,15 +138,17 @@ MIGRATION.filter((m) => m.migrated && m.parity).forEach((m) => {
   ok(Array.isArray(cs) && cs.length >= (m.minParity || 5),
     m.name + ' 在 parity.json 里有用例集（' + m.parity + '：' + (cs ? cs.length : 0) + ' 组）');
 });
-const parityCases = ['ability', 'grading', 'rollcall', 'scoring']
+const parityCases = ['ability', 'grading', 'rollcall', 'scoring', 'classroom']
   .reduce((n, k) => n + (parity[k] || []).length, 0);
 console.log('   parity 基准：能力 ' + (parity.ability || []).length +
   ' + 判分 ' + (parity.grading || []).length +
   ' + 点名 ' + (parity.rollcall || []).length +
-  ' + 计分 ' + (parity.scoring || []).length + ' = ' + parityCases + ' 组');
+  ' + 计分 ' + (parity.scoring || []).length +
+  ' + 课堂 ' + (parity.classroom || []).length + ' = ' + parityCases + ' 组');
 ok(parityCases >= 20, 'parity 基准覆盖至少 20 组用例（当前 ' + parityCases + '）');
 ok((parity.rollcall || []).length >= 3, 'parity 基准含随机点名用例（' + (parity.rollcall || []).length + ' 组）');
 ok((parity.scoring || []).length >= 2, 'parity 基准含计分引擎用例（' + (parity.scoring || []).length + ' 组）');
+ok((parity.classroom || []).length >= 3, 'parity 基准含课堂协同用例（' + (parity.classroom || []).length + ' 组）');
 
 /* ================= 5. CI 覆盖到 workspace ================= */
 group('CI 覆盖');

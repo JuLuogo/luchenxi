@@ -12,6 +12,7 @@
 //! 依赖方向：ci-domain ← ci-hub ← ci-core ← apps/
 
 pub mod ability;
+pub mod classroom;
 pub mod grade;
 pub mod rollcall;
 pub mod scoring;
@@ -27,6 +28,12 @@ pub use rollcall::{
 pub use scoring::{
     compute_points, default_tiers, is_countable, normalize_result, question_points, result_label,
     round2, score_of_input, sum_points, tier_of, ScoreInput, ScoreSnapshot, ScoringSettings, Tier,
+};
+pub use classroom::{
+    add_buzz, add_pending, finalize_feed, handle_cmd, pack_ability, phase_label, pick_answerer, push_feed,
+    set_phase, set_phase_named, team_stats, tier_key_default, AbilityPack, Buzz, BuzzOutcome,
+    ClassStudent, ClassTeam, CmdOutcome, CmdResult, FeedItem, Pending, Phase, Runtime, ScoreRequest,
+    StudentCmd, TeamStat, PHASES,
 };
 pub use grade::{
     answer_key, auto, describe_submission, normalize_text, parse_choice, validate_question,

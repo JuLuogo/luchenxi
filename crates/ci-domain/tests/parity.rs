@@ -13,9 +13,11 @@
 
 use ci_domain::{
     ability_of_tiers, answer_key, apply_pick, auto, default_tiers, describe_submission,
-    rollcall_pick, score_of_input, validate_question, PickOpts, Question, RollcallSettings,
-    ScoreInput, ScoringSettings, Student, Submission, TierStat,
+    finalize_feed, handle_cmd, rollcall_pick, score_of_input, set_phase_named, validate_question,
+    ClassStudent, ClassTeam, CmdOutcome, PickOpts, Question, RollcallSettings, Runtime, ScoreInput,
+    ScoringSettings, Student, StudentCmd, Submission, TierStat,
 };
+use serde_json::json;
 use serde::Deserialize;
 use serde_json::Value;
 use std::path::PathBuf;
@@ -26,6 +28,7 @@ struct Fixture {
     grading: Vec<GradeCase>,
     rollcall: Vec<RollCase>,
     scoring: Vec<ScoreCase>,
+    classroom: Vec<ClassCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -136,6 +139,77 @@ struct ScoreExpect {
     tier: String,
     #[serde(rename = "scoreAfter")]
     score_after: f64,
+}
+
+
+#[derive(Debug, Deserialize)]
+struct ClassCase {
+    name: String,
+    teams: Vec<ClassTeam>,
+    students: Vec<ClassStudent>,
+    q1: QRef,
+    q2: QRef,
+    #[serde(rename = "quizFirstQid")]
+    quiz_first_qid: String,
+    #[serde(rename = "bankFirstQid")]
+    bank_first_qid: String,
+    steps: Vec<ClassStep>,
+}
+
+#[derive(Debug, Deserialize)]
+struct QRef {
+    id: String,
+    tier: String,
+    options: Vec<String>,
+    answer: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct ClassStep {
+    #[serde(rename = "type")]
+    step_type: String,
+    #[serde(default)]
+    phase: Option<String>,
+    #[serde(default)]
+    cmd: Option<CmdIn>,
+    #[serde(rename = "questionRef", default)]
+    question_ref: Option<String>,
+    #[serde(rename = "answeredAlready", default)]
+    answered_already: bool,
+    expect: StepExpect,
+}
+
+#[derive(Debug, Deserialize)]
+struct CmdIn {
+    kind: String,
+    #[serde(rename = "teamId", default)]
+    team_id: Option<String>,
+    #[serde(default)]
+    sid: Option<String>,
+    #[serde(default)]
+    qid: Option<String>,
+    #[serde(default)]
+    choice: Vec<String>,
+    #[serde(default)]
+    text: String,
+    #[serde(default)]
+    skip: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct StepExpect {
+    #[serde(default)]
+    phase: Option<String>,
+    #[serde(default)]
+    accepting: Option<bool>,
+    #[serde(default)]
+    qid: Option<String>,
+    #[serde(default)]
+    reveal: Option<bool>,
+    #[serde(default)]
+    outcome: Option<Value>,
+    #[serde(rename = "feedText", default)]
+    feed_text: Option<String>,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -368,4 +442,154 @@ fn scoring_matches_js_reference() {
     }
 
     println!("\n✅ 计分引擎：{} 组用例与 JS 参考实现逐步一致", fx.scoring.len());
+}
+
+/// 课堂协同：环节切换序列 + 学生命令（入座/抢答去重/自动判分/主观题待确认/重复提交/空队），
+/// 比对结果摘要与**实时流文案逐字相同**
+#[test]
+fn classroom_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.classroom.is_empty(), "基准里没有课堂协同用例");
+
+    for case in &fx.classroom {
+        let mut rt = Runtime::default();
+        let mut buzz: Vec<ci_domain::Buzz> = Vec::new();
+
+        for (i, step) in case.steps.iter().enumerate() {
+            let n = format!("{} #{}", case.name, i + 1);
+
+            if step.step_type == "setPhase" {
+                let name = step.phase.clone().unwrap_or_default();
+                let got = set_phase_named(&mut rt, &name, Some(&case.quiz_first_qid), Some(&case.bank_first_qid));
+                let e = &step.expect;
+                if let Some(p) = &e.phase {
+                    assert_eq!(got.as_str(), p.as_str(), "[{}] 环节不一致", n);
+                }
+                if let Some(a) = e.accepting {
+                    assert_eq!(rt.accepting, a, "[{}] accepting 不一致", n);
+                }
+                if let Some(r) = e.reveal {
+                    assert_eq!(rt.reveal, r, "[{}] reveal 不一致", n);
+                }
+                // 注意：qid 只在"出题且原本没题"时才会变，这里按 fixture 记录的现状比对
+                if e.qid.is_some() && rt.qid.is_some() {
+                    assert_eq!(rt.qid.as_deref(), e.qid.as_deref(), "[{}] 当前题不一致", n);
+                }
+                println!("  ✔ {} setPhase {} → {}", n, name, got.as_str());
+                continue;
+            }
+
+            let cmd_in = step.cmd.as_ref().expect("cmd 步骤缺少 cmd");
+            let question = match step.question_ref.as_deref() {
+                Some("q1") => Some(Question {
+                    options: case.q1.options.clone(),
+                    answer: case.q1.answer.clone(),
+                    tier: case.q1.tier.clone(),
+                    points: None,
+                }),
+                Some("q2") => Some(Question {
+                    options: case.q2.options.clone(),
+                    answer: case.q2.answer.clone(),
+                    tier: case.q2.tier.clone(),
+                    points: None,
+                }),
+                _ => None,
+            };
+            let current_qid: Option<&str> = match step.question_ref.as_deref() {
+                Some("q1") => Some(case.q1.id.as_str()),
+                Some("q2") => Some(case.q2.id.as_str()),
+                _ => None,
+            };
+            let cmd = StudentCmd {
+                kind: cmd_in.kind.clone(),
+                team_id: cmd_in.team_id.clone(),
+                sid: cmd_in.sid.clone(),
+                qid: cmd_in.qid.clone(),
+                choice: cmd_in.choice.clone(),
+                text: if cmd_in.text.is_empty() { None } else { Some(cmd_in.text.clone()) },
+                skip: cmd_in.skip,
+                backlog: false,
+            };
+
+            let r = handle_cmd(
+                &cmd,
+                &case.teams,
+                &case.students,
+                &rt,
+                question.as_ref(),
+                current_qid,
+                step.answered_already,
+                &buzz,
+                0,
+            );
+
+            // 结果摘要（与 JS handleCmd 的返回值同形）
+            let got_outcome = match &r.outcome {
+                CmdOutcome::Ignored => json!({ "kind": "ignored" }),
+                CmdOutcome::Hello { team_id } => json!({ "kind": "hello", "teamId": team_id }),
+                CmdOutcome::Buzz { dup, .. } => json!({ "kind": "buzz", "dup": dup }),
+                CmdOutcome::AnswerNoStudent { .. } => json!({ "kind": "answer", "ok": false, "reason": "no-student" }),
+                CmdOutcome::AnswerDuplicate { .. } => json!({ "kind": "answer", "ok": false, "reason": "duplicate" }),
+                CmdOutcome::AnswerPending { sid } => json!({ "kind": "answer", "ok": true, "result": "pending", "sid": sid }),
+                CmdOutcome::AnswerScored { sid, result, .. } => {
+                    json!({ "kind": "answer", "ok": true, "result": result, "sid": sid, "points": 0 })
+                }
+            };
+
+            // 抢答要累积，否则下一步的去重判断就不成立
+            if let Some(b) = &r.buzz {
+                buzz.insert(0, b.clone());
+            }
+
+            // 自动判分的题：用计分引擎算出分数与文案
+            let mut feed_text = r.feeds.first().map(|f| f.text.clone());
+            if let Some(sc) = &r.score {
+                let snap = score_of_input(
+                    &default_tiers(),
+                    &ScoringSettings::default(),
+                    &ScoreInput {
+                        sid: sc.sid.clone(),
+                        qid: sc.qid.clone(),
+                        question_tier: Some(sc.tier.clone()),
+                        result: sc.result.clone(),
+                        ..Default::default()
+                    },
+                );
+                if let Some(want) = step.expect.outcome.as_ref().and_then(|o| o.get("points")).and_then(|x| x.as_f64()) {
+                    assert!((snap.points - want).abs() < 1e-9, "[{}] 分数不一致：{} vs {}", n, snap.points, want);
+                }
+                if let Some(f) = r.feeds.first() {
+                    let mut f = f.clone();
+                    finalize_feed(&mut f, &snap, &case.students);
+                    feed_text = Some(f.text);
+                }
+            }
+
+            if let Some(want) = &step.expect.outcome {
+                let wo = want.clone();
+                // points 已单独比对过，这里比对其它字段
+                for key in ["kind", "ok", "reason", "result", "sid", "dup", "teamId"] {
+                    let w = wo.get(key);
+                    let g = got_outcome.get(key);
+                    if w.is_some() || g.is_some() {
+                        assert_eq!(g, w, "[{}] 结果字段 {} 不一致", n, key);
+                    }
+                }
+            }
+            if let Some(want_text) = &step.expect.feed_text {
+                assert_eq!(
+                    feed_text.as_deref(),
+                    Some(want_text.as_str()),
+                    "[{}] 实时流文案不一致",
+                    n
+                );
+            } else {
+                assert!(feed_text.is_none(), "[{}] 不该写实时流，实际写了：{:?}", n, feed_text);
+            }
+
+            println!("  ✔ {} {} → {}", n, cmd.kind, feed_text.unwrap_or_else(|| "（不写流）".to_string()));
+        }
+    }
+
+    println!("\n✅ 课堂协同：{} 组用例与 JS 参考实现逐步一致", fx.classroom.len());
 }

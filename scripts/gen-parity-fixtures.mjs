@@ -389,6 +389,154 @@ scoringCase('自定义分值 + 未知结果归一化', [
   { q: 'basic', result: 'skip' }
 ]);
 
+
+/* ---------- 用例集：课堂协同（classroom.js）---------- *
+ * 两类步骤：
+ *   setPhase —— 环节切换（含自动带题、接收开关、收起答案）
+ *   cmd      —— 学生命令（入座/抢答/提交），比对"结果摘要 + 实时流首条文案" */
+const classroom = [];
+
+let NORM = (x) => x;
+function normOutcome(r) {
+  if (!r) return null;
+  if (r.kind === 'hello') return { kind: 'hello', teamId: NORM(r.teamId) };
+  if (r.kind === 'buzz') return { kind: 'buzz', dup: !!r.dup };
+  if (r.kind === 'answer') {
+    if (r.ok === false) return { kind: 'answer', ok: false, reason: r.reason };
+    return { kind: 'answer', ok: true, result: r.result, sid: NORM(r.sid), points: r.result === 'pending' ? undefined : Number(r.points || 0) };
+  }
+  return { kind: r.kind };
+}
+
+function classCase(name, steps) {
+  globalThis.localStorage.clear();
+  S.replaceState(S.defaultState());
+  const teams = S.get().teams;
+  const t1 = teams[0], t2 = teams[1];
+  const a = S.addStudent('甲', t1.id), b = S.addStudent('乙', t1.id);
+  const c = S.addStudent('丙', t2.id), d = S.addStudent('丁', t2.id);
+  const sid = (x) => (typeof x === 'string' ? x : x.id);
+  // 可选：造一支没有任何成员的队伍，用于验证"队伍没有成员"的失败路径
+  const emptyTeam = S.addTeam ? S.addTeam('空队') : null;
+  const t3id = emptyTeam ? (typeof emptyTeam === 'string' ? emptyTeam : emptyTeam.id) : null;
+
+  const q1 = S.addQuestion({ stem: '第一题', tier: 'basic', answer: 'A', options: ['甲', '乙'] });
+  const q2 = S.addQuestion({ stem: '主观题', tier: 'advanced' });
+  const qz = S.createQuiz('随堂测', [q1.id, q2.id], '');
+  S.setCurrentQuiz(qz.id);
+
+  // id 归一化：uid() 每次都不同，不归一化基准就不可复现（--check 会永远红）
+  const idMap = new Map();
+  S.get().teams.forEach((x, i) => idMap.set(x.id, 'tm' + (i + 1)));
+  S.get().students.forEach((x, i) => idMap.set(x.id, 's' + (i + 1)));
+  if (t3id) idMap.set(t3id, 'tm3');
+  idMap.set(q1.id, 'q1');
+  idMap.set(q2.id, 'q2');
+  const N = (v) => (v === null || v === undefined ? null : (idMap.get(v) || v));
+
+  NORM = (x) => N(x);
+
+  const rec = {
+    name,
+    teams: S.get().teams.map((x) => ({
+      id: N(x.id), name: x.name, color: x.color, icon: x.icon,
+      memberIds: (S.get().students || []).filter((s) => s.teamId === x.id).map((s) => N(s.id))
+    })),
+    students: S.get().students.map((s) => ({ id: N(s.id), name: s.name, teamId: N(s.teamId), active: true })),
+    q1: { id: 'q1', tier: q1.tier, options: q1.options, answer: q1.answer },
+    q2: { id: 'q2', tier: q2.tier, options: [], answer: '' },
+    quizFirstQid: N(qz.questionIds[0]),
+    bankFirstQid: N(S.get().bank[0].id),
+    steps: []
+  };
+
+  steps.forEach((step) => {
+    if (step.kind === 'setPhase') {
+      const got = CI.classroom.setPhase(step.phase);
+      const st = S.get();
+      rec.steps.push({
+        type: 'setPhase',
+        phase: step.phase,
+        expect: { phase: got, accepting: !!st.runtime.accepting, qid: st.runtime.qid ? N(st.runtime.qid) : null, reveal: !!st.runtime.reveal }
+      });
+      return;
+    }
+    // 学生命令
+    const cmd = Object.assign({}, step.cmd);
+    if (cmd.team === 't1') cmd.teamId = t1.id;
+    if (cmd.team === 't2') cmd.teamId = t2.id;
+    if (cmd.team === 't3') cmd.teamId = t3id;
+    if (cmd.student === 'a') cmd.sid = sid(a);
+    if (cmd.student === 'b') cmd.sid = sid(b);
+    if (cmd.student === 'c') cmd.sid = sid(c);
+    if (cmd.student === 'd') cmd.sid = sid(d);
+    if (cmd.q === 'q1') cmd.qid = q1.id;
+    if (cmd.q === 'q2') cmd.qid = q2.id;
+    delete cmd.team; delete cmd.student; delete cmd.q;
+
+    if (step.prepare === 'answerByA') {
+      // 让"甲"先答一次，用于制造重复提交
+      S.recordResult({ sid: sid(a), qid: q1.id, tier: q1.tier, result: 'correct', quizId: qz.id, source: 'student' });
+    }
+    if (step.prepare === 'setQ1') S.setRuntime({ qid: q1.id });
+    if (step.prepare === 'setQ2') S.setRuntime({ qid: q2.id });
+
+    // 记录"该生是否已答过当前题"（与 handleCmd 内部同一套判断），Rust 侧据此复现
+    const st0 = S.get();
+    const qForCmd = cmd.qid ? S.question(st0, cmd.qid) : null;
+    const resolvedSid = CI.classroom.pickAnswerer(st0, cmd.teamId, cmd.sid);
+    const answeredAlready = (qForCmd && resolvedSid)
+      ? (st0.runtime.quizId
+        ? S.answeredAlready(st0, st0.runtime.quizId, qForCmd.id, resolvedSid)
+        : S.recordsOf(st0, { sid: resolvedSid, qid: qForCmd.id }).length > 0)
+      : false;
+
+    const feedOf = () => ((S.get().classroom && S.get().classroom.feed) || []);
+    const feedBefore = feedOf().length;
+    const out = CI.classroom.handleCmd(cmd);
+    const feedAfter = feedOf()[0] || null;
+    // 抢答这类"不写实时流"的命令不该拿上一条文案来比对
+    const feed = feedOf().length > feedBefore ? feedAfter : null;
+    rec.steps.push({
+      type: 'cmd',
+      kind: cmd.kind,
+      cmd: {
+        kind: cmd.kind,
+        teamId: N(cmd.teamId), sid: N(cmd.sid) || null, qid: N(cmd.qid) || null,
+        choice: cmd.choice || [], text: cmd.text || '', skip: !!cmd.skip
+      },
+      answeredAlready: !!answeredAlready,
+      questionRef: cmd.qid === q1.id ? 'q1' : (cmd.qid === q2.id ? 'q2' : null),
+      currentQidRef: cmd.qid === q1.id ? 'q1' : (cmd.qid === q2.id ? 'q2' : null),
+      expect: { outcome: normOutcome(out), feedText: feed ? feed.text : null, feedKind: feed ? feed.kind : null }
+    });
+  });
+
+  classroom.push(rec);
+}
+
+classCase('环节切换序列', [
+  { kind: 'setPhase', phase: 'question' },
+  { kind: 'setPhase', phase: 'review' },
+  { kind: 'setPhase', phase: 'rollcall' },
+  { kind: 'setPhase', phase: 'nonsense' }
+]);
+
+classCase('学生命令：入座 / 抢答去重 / 客观题自动判分 / 主观题待确认 / 重复提交', [
+  { kind: 'cmd', cmd: { kind: 'hello', team: 't1' } },
+  { kind: 'cmd', cmd: { kind: 'buzz', team: 't1', student: 'a', q: 'q1' } },
+  { kind: 'cmd', cmd: { kind: 'buzz', team: 't1', student: 'b', q: 'q1' } },
+  { kind: 'cmd', cmd: { kind: 'buzz', team: 't2', student: 'c', q: 'q1' } },
+  { prepare: 'setQ1', kind: 'cmd', cmd: { kind: 'answer', team: 't1', student: 'a', q: 'q1', choice: ['A'] } },
+  { prepare: 'setQ2', kind: 'cmd', cmd: { kind: 'answer', team: 't1', student: 'b', q: 'q2', text: '我的证明' } },
+  { prepare: 'answerByA', kind: 'cmd', cmd: { kind: 'answer', team: 't1', student: 'a', q: 'q1', choice: ['A'] } }
+]);
+
+classCase('学生命令：没有成员的队伍（应写失败提示）', [
+  // 注意：不给 student —— pickAnswerer 会优先"命令指定的人"，给了 sid 就走不到空队路径
+  { kind: 'cmd', cmd: { kind: 'answer', team: 't3', q: 'q1', choice: ['A'] } }
+]);
+
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
@@ -396,7 +544,8 @@ const payload = {
   ability: cases,
   grading,
   rollcall,
-  scoring
+  scoring,
+  classroom
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
@@ -404,7 +553,7 @@ const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
 if (CHECK) {
   if (current === text) {
     console.log('[ok] parity.json 与 JS 参考实现一致（能力 ' + cases.length + ' + 判分 ' + grading.length +
-    ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' 组）');
+    ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' + 课堂 ' + classroom.length + ' 组）');
     process.exit(0);
   }
   console.error('[stale] parity.json 与 JS 参考实现不一致 —— 运行 node scripts/gen-parity-fixtures.mjs 重新生成');
@@ -414,8 +563,9 @@ if (CHECK) {
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, text, 'utf8');
 console.log('[ok] 已生成 ' + path.relative(ROOT, OUT) +
-  '（能力 ' + cases.length + ' + 判分 ' + grading.length + ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' 组用例）');
+  '（能力 ' + cases.length + ' + 判分 ' + grading.length + ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' + 课堂 ' + classroom.length + ' 组用例）');
 cases.forEach((c) => console.log('   · ' + c.name.padEnd(28) + c.expect.grade + '  overall=' + c.expect.overall));
 grading.forEach((g) => console.log('   · ' + g.name.padEnd(28) + (g.expect ? g.expect.result : 'null（主观题）')));
 rollcall.forEach((r) => console.log('   · ' + r.name.padEnd(34) + r.mode + '  ' + r.steps.length + ' 步'));
 scoring.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.steps.length + ' 步'));
+classroom.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.steps.length + ' 步'));
