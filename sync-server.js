@@ -584,6 +584,35 @@ function handleHttp(req, res) {
    */
   const DIST = path.join(ROOT, 'web', 'dist');
   const hasDist = fs.existsSync(path.join(DIST, 'admin.html'));
+
+  /**
+   * 新版界面还没构建时，别丢一个光秃秃的 404 —— 那是"克隆下来以为跑不起来"的头号原因。
+   * 这里给一页说明：怎么构建、旧界面在哪。
+   */
+  if (!hasDist && (urlPath === '/next' || urlPath.startsWith('/next/'))) {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end([
+      '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">',
+      '<title>新版界面还没构建</title>',
+      '<style>body{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;max-width:640px;margin:64px auto;padding:0 20px;color:#1a1d24;line-height:1.9}',
+      'code{background:#f1f5f9;padding:2px 6px;border-radius:6px}',
+      'pre{background:#0f172a;color:#e2e8f0;padding:14px;border-radius:10px;overflow:auto}',
+      'a{color:#4f46e5}</style></head><body>',
+      '<h2>新版界面还没有构建</h2>',
+      '<p>新版（Vue 3）界面是<strong>构建产物</strong>，<code>web/dist</code> 按惯例不入版本库，' +
+      '所以克隆下来第一次访问 <code>/next/</code> 会是空的。</p>',
+      '<p>构建一次即可（约 10 秒）：</p>',
+      '<pre>npm run web:build</pre>',
+      '<p>或者直接用 <code>npm start</code> 启动 —— 它会检测到缺失并自动构建。</p>',
+      '<hr><p>现在就可以用的旧界面：' +
+      '<a href="/admin.html">教师端 /admin.html</a> · ' +
+      '<a href="/join">学生端 /join</a> · ' +
+      '<a href="/stage">大屏 /stage</a></p>',
+      '</body></html>'
+    ].join('\n'));
+    return;
+  }
+
   if (hasDist && (urlPath === '/next' || urlPath.startsWith('/next/'))) {
     const rest = urlPath.slice('/next'.length) || '/';
     if (rest === '/' || rest === '/admin' || rest === '/admin.html') return sendFile(res, path.join(DIST, 'admin.html'));
@@ -631,6 +660,11 @@ server.listen(PORT, HOST, () => {
   console.log(`  教师端 : http://localhost:${PORT}/admin.html`);
   console.log(`  学生端 : http://${lan}:${PORT}/join    ← 学生手机/平板输入这个地址（或用 EasyTier 虚拟 IP）`);
   console.log(`  大屏   : http://localhost:${PORT}/stage`);
+  // 新版（Vue 3）界面是构建产物，克隆后可能还没构建 —— 启动时直接说清楚，别让人以为跑不起来
+  const distReady = fs.existsSync(path.join(ROOT, 'web', 'dist', 'admin.html'));
+  console.log('  新版   : ' + (distReady
+    ? `http://localhost:${PORT}/next/admin.html   ← Vue 3 新版界面（教师端）`
+    : '未构建 → 运行 npm run web:build，或下次直接用 npm start 启动（会自动构建）'));
   console.log(`  房间   : ${DEFAULT_ROOM}（教师端可改；学生端用 ?room=xxx 进入指定房间）`);
   console.log(`  二维码 : ${qrcode ? '可用（/qr.png?text=…）' : '不可用（npm i qrcode 后启用，界面会降级显示文字地址）'}`);
   if (ips.length > 1) console.log('  其它网卡: ' + ips.map((x) => x.address).join(', ') + '  ← 多网卡/EasyTier 时学生端改用其一');
