@@ -12,8 +12,9 @@
 //! CI 校验基准是否过期：`node scripts/gen-parity-fixtures.mjs --check`
 
 use ci_domain::{
-    ability_of_tiers, answer_key, apply_pick, auto, describe_submission, rollcall_pick,
-    validate_question, PickOpts, Question, RollcallSettings, Student, Submission, TierStat,
+    ability_of_tiers, answer_key, apply_pick, auto, default_tiers, describe_submission,
+    rollcall_pick, score_of_input, validate_question, PickOpts, Question, RollcallSettings,
+    ScoreInput, ScoringSettings, Student, Submission, TierStat,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -24,6 +25,7 @@ struct Fixture {
     ability: Vec<Case>,
     grading: Vec<GradeCase>,
     rollcall: Vec<RollCase>,
+    scoring: Vec<ScoreCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -100,6 +102,40 @@ struct RollAfter {
     round: u32,
     round_pool: Vec<String>,
     history: Vec<String>,
+}
+
+
+#[derive(Debug, Deserialize)]
+struct ScoreCase {
+    name: String,
+    steps: Vec<ScoreStep>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ScoreStep {
+    settings: ScoringSettings,
+    #[serde(rename = "hasQuestion")]
+    has_question: bool,
+    #[serde(rename = "questionTier")]
+    question_tier: Option<String>,
+    #[serde(rename = "customPoints")]
+    custom_points: Option<f64>,
+    tier: Option<String>,
+    result: String,
+    fast: bool,
+    source: String,
+    expect: ScoreExpect,
+}
+
+#[derive(Debug, Deserialize)]
+struct ScoreExpect {
+    base: f64,
+    ratio: f64,
+    points: f64,
+    result: String,
+    tier: String,
+    #[serde(rename = "scoreAfter")]
+    score_after: f64,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -285,4 +321,51 @@ fn rollcall_matches_js_reference() {
     }
 
     println!("\n✅ 随机点名：{} 组用例与 JS 参考实现逐步一致", fx.rollcall.len());
+}
+
+/// 加权计分：逐步复现 JS 的流水线（含扣分/抢答奖励/halfRatio 改动/自定义分值/未知结果），
+/// 比对每一步的基准分、折算比例、得分，以及累计分数（两位小数舍入也要一致）
+#[test]
+fn scoring_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.scoring.is_empty(), "基准里没有计分用例");
+    let tiers = default_tiers();
+
+    for case in &fx.scoring {
+        let mut total = 0.0_f64;
+        for (i, step) in case.steps.iter().enumerate() {
+            let n = format!("{} #{ }", case.name, i + 1);
+            let input = ScoreInput {
+                sid: "s1".to_string(),
+                qid: if step.has_question { Some("q".to_string()) } else { None },
+                tier: step.tier.clone(),
+                question_tier: step.question_tier.clone(),
+                custom_points: step.custom_points,
+                base: None,
+                result: step.result.clone(),
+                fast: step.fast,
+                source: Some(step.source.clone()),
+            };
+            let got = score_of_input(&tiers, &step.settings, &input);
+
+            assert!((got.base - step.expect.base).abs() < 1e-9, "[{}] base 不一致：{} vs {}", n, got.base, step.expect.base);
+            assert!((got.ratio - step.expect.ratio).abs() < 1e-9, "[{}] ratio 不一致：{} vs {}", n, got.ratio, step.expect.ratio);
+            assert!((got.points - step.expect.points).abs() < 1e-9, "[{}] points 不一致：{} vs {}", n, got.points, step.expect.points);
+            assert_eq!(got.result, step.expect.result, "[{}] 结果归一化不一致", n);
+            assert_eq!(got.tier, step.expect.tier, "[{}] 题型快照不一致", n);
+
+            total = ci_domain::round2(total + got.points);
+            assert!(
+                (total - step.expect.score_after).abs() < 1e-9,
+                "[{}] 累计分数不一致：{} vs {}",
+                n,
+                total,
+                step.expect.score_after
+            );
+
+            println!("  ✔ {} → base {} × {} = {}", n, got.base, got.ratio, got.points);
+        }
+    }
+
+    println!("\n✅ 计分引擎：{} 组用例与 JS 参考实现逐步一致", fx.scoring.len());
 }

@@ -2621,5 +2621,438 @@
         }
       ]
     }
+  ],
+  "scoring": [
+    {
+      "name": "基础分与累计（答对/半对/答错/快捷）",
+      "questions": [
+        {
+          "tier": "basic",
+          "points": null
+        },
+        {
+          "tier": "advanced",
+          "points": null
+        },
+        {
+          "tier": "extended",
+          "points": 20
+        }
+      ],
+      "steps": [
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": true,
+          "questionTier": "basic",
+          "customPoints": null,
+          "tier": null,
+          "result": "correct",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 3,
+            "ratio": 1,
+            "points": 3,
+            "result": "correct",
+            "tier": "basic",
+            "scoreAfter": 3
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": true,
+          "questionTier": "advanced",
+          "customPoints": null,
+          "tier": null,
+          "result": "correct",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 5,
+            "ratio": 1,
+            "points": 5,
+            "result": "correct",
+            "tier": "advanced",
+            "scoreAfter": 8
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": true,
+          "questionTier": "advanced",
+          "customPoints": null,
+          "tier": null,
+          "result": "half",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 5,
+            "ratio": 0.5,
+            "points": 2.5,
+            "result": "half",
+            "tier": "advanced",
+            "scoreAfter": 10.5
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": true,
+          "questionTier": "advanced",
+          "customPoints": null,
+          "tier": null,
+          "result": "wrong",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 5,
+            "ratio": 0,
+            "points": 0,
+            "result": "wrong",
+            "tier": "advanced",
+            "scoreAfter": 10.5
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": false,
+          "questionTier": null,
+          "customPoints": null,
+          "tier": "improve",
+          "result": "correct",
+          "fast": false,
+          "source": "quick",
+          "expect": {
+            "base": 10,
+            "ratio": 1,
+            "points": 10,
+            "result": "correct",
+            "tier": "improve",
+            "scoreAfter": 20.5
+          }
+        }
+      ]
+    },
+    {
+      "name": "扣分与抢答奖励（wrongPenalty=2 / fastBonus=1 / halfRatio=0.4）",
+      "questions": [
+        {
+          "tier": "basic",
+          "points": null
+        },
+        {
+          "tier": "advanced",
+          "points": null
+        },
+        {
+          "tier": "extended",
+          "points": 20
+        }
+      ],
+      "steps": [
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": true,
+          "questionTier": "basic",
+          "customPoints": null,
+          "tier": null,
+          "result": "correct",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 3,
+            "ratio": 1,
+            "points": 3,
+            "result": "correct",
+            "tier": "basic",
+            "scoreAfter": 3
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": true,
+          "questionTier": "advanced",
+          "customPoints": null,
+          "tier": null,
+          "result": "correct",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 5,
+            "ratio": 1,
+            "points": 5,
+            "result": "correct",
+            "tier": "advanced",
+            "scoreAfter": 8
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": true,
+          "questionTier": "advanced",
+          "customPoints": null,
+          "tier": null,
+          "result": "half",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 5,
+            "ratio": 0.5,
+            "points": 2.5,
+            "result": "half",
+            "tier": "advanced",
+            "scoreAfter": 10.5
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": true,
+          "questionTier": "advanced",
+          "customPoints": null,
+          "tier": null,
+          "result": "wrong",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 5,
+            "ratio": 0,
+            "points": 0,
+            "result": "wrong",
+            "tier": "advanced",
+            "scoreAfter": 10.5
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": false,
+          "questionTier": null,
+          "customPoints": null,
+          "tier": "improve",
+          "result": "correct",
+          "fast": false,
+          "source": "quick",
+          "expect": {
+            "base": 10,
+            "ratio": 1,
+            "points": 10,
+            "result": "correct",
+            "tier": "improve",
+            "scoreAfter": 20.5
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.4,
+            "fast_bonus": 1,
+            "wrong_penalty": 2
+          },
+          "hasQuestion": true,
+          "questionTier": "basic",
+          "customPoints": null,
+          "tier": null,
+          "result": "wrong",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 3,
+            "ratio": 0,
+            "points": -2,
+            "result": "wrong",
+            "tier": "basic",
+            "scoreAfter": 18.5
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.4,
+            "fast_bonus": 1,
+            "wrong_penalty": 2
+          },
+          "hasQuestion": true,
+          "questionTier": "basic",
+          "customPoints": null,
+          "tier": null,
+          "result": "correct",
+          "fast": true,
+          "source": "quiz",
+          "expect": {
+            "base": 3,
+            "ratio": 1,
+            "points": 4,
+            "result": "correct",
+            "tier": "basic",
+            "scoreAfter": 22.5
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.4,
+            "fast_bonus": 1,
+            "wrong_penalty": 2
+          },
+          "hasQuestion": true,
+          "questionTier": "basic",
+          "customPoints": null,
+          "tier": null,
+          "result": "half",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 3,
+            "ratio": 0.4,
+            "points": 1.2,
+            "result": "half",
+            "tier": "basic",
+            "scoreAfter": 23.7
+          }
+        }
+      ]
+    },
+    {
+      "name": "自定义分值 + 未知结果归一化",
+      "questions": [
+        {
+          "tier": "basic",
+          "points": null
+        },
+        {
+          "tier": "advanced",
+          "points": null
+        },
+        {
+          "tier": "extended",
+          "points": 20
+        }
+      ],
+      "steps": [
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": true,
+          "questionTier": "extended",
+          "customPoints": 20,
+          "tier": null,
+          "result": "correct",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 20,
+            "ratio": 1,
+            "points": 20,
+            "result": "correct",
+            "tier": "extended",
+            "scoreAfter": 20
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": true,
+          "questionTier": "extended",
+          "customPoints": 20,
+          "tier": null,
+          "result": "half",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 20,
+            "ratio": 0.5,
+            "points": 10,
+            "result": "half",
+            "tier": "extended",
+            "scoreAfter": 30
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": true,
+          "questionTier": "extended",
+          "customPoints": 20,
+          "tier": null,
+          "result": "不存在的类型",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 20,
+            "ratio": 1,
+            "points": 20,
+            "result": "correct",
+            "tier": "extended",
+            "scoreAfter": 50
+          }
+        },
+        {
+          "settings": {
+            "half_ratio": 0.5,
+            "fast_bonus": 0,
+            "wrong_penalty": 0
+          },
+          "hasQuestion": true,
+          "questionTier": "basic",
+          "customPoints": null,
+          "tier": null,
+          "result": "skip",
+          "fast": false,
+          "source": "quiz",
+          "expect": {
+            "base": 3,
+            "ratio": 0,
+            "points": 0,
+            "result": "skip",
+            "tier": "basic",
+            "scoreAfter": 50
+          }
+        }
+      ]
+    }
   ]
 }

@@ -299,20 +299,112 @@ rollCase('排除已答当前题（只剩 4 人）', { students: R5, mode: 'even'
   [0.1, 0.2]);
 rollCase('防连点：最近 1 次不重复', { students: R5, mode: 'even', recentExclude: 1 }, [0.7, 0.7, 0.7]);
 
+
+/* ---------- 用例集：加权计分引擎（store.js）---------- *
+ * 逐步复现 JS 的 recordResult 序列：记录每一步的输入与"算出来的基准/比例/得分"，
+ * 以及累计分数。Rust 侧用同样的输入算一遍，逐字段比对（含两位小数舍入）。 */
+const scoring = [];
+
+function scoringCase(name, steps, settingsPatch) {
+  globalThis.localStorage.clear();
+  S.replaceState(S.defaultState());
+  const team = S.get().teams[0].id;
+  const added = S.addStudent('甲', team);
+  const sid = typeof added === 'string' ? added : added.id;
+  const qBasic = S.addQuestion({ stem: '基础题：1+1=?', tier: 'basic', answer: '2' });
+  const qAdv = S.addQuestion({ stem: '拔高题：求导', tier: 'advanced', answer: '2x' });
+  const qCustom = S.addQuestion({ stem: '扩展题：自定义分值', tier: 'extended', points: 20, answer: '-' });
+
+  // 题目 id 也会每次不同：这里只保留题型与自定义分值（Rust 侧根本不需要 id）
+  const rec = {
+    name,
+    questions: [qBasic, qAdv, qCustom].map((q) => ({ tier: q.tier, points: q.points === undefined || q.points === null ? null : Number(q.points) })),
+    steps: []
+  };
+
+  steps.forEach((step) => {
+    if (step.settings) S.updateSettings(step.settings);
+    // 只改设置的步骤（没有 result）不产生流水，仅影响后续步骤
+    if (!step.result) return;
+    const q = step.q === 'basic' ? qBasic : (step.q === 'adv' ? qAdv : (step.q === 'custom' ? qCustom : null));
+    const before = (S.get().settings) || {};
+    const r = S.recordResult({
+      sid,
+      qid: q ? q.id : null,
+      tier: step.tier || undefined,
+      result: step.result,
+      fast: !!step.fast,
+      source: step.source || 'quiz'
+    });
+    rec.steps.push({
+      settings: {
+        half_ratio: Number(before.halfRatio === undefined ? 0.5 : before.halfRatio),
+        fast_bonus: Number(before.fastBonus || 0),
+        wrong_penalty: Number(before.wrongPenalty || 0)
+      },
+      hasQuestion: !!q,
+      questionTier: q ? q.tier : null,
+      customPoints: q ? (q.points === undefined || q.points === null ? null : Number(q.points)) : null,
+      tier: step.tier || null,
+      result: step.result,
+      fast: !!step.fast,
+      source: step.source || 'quiz',
+      expect: {
+        base: Number(r.base),
+        ratio: Number(r.ratio),
+        points: Number(r.points),
+        result: r.result,
+        tier: r.tier,
+        scoreAfter: Number(S.scoreOf(S.get(), sid))
+      }
+    });
+  });
+
+  scoring.push(rec);
+}
+
+// 与 tests/logic.test.js 第 3 组同样的一条流水线
+scoringCase('基础分与累计（答对/半对/答错/快捷）', [
+  { q: 'basic', result: 'correct' },
+  { q: 'adv', result: 'correct' },
+  { q: 'adv', result: 'half' },
+  { q: 'adv', result: 'wrong' },
+  { tier: 'improve', result: 'correct', source: 'quick' }
+]);
+scoringCase('扣分与抢答奖励（wrongPenalty=2 / fastBonus=1 / halfRatio=0.4）', [
+  { q: 'basic', result: 'correct' },
+  { q: 'adv', result: 'correct' },
+  { q: 'adv', result: 'half' },
+  { q: 'adv', result: 'wrong' },
+  { tier: 'improve', result: 'correct', source: 'quick' },
+  { settings: { wrongPenalty: 2, fastBonus: 1, halfRatio: 0.4 } },
+  { q: 'basic', result: 'wrong' },
+  { q: 'basic', result: 'correct', fast: true },
+  { q: 'basic', result: 'half' }
+]);
+scoringCase('自定义分值 + 未知结果归一化', [
+  { q: 'custom', result: 'correct' },
+  { q: 'custom', result: 'half' },
+  { q: 'custom', result: '不存在的类型' },
+  { q: 'basic', result: 'skip' }
+]);
+
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
   generatedBy: 'JS 参考实现（assets/js/analysis.js + assets/js/grade.js）',
   ability: cases,
   grading,
-  rollcall
+  rollcall,
+  scoring
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
 
 if (CHECK) {
   if (current === text) {
-    console.log('[ok] parity.json 与 JS 参考实现一致（能力 ' + cases.length + ' + 判分 ' + grading.length + ' + 点名 ' + rollcall.length + ' 组）');
+    console.log('[ok] parity.json 与 JS 参考实现一致（能力 ' + cases.length + ' + 判分 ' + grading.length +
+    ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' 组）');
     process.exit(0);
   }
   console.error('[stale] parity.json 与 JS 参考实现不一致 —— 运行 node scripts/gen-parity-fixtures.mjs 重新生成');
@@ -322,7 +414,8 @@ if (CHECK) {
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, text, 'utf8');
 console.log('[ok] 已生成 ' + path.relative(ROOT, OUT) +
-  '（能力 ' + cases.length + ' + 判分 ' + grading.length + ' + 点名 ' + rollcall.length + ' 组用例）');
+  '（能力 ' + cases.length + ' + 判分 ' + grading.length + ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' 组用例）');
 cases.forEach((c) => console.log('   · ' + c.name.padEnd(28) + c.expect.grade + '  overall=' + c.expect.overall));
 grading.forEach((g) => console.log('   · ' + g.name.padEnd(28) + (g.expect ? g.expect.result : 'null（主观题）')));
 rollcall.forEach((r) => console.log('   · ' + r.name.padEnd(34) + r.mode + '  ' + r.steps.length + ' 步'));
+scoring.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.steps.length + ' 步'));

@@ -14,6 +14,7 @@
 pub mod ability;
 pub mod grade;
 pub mod rollcall;
+pub mod scoring;
 
 pub use ability::{
     ability_comment, ability_of_tiers, grade_by_key, pct, Ability, Axis, Bucket, Grade, TierStat,
@@ -22,6 +23,10 @@ pub use ability::{
 pub use rollcall::{
     apply_pick, called_count, candidates as rollcall_candidates, pick as rollcall_pick, recent_ids,
     Pick, PickOpts, RollEntry, RollcallSettings, Student, XorShift64,
+};
+pub use scoring::{
+    compute_points, default_tiers, is_countable, normalize_result, question_points, result_label,
+    round2, score_of_input, sum_points, tier_of, ScoreInput, ScoreSnapshot, ScoringSettings, Tier,
 };
 pub use grade::{
     answer_key, auto, describe_submission, normalize_text, parse_choice, validate_question,
