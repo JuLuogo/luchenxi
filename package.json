@@ -35,7 +35,9 @@
     "web:dev": "npm --prefix web run dev",
     "web:build": "npm --prefix web run build",
     "screenshots:next": "node tests/shot-next.js",
-    "doctor": "node scripts/doctor.mjs"
+    "doctor": "node scripts/doctor.mjs",
+    "parity:gen": "node scripts/gen-parity-fixtures.mjs",
+    "parity:check": "node scripts/gen-parity-fixtures.mjs --check"
   },
   "dependencies": {
     "qrcode": "^1.5.4",

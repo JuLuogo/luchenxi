@@ -1,0 +1,1363 @@
+{
+  "_comment": "由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对",
+  "generatedBy": "JS 参考实现（assets/js/analysis.js + assets/js/grade.js）",
+  "ability": [
+    {
+      "name": "全才：四题型各答对两次",
+      "minSample": 2,
+      "totalAttempts": 8,
+      "tiers": [
+        {
+          "key": "basic",
+          "label": "基础题",
+          "color": "#66bb6a",
+          "weight": 3,
+          "attempts": 2,
+          "correct": 2,
+          "credit_rate": 100,
+          "correct_rate": 100
+        },
+        {
+          "key": "advanced",
+          "label": "拔高题",
+          "color": "#42a5f5",
+          "weight": 5,
+          "attempts": 2,
+          "correct": 2,
+          "credit_rate": 100,
+          "correct_rate": 100
+        },
+        {
+          "key": "extended",
+          "label": "扩展题",
+          "color": "#ab47bc",
+          "weight": 8,
+          "attempts": 2,
+          "correct": 2,
+          "credit_rate": 100,
+          "correct_rate": 100
+        },
+        {
+          "key": "improve",
+          "label": "提升题",
+          "color": "#ef6c00",
+          "weight": 10,
+          "attempts": 2,
+          "correct": 2,
+          "credit_rate": 100,
+          "correct_rate": 100
+        }
+      ],
+      "expect": {
+        "overall": 100,
+        "mastery": 100,
+        "balance": 100,
+        "coverage": 100,
+        "attempts": 8,
+        "filled": 4,
+        "maxRate": 100,
+        "minRate": 100,
+        "grade": "hexagon",
+        "gradeShort": "S",
+        "gradeLabel": "六边形战士",
+        "comment": "已作答的题型掌握度接近（约 100%）。六边形战士：各题型都稳，可以给更难的挑战。",
+        "weakest": {
+          "key": "basic",
+          "rate": 100
+        },
+        "strongest": {
+          "key": "improve",
+          "rate": 100
+        },
+        "axes": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "attempts": 2,
+            "correct": 2,
+            "rate": 100,
+            "correctRate": 100
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "attempts": 2,
+            "correct": 2,
+            "rate": 100,
+            "correctRate": 100
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "attempts": 2,
+            "correct": 2,
+            "rate": 100,
+            "correctRate": 100
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "attempts": 2,
+            "correct": 2,
+            "rate": 100,
+            "correctRate": 100
+          }
+        ]
+      }
+    },
+    {
+      "name": "偏科：基础拔高全对，扩展提升全错",
+      "minSample": 2,
+      "totalAttempts": 8,
+      "tiers": [
+        {
+          "key": "basic",
+          "label": "基础题",
+          "color": "#66bb6a",
+          "weight": 3,
+          "attempts": 2,
+          "correct": 2,
+          "credit_rate": 100,
+          "correct_rate": 100
+        },
+        {
+          "key": "advanced",
+          "label": "拔高题",
+          "color": "#42a5f5",
+          "weight": 5,
+          "attempts": 2,
+          "correct": 2,
+          "credit_rate": 100,
+          "correct_rate": 100
+        },
+        {
+          "key": "extended",
+          "label": "扩展题",
+          "color": "#ab47bc",
+          "weight": 8,
+          "attempts": 2,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        },
+        {
+          "key": "improve",
+          "label": "提升题",
+          "color": "#ef6c00",
+          "weight": 10,
+          "attempts": 2,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        }
+      ],
+      "expect": {
+        "overall": 31,
+        "mastery": 31,
+        "balance": 0,
+        "coverage": 100,
+        "attempts": 8,
+        "filled": 4,
+        "maxRate": 100,
+        "minRate": 0,
+        "grade": "specialist",
+        "gradeShort": "B+",
+        "gradeLabel": "偏科尖子",
+        "comment": "拔高题 掌握最好（100%），扩展题 是短板（0%）。强项很强，先把短板补到及格线，总分涨得最快。",
+        "weakest": {
+          "key": "extended",
+          "rate": 0
+        },
+        "strongest": {
+          "key": "advanced",
+          "rate": 100
+        },
+        "axes": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "attempts": 2,
+            "correct": 2,
+            "rate": 100,
+            "correctRate": 100
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "attempts": 2,
+            "correct": 2,
+            "rate": 100,
+            "correctRate": 100
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "attempts": 2,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "attempts": 2,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "半对：基础题两次半对",
+      "minSample": 2,
+      "totalAttempts": 2,
+      "tiers": [
+        {
+          "key": "basic",
+          "label": "基础题",
+          "color": "#66bb6a",
+          "weight": 3,
+          "attempts": 2,
+          "correct": 0,
+          "credit_rate": 50,
+          "correct_rate": 0
+        },
+        {
+          "key": "advanced",
+          "label": "拔高题",
+          "color": "#42a5f5",
+          "weight": 5,
+          "attempts": 0,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        },
+        {
+          "key": "extended",
+          "label": "扩展题",
+          "color": "#ab47bc",
+          "weight": 8,
+          "attempts": 0,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        },
+        {
+          "key": "improve",
+          "label": "提升题",
+          "color": "#ef6c00",
+          "weight": 10,
+          "attempts": 0,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        }
+      ],
+      "expect": {
+        "overall": 35,
+        "mastery": 50,
+        "balance": null,
+        "coverage": 25,
+        "attempts": 2,
+        "filled": 1,
+        "maxRate": 50,
+        "minRate": 50,
+        "grade": "weak",
+        "gradeShort": "D",
+        "gradeLabel": "需要重点辅导",
+        "comment": "已作答的题型掌握度接近（约 50%）。建议课后单独安排针对性练习。（还有题型没作答，数据会随课堂更新）",
+        "weakest": {
+          "key": "basic",
+          "rate": 50
+        },
+        "strongest": {
+          "key": "basic",
+          "rate": 50
+        },
+        "axes": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "attempts": 2,
+            "correct": 0,
+            "rate": 50,
+            "correctRate": 0
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "attempts": 0,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "attempts": 0,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "attempts": 0,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "新手：只答对一道基础题",
+      "minSample": 2,
+      "totalAttempts": 1,
+      "tiers": [
+        {
+          "key": "basic",
+          "label": "基础题",
+          "color": "#66bb6a",
+          "weight": 3,
+          "attempts": 1,
+          "correct": 1,
+          "credit_rate": 100,
+          "correct_rate": 100
+        },
+        {
+          "key": "advanced",
+          "label": "拔高题",
+          "color": "#42a5f5",
+          "weight": 5,
+          "attempts": 0,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        },
+        {
+          "key": "extended",
+          "label": "扩展题",
+          "color": "#ab47bc",
+          "weight": 8,
+          "attempts": 0,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        },
+        {
+          "key": "improve",
+          "label": "提升题",
+          "color": "#ef6c00",
+          "weight": 10,
+          "attempts": 0,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        }
+      ],
+      "expect": {
+        "overall": 70,
+        "mastery": 100,
+        "balance": null,
+        "coverage": 25,
+        "attempts": 1,
+        "filled": 1,
+        "maxRate": 100,
+        "minRate": 100,
+        "grade": "insufficient",
+        "gradeShort": "—",
+        "gradeLabel": "样本不足",
+        "comment": "多给几次机会，数据才说明问题（目前只有 1 个题型有作答）",
+        "weakest": {
+          "key": "basic",
+          "rate": 100
+        },
+        "strongest": {
+          "key": "basic",
+          "rate": 100
+        },
+        "axes": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "attempts": 1,
+            "correct": 1,
+            "rate": 100,
+            "correctRate": 100
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "attempts": 0,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "attempts": 0,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "attempts": 0,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "混合：基础全对 + 提升全错（权重差异）",
+      "minSample": 2,
+      "totalAttempts": 4,
+      "tiers": [
+        {
+          "key": "basic",
+          "label": "基础题",
+          "color": "#66bb6a",
+          "weight": 3,
+          "attempts": 2,
+          "correct": 2,
+          "credit_rate": 100,
+          "correct_rate": 100
+        },
+        {
+          "key": "advanced",
+          "label": "拔高题",
+          "color": "#42a5f5",
+          "weight": 5,
+          "attempts": 0,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        },
+        {
+          "key": "extended",
+          "label": "扩展题",
+          "color": "#ab47bc",
+          "weight": 8,
+          "attempts": 0,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        },
+        {
+          "key": "improve",
+          "label": "提升题",
+          "color": "#ef6c00",
+          "weight": 10,
+          "attempts": 2,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        }
+      ],
+      "expect": {
+        "overall": 18,
+        "mastery": 23,
+        "balance": 0,
+        "coverage": 50,
+        "attempts": 4,
+        "filled": 2,
+        "maxRate": 100,
+        "minRate": 0,
+        "grade": "specialist",
+        "gradeShort": "B+",
+        "gradeLabel": "偏科尖子",
+        "comment": "基础题 掌握最好（100%），提升题 是短板（0%）。强项很强，先把短板补到及格线，总分涨得最快。（还有题型没作答，数据会随课堂更新）",
+        "weakest": {
+          "key": "improve",
+          "rate": 0
+        },
+        "strongest": {
+          "key": "basic",
+          "rate": 100
+        },
+        "axes": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "attempts": 2,
+            "correct": 2,
+            "rate": 100,
+            "correctRate": 100
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "attempts": 0,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "attempts": 0,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "attempts": 2,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "三题型满分（覆盖率 75%）",
+      "minSample": 2,
+      "totalAttempts": 6,
+      "tiers": [
+        {
+          "key": "basic",
+          "label": "基础题",
+          "color": "#66bb6a",
+          "weight": 3,
+          "attempts": 2,
+          "correct": 2,
+          "credit_rate": 100,
+          "correct_rate": 100
+        },
+        {
+          "key": "advanced",
+          "label": "拔高题",
+          "color": "#42a5f5",
+          "weight": 5,
+          "attempts": 2,
+          "correct": 2,
+          "credit_rate": 100,
+          "correct_rate": 100
+        },
+        {
+          "key": "extended",
+          "label": "扩展题",
+          "color": "#ab47bc",
+          "weight": 8,
+          "attempts": 2,
+          "correct": 2,
+          "credit_rate": 100,
+          "correct_rate": 100
+        },
+        {
+          "key": "improve",
+          "label": "提升题",
+          "color": "#ef6c00",
+          "weight": 10,
+          "attempts": 0,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        }
+      ],
+      "expect": {
+        "overall": 90,
+        "mastery": 100,
+        "balance": 100,
+        "coverage": 75,
+        "attempts": 6,
+        "filled": 3,
+        "maxRate": 100,
+        "minRate": 100,
+        "grade": "allround",
+        "gradeShort": "A",
+        "gradeLabel": "全面发展",
+        "comment": "已作答的题型掌握度接近（约 100%）。整体均衡，把最低那项再提 10% 就很亮眼。（还有题型没作答，数据会随课堂更新）",
+        "weakest": {
+          "key": "basic",
+          "rate": 100
+        },
+        "strongest": {
+          "key": "extended",
+          "rate": 100
+        },
+        "axes": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "attempts": 2,
+            "correct": 2,
+            "rate": 100,
+            "correctRate": 100
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "attempts": 2,
+            "correct": 2,
+            "rate": 100,
+            "correctRate": 100
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "attempts": 2,
+            "correct": 2,
+            "rate": 100,
+            "correctRate": 100
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "attempts": 0,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "接近但不相等（评语不能自相矛盾）",
+      "minSample": 2,
+      "totalAttempts": 8,
+      "tiers": [
+        {
+          "key": "basic",
+          "label": "基础题",
+          "color": "#66bb6a",
+          "weight": 3,
+          "attempts": 2,
+          "correct": 1,
+          "credit_rate": 50,
+          "correct_rate": 50
+        },
+        {
+          "key": "advanced",
+          "label": "拔高题",
+          "color": "#42a5f5",
+          "weight": 5,
+          "attempts": 2,
+          "correct": 1,
+          "credit_rate": 50,
+          "correct_rate": 50
+        },
+        {
+          "key": "extended",
+          "label": "扩展题",
+          "color": "#ab47bc",
+          "weight": 8,
+          "attempts": 2,
+          "correct": 1,
+          "credit_rate": 50,
+          "correct_rate": 50
+        },
+        {
+          "key": "improve",
+          "label": "提升题",
+          "color": "#ef6c00",
+          "weight": 10,
+          "attempts": 2,
+          "correct": 1,
+          "credit_rate": 50,
+          "correct_rate": 50
+        }
+      ],
+      "expect": {
+        "overall": 50,
+        "mastery": 50,
+        "balance": 100,
+        "coverage": 100,
+        "attempts": 8,
+        "filled": 4,
+        "maxRate": 50,
+        "minRate": 50,
+        "grade": "basic",
+        "gradeShort": "C",
+        "gradeLabel": "基础待巩固",
+        "comment": "已作答的题型掌握度接近（约 50%）。建议先把基础题正确率提到 80% 以上。",
+        "weakest": {
+          "key": "basic",
+          "rate": 50
+        },
+        "strongest": {
+          "key": "improve",
+          "rate": 50
+        },
+        "axes": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "attempts": 2,
+            "correct": 1,
+            "rate": 50,
+            "correctRate": 50
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "attempts": 2,
+            "correct": 1,
+            "rate": 50,
+            "correctRate": 50
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "attempts": 2,
+            "correct": 1,
+            "rate": 50,
+            "correctRate": 50
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "attempts": 2,
+            "correct": 1,
+            "rate": 50,
+            "correctRate": 50
+          }
+        ]
+      }
+    },
+    {
+      "name": "全部答错（最低档）",
+      "minSample": 2,
+      "totalAttempts": 8,
+      "tiers": [
+        {
+          "key": "basic",
+          "label": "基础题",
+          "color": "#66bb6a",
+          "weight": 3,
+          "attempts": 2,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        },
+        {
+          "key": "advanced",
+          "label": "拔高题",
+          "color": "#42a5f5",
+          "weight": 5,
+          "attempts": 2,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        },
+        {
+          "key": "extended",
+          "label": "扩展题",
+          "color": "#ab47bc",
+          "weight": 8,
+          "attempts": 2,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        },
+        {
+          "key": "improve",
+          "label": "提升题",
+          "color": "#ef6c00",
+          "weight": 10,
+          "attempts": 2,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        }
+      ],
+      "expect": {
+        "overall": 0,
+        "mastery": 0,
+        "balance": 100,
+        "coverage": 100,
+        "attempts": 8,
+        "filled": 4,
+        "maxRate": 0,
+        "minRate": 0,
+        "grade": "weak",
+        "gradeShort": "D",
+        "gradeLabel": "需要重点辅导",
+        "comment": "已作答的题型掌握度接近（约 0%）。建议课后单独安排针对性练习。",
+        "weakest": {
+          "key": "basic",
+          "rate": 0
+        },
+        "strongest": {
+          "key": "improve",
+          "rate": 0
+        },
+        "axes": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "attempts": 2,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "attempts": 2,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "attempts": 2,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "attempts": 2,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "跳过的题也算作答次数（skip）",
+      "minSample": 2,
+      "totalAttempts": 4,
+      "tiers": [
+        {
+          "key": "basic",
+          "label": "基础题",
+          "color": "#66bb6a",
+          "weight": 3,
+          "attempts": 2,
+          "correct": 1,
+          "credit_rate": 50,
+          "correct_rate": 50
+        },
+        {
+          "key": "advanced",
+          "label": "拔高题",
+          "color": "#42a5f5",
+          "weight": 5,
+          "attempts": 2,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        },
+        {
+          "key": "extended",
+          "label": "扩展题",
+          "color": "#ab47bc",
+          "weight": 8,
+          "attempts": 0,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        },
+        {
+          "key": "improve",
+          "label": "提升题",
+          "color": "#ef6c00",
+          "weight": 10,
+          "attempts": 0,
+          "correct": 0,
+          "credit_rate": 0,
+          "correct_rate": 0
+        }
+      ],
+      "expect": {
+        "overall": 15,
+        "mastery": 19,
+        "balance": 50,
+        "coverage": 50,
+        "attempts": 4,
+        "filled": 2,
+        "maxRate": 50,
+        "minRate": 0,
+        "grade": "weak",
+        "gradeShort": "D",
+        "gradeLabel": "需要重点辅导",
+        "comment": "基础题 掌握最好（50%），拔高题 是短板（0%）。建议课后单独安排针对性练习。（还有题型没作答，数据会随课堂更新）",
+        "weakest": {
+          "key": "advanced",
+          "rate": 0
+        },
+        "strongest": {
+          "key": "basic",
+          "rate": 50
+        },
+        "axes": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "attempts": 2,
+            "correct": 1,
+            "rate": 50,
+            "correctRate": 50
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "attempts": 2,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "attempts": 0,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "attempts": 0,
+            "correct": 0,
+            "rate": 0,
+            "correctRate": 0
+          }
+        ]
+      }
+    }
+  ],
+  "grading": [
+    {
+      "name": "单选答对",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "B"
+      },
+      "submission": {
+        "choice": [
+          "B"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "correct",
+        "expected": "B",
+        "got": "B"
+      },
+      "answerKey": "B. 乙",
+      "describe": "B. 乙",
+      "validate": [],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "单选答错",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "B"
+      },
+      "submission": {
+        "choice": [
+          "A"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "wrong",
+        "expected": "B",
+        "got": "A"
+      },
+      "answerKey": "B. 乙",
+      "describe": "A. 甲",
+      "validate": [],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "单选空提交",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "B"
+      },
+      "submission": {
+        "choice": [],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "skip",
+        "expected": "B",
+        "got": "（空）"
+      },
+      "answerKey": "B. 乙",
+      "describe": "（空）",
+      "validate": [],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "多选全对（乱序）",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "AC"
+      },
+      "submission": {
+        "choice": [
+          "C",
+          "A"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "correct",
+        "expected": "AC",
+        "got": "AC"
+      },
+      "answerKey": "A. 甲；C. 丙",
+      "describe": "A. 甲 / C. 丙",
+      "validate": [],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "多选漏选",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "AC"
+      },
+      "submission": {
+        "choice": [
+          "A"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "half",
+        "expected": "AC",
+        "got": "A"
+      },
+      "answerKey": "A. 甲；C. 丙",
+      "describe": "A. 甲",
+      "validate": [],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "多选错选",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "AC"
+      },
+      "submission": {
+        "choice": [
+          "A",
+          "B"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "wrong",
+        "expected": "AC",
+        "got": "AB"
+      },
+      "answerKey": "A. 甲；C. 丙",
+      "describe": "A. 甲 / B. 乙",
+      "validate": [],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "多选跳过",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "AC"
+      },
+      "submission": {
+        "choice": [
+          "A"
+        ],
+        "text": "",
+        "skip": true
+      },
+      "expect": {
+        "result": "skip",
+        "expected": "A. 甲；C. 丙",
+        "got": "跳过"
+      },
+      "answerKey": "A. 甲；C. 丙",
+      "describe": "跳过",
+      "validate": [],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "填空忽略空格大小写",
+      "question": {
+        "options": [],
+        "answer": "x=1|x = 1|1"
+      },
+      "submission": {
+        "choice": [],
+        "text": " X = 1 ",
+        "skip": false
+      },
+      "expect": {
+        "result": "correct",
+        "expected": "x=1|x = 1|1",
+        "got": " X = 1 "
+      },
+      "answerKey": "x=1|x = 1|1",
+      "describe": "X = 1",
+      "validate": [],
+      "type": "fill",
+      "typeLabel": "填空题"
+    },
+    {
+      "name": "填空全角数字",
+      "question": {
+        "options": [],
+        "answer": "x=1|x = 1|1"
+      },
+      "submission": {
+        "choice": [],
+        "text": "１",
+        "skip": false
+      },
+      "expect": {
+        "result": "correct",
+        "expected": "x=1|x = 1|1",
+        "got": "１"
+      },
+      "answerKey": "x=1|x = 1|1",
+      "describe": "１",
+      "validate": [],
+      "type": "fill",
+      "typeLabel": "填空题"
+    },
+    {
+      "name": "填空答错",
+      "question": {
+        "options": [],
+        "answer": "x=1|x = 1|1"
+      },
+      "submission": {
+        "choice": [],
+        "text": "x=2",
+        "skip": false
+      },
+      "expect": {
+        "result": "wrong",
+        "expected": "x=1|x = 1|1",
+        "got": "x=2"
+      },
+      "answerKey": "x=1|x = 1|1",
+      "describe": "x=2",
+      "validate": [],
+      "type": "fill",
+      "typeLabel": "填空题"
+    },
+    {
+      "name": "填空空提交",
+      "question": {
+        "options": [],
+        "answer": "x=1|x = 1|1"
+      },
+      "submission": {
+        "choice": [],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "skip",
+        "expected": "x=1|x = 1|1",
+        "got": "（空）"
+      },
+      "answerKey": "x=1|x = 1|1",
+      "describe": "（空）",
+      "validate": [],
+      "type": "fill",
+      "typeLabel": "填空题"
+    },
+    {
+      "name": "主观题（交老师判定）",
+      "question": {
+        "options": [],
+        "answer": ""
+      },
+      "submission": {
+        "choice": [],
+        "text": "我的证明",
+        "skip": false
+      },
+      "expect": null,
+      "answerKey": "（未设置）",
+      "describe": "我的证明",
+      "validate": [],
+      "type": "subjective",
+      "typeLabel": "主观题"
+    },
+    {
+      "name": "选择题答案字母越界",
+      "question": {
+        "options": [
+          "甲",
+          "乙"
+        ],
+        "answer": "D"
+      },
+      "submission": {
+        "choice": [
+          "D"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "correct",
+        "expected": "D",
+        "got": "D"
+      },
+      "answerKey": "D. ",
+      "describe": "D. ",
+      "validate": [
+        "答案字母 D 超出选项个数（只有 2 个选项）"
+      ],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "选择题答案写成选项原文",
+      "question": {
+        "options": [
+          "6",
+          "8",
+          "9"
+        ],
+        "answer": "8"
+      },
+      "submission": {
+        "choice": [
+          "B"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "wrong",
+        "expected": "",
+        "got": "B"
+      },
+      "answerKey": "（未设置）",
+      "describe": "B. 8",
+      "validate": [
+        "选择题的答案要填**选项字母**（如 B 或 AC），当前是「8」——这样所有提交都会被判错。想按内容判分请把选项留空（作为填空题）"
+      ],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "填空题用逗号分隔多解",
+      "question": {
+        "options": [],
+        "answer": "8,八"
+      },
+      "submission": {
+        "choice": [],
+        "text": "八",
+        "skip": false
+      },
+      "expect": {
+        "result": "wrong",
+        "expected": "8,八",
+        "got": "八"
+      },
+      "answerKey": "8,八",
+      "describe": "八",
+      "validate": [
+        "多个可接受答案建议用 | 分隔（如「8|八|eight」），当前用了逗号"
+      ],
+      "type": "fill",
+      "typeLabel": "填空题"
+    }
+  ]
+}

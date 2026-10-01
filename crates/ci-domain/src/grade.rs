@@ -15,6 +15,7 @@
 //!   空提交 → skip（不计分、计入统计分母）
 
 use serde_json::Value;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub const LETTERS: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -50,7 +51,8 @@ impl QuestionType {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Verdict {
     Correct,
     Half,
@@ -70,7 +72,7 @@ impl Verdict {
 }
 
 /// 题目（只保留判分需要的字段；其余字段仍在 dump 里，由前端展示）
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Question {
     pub options: Vec<String>,
     pub answer: String,
@@ -168,7 +170,7 @@ impl Question {
 }
 
 /// 学生提交
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Submission {
     pub choice: Vec<String>,
     pub text: String,

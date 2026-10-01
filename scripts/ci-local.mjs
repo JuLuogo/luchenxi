@@ -134,6 +134,9 @@ run('应用图标齐备（PNG/ICO/ICNS）', ['-e', `
 const NODE_TESTS = [
   ['逻辑断言（教师端 + 多端协同）', 'tests/logic.test.js'],
   ['v5 工作区结构（crate 划分 / 依赖方向 / 迁移进度）', 'tests/v5-workspace.test.js'],
+  // JS ↔ Rust 一致性基准：JS 规则改了却没重新生成基准时会在这里红，
+  // 免得回头误以为是 Rust 实现漂移
+  ['JS↔Rust 一致性基准（parity.json 是否最新）', 'scripts/gen-parity-fixtures.mjs', ['--check']],
   ['教师端本地 SQLite', 'tests/db.test.js'],
   ['持久化适配层（浏览器 / 枢纽 / Tauri）', 'tests/storage.test.js'],
   ['EasyTier 组网参数与 Rust 源码一致性', 'tests/net.test.js'],

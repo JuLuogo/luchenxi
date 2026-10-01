@@ -102,8 +102,8 @@ ok(/pub use ci_core as core;/.test(teacherLib), 'lib.rs 暴露 core 门面');
 group('领域层迁移进度（JS → Rust）');
 
 const MIGRATION = [
-  { js: 'assets/js/grade.js', rs: 'crates/ci-domain/src/grade.rs', name: '题型推断与客观题判分', migrated: true },
-  { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/ability.rs', name: '加权计分与能力评价', migrated: false },
+  { js: 'assets/js/grade.js', rs: 'crates/ci-domain/src/grade.rs', name: '题型推断与客观题判分', migrated: true, parity: 'grading' },
+  { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/ability.rs', name: '加权计分与能力评价', migrated: true, parity: 'ability' },
   { js: 'assets/js/rollcall.js', rs: 'crates/ci-domain/src/rollcall.rs', name: '随机点名', migrated: false },
   { js: 'assets/js/classroom.js', rs: 'crates/ci-domain/src/classroom.rs', name: '课堂环节与学生命令', migrated: false },
   { js: 'assets/js/store.js', rs: 'crates/ci-domain/src/scoring.rs', name: '题型权重与计分引擎', migrated: false }
@@ -126,7 +126,21 @@ MIGRATION.forEach((m) => {
   console.log('   ' + (m.migrated ? '✅' : '⏳') + ' ' + m.name.padEnd(16) + m.js + '  →  ' + m.rs);
 });
 console.log('\n   进度：' + done + '/' + MIGRATION.length + ' 个领域模块已迁移到 Rust');
-ok(done >= 1, '至少已迁移一个领域模块（本轮：判分）');
+ok(done >= 1, '至少已迁移一个领域模块（本轮：判分 + 能力评价）');
+
+// 已迁移的模块必须在 parity 基准里有对应用例集（否则"迁移"只是自称）
+const parityPath = path.join(ROOT, 'tests', 'fixtures', 'parity.json');
+ok(fs.existsSync(parityPath), 'parity.json 存在（由 JS 参考实现生成的基准）');
+const parity = JSON.parse(fs.readFileSync(parityPath, 'utf8'));
+MIGRATION.filter((m) => m.migrated && m.parity).forEach((m) => {
+  const cs = parity[m.parity];
+  ok(Array.isArray(cs) && cs.length >= 5,
+    m.name + ' 在 parity.json 里有用例集（' + m.parity + '：' + (cs ? cs.length : 0) + ' 组）');
+});
+const parityCases = (parity.ability || []).length + (parity.grading || []).length;
+console.log('   parity 基准：' + (parity.ability || []).length + ' 组能力 + ' +
+  (parity.grading || []).length + ' 组判分 = ' + parityCases + ' 组');
+ok(parityCases >= 20, 'parity 基准覆盖至少 20 组用例（当前 ' + parityCases + '）');
 
 /* ================= 5. CI 覆盖到 workspace ================= */
 group('CI 覆盖');
