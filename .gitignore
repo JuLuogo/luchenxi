@@ -34,12 +34,27 @@ data/
 *.db-wal
 *.db-shm
 
-# 客户端（Tauri）构建产物
-apps/*/ui/                       # 由 scripts/sync-ui.mjs 从仓库根目录生成，勿提交
-apps/*/src-tauri/target/
-apps/*/src-tauri/gen/            # tauri android init 生成的 Android 工程
-apps/*/src-tauri/schema.sql      # 由 sync-ui 从 packages/db/schema.sql 拷贝
-apps/*/src-tauri/binaries/*      # EasyTier sidecar，由 scripts/fetch-easytier.mjs 下载
-!apps/*/src-tauri/binaries/.gitkeep
-apps/*/node_modules/
+# ---------------------------------------------------------------
+# 客户端（Tauri）生成物与构建产物
+#
+# 注意：.gitignore **不支持行内注释** —— 写成 `apps/*/ui/   # 说明` 会让整行
+# （含 # 与说明文字）都变成模式，规则静默失效。说明一律单独成行。
+# ---------------------------------------------------------------
 
+# 由 scripts/sync-ui.mjs 从仓库根目录同步生成，勿提交
+apps/*/ui/
+
+# Rust 编译产物
+apps/*/src-tauri/target/
+
+# tauri android init 生成的 Android 工程
+apps/*/src-tauri/gen/
+
+# 由 sync-ui 从 packages/db/schema.sql 拷贝
+apps/*/src-tauri/schema.sql
+
+# EasyTier sidecar，由 scripts/fetch-easytier.mjs 下载
+apps/*/src-tauri/binaries/*
+!apps/*/src-tauri/binaries/.gitkeep
+
+apps/*/node_modules/
