@@ -4,6 +4,7 @@
   "version": "4.0.0",
   "description": "课堂积分系统 · 学生小组端（Tauri v2：Android 为主，桌面也可用）",
   "scripts": {
+    "tauri": "tauri",
     "dev": "tauri dev",
     "build": "tauri build",
     "android:init": "tauri android init",

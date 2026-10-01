@@ -4,6 +4,7 @@
   "version": "4.0.0",
   "description": "课堂积分系统 · 教师端桌面客户端（Tauri v2：本地 SQLite + 内置枢纽 + EasyTier 组网）",
   "scripts": {
+    "tauri": "tauri",
     "dev": "tauri dev",
     "build": "tauri build",
     "build:debug": "tauri build --debug",
