@@ -41,12 +41,20 @@
     "longDescription": "课堂积分系统教师端：加权记分、题库组卷、点名、学情分析、多端协同；数据存本机 SQLite，内置局域网枢纽与 EasyTier 组网。",
     "windows": {
       "nsis": {
-        "languages": ["SimpChinese"]
+        "languages": [
+          "SimpChinese"
+        ]
+      },
+      "wix": {
+        "language": "zh-CN"
       }
     },
     "linux": {
       "deb": {
-        "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0"]
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0"
+        ]
       }
     }
   },

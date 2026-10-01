@@ -95,6 +95,10 @@ npm run android:build                    # 产出 APK（内部就是 tauri andro
 | 工作流里 `npm run tauri build` | 客户端 package.json 的脚本名是 **build**（`tauri build`）而不是 `tauri` | 改为 `npm run build -- --target <triple>`；`tests/ci.test.js` 增加了"引用的 npm script 必须存在"的校验（会把注释里的命令也排除掉） |
 | 动作都提示 "Node.js 20 is deprecated" | `checkout@v4`/`setup-node@v4`/`setup-java@v4` 等仍是 Node 20 | 统一升到 `checkout@v7` / `setup-node@v7` / `setup-java@v6` / `upload-artifact@v7` / `softprops/action-gh-release@v3` |
 
+| 本机 `cargo check` 失败：`resource path binaries/easytier-core-<triple>.exe doesn't exist` | 教师端的 `externalBin` 声明了 EasyTier sidecar，构建时它必须存在 | 构建前跑 `node scripts/fetch-easytier.mjs <triple>`（`rust.yml` 已补这一步） |
+| 本机 `tauri build` 到最后一步 `light.exe` 失败，无报错 | MSI 产物名含中文（课堂积分-教师端），而 WiX 默认语言 `en-US` 用代码页 1252，装不下中文 | 两个客户端都设 `bundle.windows.wix.language = "zh-CN"`（代码页 936）→ 出包成功 |
+| **13 个枢纽一致性用例全部 404** | Rust 枢纽只把 WebSocket 挂在 `/ws`，而所有客户端连的是 `ws://host:port/?room=…`（Node 版对任意路径都升级）→ 打包后的桌面端连不上自己的界面 | `hub.rs` 同时挂 `/` 与 `/ws`；本机 20 个 Rust 测试全绿 |
+
 > 教训：**工作流的失败信息要能被读到**。注解（`::error::`）与 `tee` 日志是这次能定位问题的关键，
 > 所以 `ci-local.mjs` 现在在 Actions 上会把失败步骤的最后十几行直接写成注解。
 
