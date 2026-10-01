@@ -47,9 +47,56 @@ ok('新版界面已构建（web/dist）', distReady, distReady ? '' : '运行 np
 ok('客户端工程（apps/）', has('apps/teacher/src-tauri/Cargo.toml') && has('apps/student/src-tauri/Cargo.toml'),
   '两套 Tauri 工程；出包需要 Rust 工具链 + Android SDK');
 
-/* ---------- 4. Rust 工具链（可选） ---------- */
-const hasCargo = cmdExists('cargo');
-ok('Rust 工具链 cargo', hasCargo, hasCargo ? '' : '本机没有 → 客户端只能靠 GitHub Actions 构建（rust.yml / build.yml）');
+/* ---------- 4. 本机构建工具链（出安装包要用） ---------- */
+// 这些可以整体 portable 安装到 D:\app（scripts/setup-toolchain.ps1，免 UAC）
+const APP = process.env.CI_APP_ROOT || 'D:\\app';
+function firstExisting(list) { return list.find((p) => p && fs.existsSync(p)) || null; }
+
+const cargoHome = process.env.CARGO_HOME || path.join(APP, 'rust', 'cargo');
+const cargo = firstExisting([path.join(cargoHome, 'bin', 'cargo.exe'), path.join(cargoHome, 'bin', 'cargo')]);
+let cargoVer = '';
+if (cargo) {
+  const r = spawnSync(cargo, ['--version'], { encoding: 'utf8', env: { ...process.env, CARGO_HOME: cargoHome, RUSTUP_HOME: process.env.RUSTUP_HOME || path.join(APP, 'rust', 'rustup') } });
+  cargoVer = (r.stdout || '').trim() || (r.stderr || '').trim().slice(0, 60);
+}
+ok('Rust 工具链（cargo）', !!cargo, cargo ? cargoVer : '运行 scripts/setup-toolchain.ps1 -Only rust（约 20 秒，会自动用国内镜像）');
+
+const mirrorCfg = firstExisting([path.join(cargoHome, 'config.toml'), path.join(cargoHome, 'config')]);
+ok('cargo 镜像配置', !!mirrorCfg, mirrorCfg ? '已配置（直连 crates.io 在部分网络会超时）' : '未配置 → 拉依赖可能很慢');
+
+const jdk = firstExisting([process.env.JAVA_HOME && path.join(process.env.JAVA_HOME, 'bin', 'java.exe'),
+  path.join(APP, 'jdk17', 'bin', 'java.exe')]);
+let jdkVer = '';
+if (jdk) {
+  const r = spawnSync(jdk, ['-version'], { encoding: 'utf8' });
+  jdkVer = ((r.stderr || '') + (r.stdout || '')).split('\n')[0].trim();
+}
+ok('JDK 17（Android 构建用）', !!jdk, jdk ? jdkVer : '运行 scripts/setup-toolchain.ps1 -Only jdk');
+
+const sdkRoot = process.env.ANDROID_SDK_ROOT || process.env.ANDROID_HOME || path.join(APP, 'android-sdk');
+const sdkmanager = firstExisting([path.join(sdkRoot, 'cmdline-tools', 'latest', 'bin', 'sdkmanager.bat')]);
+const ndk = firstExisting([process.env.NDK_HOME, path.join(sdkRoot, 'ndk', '26.1.10909125')]);
+ok('Android SDK（cmdline-tools）', !!sdkmanager, sdkmanager ? sdkRoot : '运行 scripts/setup-toolchain.ps1 -Only android');
+ok('Android NDK 26.1', !!ndk, ndk || '运行 scripts/setup-toolchain.ps1 -Only android（约 700MB）');
+
+if (process.platform === 'win32') {
+  const vswhere = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe';
+  let msvc = null;
+  if (fs.existsSync(vswhere)) {
+    const r = spawnSync(vswhere, ['-latest', '-products', '*', '-property', 'installationPath'], { encoding: 'utf8' });
+    const vsPath = (r.stdout || '').trim();
+    if (vsPath) {
+      const base = path.join(vsPath, 'VC', 'Tools', 'MSVC');
+      if (fs.existsSync(base)) {
+        const ver = fs.readdirSync(base)[0];
+        msvc = firstExisting([path.join(base, ver, 'bin', 'Hostx64', 'x64', 'cl.exe')]);
+      }
+    }
+  }
+  ok('MSVC 编译器（cl.exe）', !!msvc, msvc ? path.dirname(msvc) : '需要 Visual Studio 生成工具 + C++ 工作负载');
+  const sdkLib = 'C:\\Program Files (x86)\\Windows Kits\\10\\Lib';
+  ok('Windows SDK', fs.existsSync(sdkLib), fs.existsSync(sdkLib) ? fs.readdirSync(sdkLib).join(', ') : '随 VS 生成工具一起装');
+}
 
 /* ---------- 5. 端口与枢纽 ---------- */
 function portFree(port) {
