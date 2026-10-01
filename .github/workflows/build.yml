@@ -188,7 +188,15 @@ jobs:
         if: failure()
         working-directory: apps/student
         run: |
-          [ -f android-build.log ] && tail -60 android-build.log || true
+          if [ -f android-build.log ]; then
+            # Gradle / cargo 的错误行都抓出来变成注解，否则只能看到 "exit code 1"
+            grep -nE "FAILURE:|What went wrong|Caused by:|^error(\[|:)|error: |Execution failed" android-build.log \
+              | head -20 | while IFS= read -r l; do echo "::error file=apps/student::$l"; done || true
+            echo "==== android-build.log 尾部 ===="
+            tail -60 android-build.log || true
+          else
+            echo "::error::没有生成 android-build.log（失败发生在更早的步骤）"
+          fi
 
       - uses: actions/upload-artifact@v7
         if: success()
