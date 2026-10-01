@@ -124,15 +124,6 @@ jobs:
           path: apps/${{ matrix.app }}/src-tauri/target/${{ matrix.target }}/release/bundle/**
           if-no-files-found: warn
 
-      - name: 挂到 Draft Release（仅 tag）
-        if: success() && startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: '课堂积分 ${{ github.ref_name }}'
-          draft: true
-          files: apps/${{ matrix.app }}/src-tauri/target/${{ matrix.target }}/release/bundle/**
-
   android:
     needs: prepare-ui
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.who != 'teacher' || github.event_name == 'push' }}
@@ -155,11 +146,23 @@ jobs:
 
       # GitHub 的 ubuntu 运行器已预装 Android SDK，不需要 android-actions/setup-android
       # （那个 action 仍是 Node 20，在新运行器上被强制跑 Node 24 时会失败）。
+      # 注意：sdkmanager 不一定在 PATH 上（实测 exit 127 = command not found），所以要显式定位。
       - name: Android SDK 许可与 NDK
         run: |
-          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-$ANDROID_HOME}" >> $GITHUB_ENV
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platform-tools" "ndk;26.1.10909125" > /dev/null
+          export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          SDKMGR="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMGR" ]; then SDKMGR="$(command -v sdkmanager || true)"; fi
+          if [ -z "$SDKMGR" ] || [ ! -x "$SDKMGR" ]; then
+            echo "::error::找不到 sdkmanager（ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT）"
+            ls -la "$ANDROID_SDK_ROOT" 2>/dev/null || true
+            ls -la "$ANDROID_SDK_ROOT/cmdline-tools" 2>/dev/null || true
+            exit 1
+          fi
+          echo "使用 sdkmanager: $SDKMGR"
+          echo "$(dirname "$SDKMGR")" >> $GITHUB_PATH
+          yes | "$SDKMGR" --licenses > /dev/null 2>&1 || true
+          "$SDKMGR" --install "platform-tools" "ndk;26.1.10909125"
           echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
 
@@ -193,6 +196,33 @@ jobs:
           name: android-apk
           path: apps/student/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
           if-no-files-found: warn
+
+  # ------------------------------------------------------------------
+  # Draft Release：**统一在这里创建一次**。
+  # 早先每个矩阵作业各自调 softprops/action-gh-release，几个作业并发创建同一个
+  # Draft Release，被 GitHub 以 "secondary rate limit" 拒掉（Linux 教师端就是这么挂的）。
+  # ------------------------------------------------------------------
+  release:
+    needs: [desktop, android]
+    if: ${{ always() && startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 汇总各平台安装包
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: 列出产物（便于排查）
+        run: ls -R dist | head -50
+
+      - name: 创建 Draft Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: '课堂积分 ${{ github.ref_name }}'
+          draft: true
+          files: dist/**
 
   # ------------------------------------------------------------------
   # iOS：v4 只做"预留"。真正出包需要 macOS 运行器 + Apple 开发者证书/描述文件，
