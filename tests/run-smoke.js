@@ -56,7 +56,19 @@ async function getJson(url, tries = 40) {
     } catch (e) { /* 端口未就绪，继续等 */ }
     await sleep(400);
   }
-  throw new Error('CDP 未就绪：' + url);
+  // 起不来时把浏览器日志带上：CI 上这是唯一的诊断线索
+  throw new Error('CDP 未就绪：' + url + (BROWSER_LOG ? browserLogTail() : ''));
+}
+
+/** 浏览器 stderr 的尾部（CDP 失败时附在错误里，便于在 CI 注解里直接看到原因） */
+let BROWSER_LOG = '';
+function browserLogTail() {
+  try {
+    if (!BROWSER_LOG || !fs.existsSync(BROWSER_LOG)) return '';
+    const txt = fs.readFileSync(BROWSER_LOG, 'utf8').trim();
+    if (!txt) return '（浏览器没有任何输出 —— 可能进程根本没起来）';
+    return '\n--- 浏览器日志 ---\n' + txt.split(/\r?\n/).slice(-12).join('\n');
+  } catch (e) { return ''; }
 }
 
 class CDP {
@@ -110,9 +122,20 @@ class CDP {
     process.exit(3);
   }, 150000);
 
+  // Chrome 的 stderr 收进文件：CDP 起不来时这就是唯一的线索
+  //（以前是 stdio:'ignore'，CI 上只看到"CDP 未就绪"，完全猜不出原因）
+  const chromeLog = path.join(os.tmpdir(), 'ci-smoke-chrome-' + Date.now() + '.log');
+  const logFd = fs.openSync(chromeLog, 'a');
+  BROWSER_LOG = chromeLog;
+
   const child = spawn(bin, [
     '--headless=new',
     '--disable-gpu',
+    // CI（容器/受限环境）必需：/dev/shm 太小会让渲染进程直接崩，表现为 CDP 端口永不就绪
+    '--disable-dev-shm-usage',
+    // 以 root 运行时（部分容器镜像）沙箱会直接拒绝启动
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
     '--no-first-run',
     '--no-default-browser-check',
     '--disable-extensions',
@@ -120,7 +143,7 @@ class CDP {
     '--remote-debugging-port=' + PORT,
     '--user-data-dir=' + profile,
     'about:blank'
-  ], { stdio: 'ignore', detached: true });
+  ], { stdio: ['ignore', logFd, logFd], detached: true });
 
   let exitCode = 1;
   try {

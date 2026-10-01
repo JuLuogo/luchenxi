@@ -169,27 +169,68 @@ if (!QUICK) {
 }
 
 // 3) Rust（只有本机装了 cargo 才跑；否则跳过并明确写在总结里）
-function hasCargo() {
-  if (process.env.SKIP_CARGO === '1') return false;
-  // 不加 shell（避免 DEP0190）：Windows 上 Node 会按 PATHEXT 找到 cargo.exe
+/**
+ * 找 cargo：先看 PATH，再看常见安装位置。
+ * 为什么：scripts/setup-toolchain.ps1 把 Rust 装到 D:\app\rust（portable，免 UAC），
+ * 环境变量要新开终端才生效；本脚本不能因此就"以为没有 Rust"而跳过编译。
+ */
+function findCargo() {
+  if (process.env.SKIP_CARGO === '1') return null;
+  const candidates = [];
+  if (process.env.CARGO_HOME) candidates.push(path.join(process.env.CARGO_HOME, 'bin', process.platform === 'win32' ? 'cargo.exe' : 'cargo'));
+  candidates.push(path.join(process.env.USERPROFILE || process.env.HOME || '', '.cargo', 'bin', process.platform === 'win32' ? 'cargo.exe' : 'cargo'));
+  const appRoot = process.env.CI_APP_ROOT || (process.platform === 'win32' ? 'D:\\app' : '/opt/app');
+  candidates.push(path.join(appRoot, 'rust', 'cargo', 'bin', process.platform === 'win32' ? 'cargo.exe' : 'cargo'));
+  for (const c of candidates) {
+    if (c && fs.existsSync(c)) return c;
+  }
+  // 最后再试 PATH
   const probe = spawnSync('cargo', ['--version'], { stdio: 'ignore' });
-  return probe.status === 0;
+  return probe.status === 0 ? 'cargo' : null;
 }
 
-const cargoAvailable = hasCargo();
+const cargoBin = findCargo();
+const cargoAvailable = !!cargoBin;
+/**
+ * rustup 装的 cargo 是个代理：它靠 RUSTUP_HOME/CARGO_HOME 找工具链。
+ * portable 安装（D:\app\rust）时环境变量要新开终端才生效，这里显式补上，
+ * 否则会以"error: rustup could not choose a version of cargo"在 0.1 秒内失败。
+ */
+const cargoEnv = (() => {
+  const env = { ...process.env };
+  if (!cargoBin || cargoBin === 'cargo') return env;
+  const binDir = path.dirname(cargoBin);
+  const home = path.dirname(binDir);                        // …/rust/cargo
+  if (!env.CARGO_HOME) env.CARGO_HOME = home;
+  if (!env.RUSTUP_HOME) {
+    const guess = path.join(path.dirname(home), 'rustup');   // …/rust/rustup
+    if (fs.existsSync(guess)) env.RUSTUP_HOME = guess;
+  }
+  return env;
+})();
 if (cargoAvailable) {
   const teacherSrc = path.join('apps', 'teacher', 'src-tauri');
   const studentSrc = path.join('apps', 'student', 'src-tauri');
+  console.log(C.dim + '▶ 使用 cargo：' + cargoBin + C.x);
+
+  // EasyTier sidecar：教师端 externalBin 声明了它，缺了 tauri-build 会直接失败
+  const binDir = path.join(ROOT, teacherSrc, 'binaries');
+  const hasSidecar = fs.existsSync(binDir) && fs.readdirSync(binDir).some((f) => /^easytier-core/.test(f) && f !== '.gitkeep');
+  if (!hasSidecar) {
+    console.log(C.b + '▶ 放置 EasyTier sidecar（教师端构建需要）' + C.x);
+    const target = process.platform === 'win32' ? 'x86_64-pc-windows-msvc' : 'x86_64-unknown-linux-gnu';
+    spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'fetch-easytier.mjs'), target], { cwd: ROOT, stdio: 'inherit' });
+  }
 
   const t0r = Date.now();
   process.stdout.write(C.b + '▶ Rust：教师端 cargo test（含枢纽一致性）' + C.x + '\n');
-  const rt = spawnSync('cargo', ['test', '--all-targets'], { cwd: path.join(ROOT, teacherSrc), stdio: 'inherit' });
+  const rt = spawnSync(cargoBin, ['test', '--all-targets'], { cwd: path.join(ROOT, teacherSrc), stdio: 'inherit', env: cargoEnv });
   results.push({ title: 'Rust：教师端 cargo test（含枢纽一致性）', pass: rt.status === 0, ms: Date.now() - t0r });
   console.log((rt.status === 0 ? C.ok + '✔ ' : C.bad + '✘ ') + 'Rust：教师端 cargo test' + C.x + '\n');
 
   const t0s = Date.now();
   process.stdout.write(C.b + '▶ Rust：学生端 cargo check' + C.x + '\n');
-  const rs = spawnSync('cargo', ['check', '--all-targets'], { cwd: path.join(ROOT, studentSrc), stdio: 'inherit' });
+  const rs = spawnSync(cargoBin, ['check', '--all-targets'], { cwd: path.join(ROOT, studentSrc), stdio: 'inherit', env: cargoEnv });
   results.push({ title: 'Rust：学生端 cargo check', pass: rs.status === 0, ms: Date.now() - t0s });
   console.log((rs.status === 0 ? C.ok + '✔ ' : C.bad + '✘ ') + 'Rust：学生端 cargo check' + C.x + '\n');
 } else {
