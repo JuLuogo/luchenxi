@@ -4,16 +4,18 @@
  *
  *   node scripts/collect-bundles.mjs --app teacher --os windows-latest --target x86_64-pc-windows-msvc
  *
- * 为什么必须改名：`actions/upload-artifact` / `download-artifact` 对非 ASCII 文件名
- * （我们的包名是「课堂积分-教师端_4.0.0_x64_zh-CN.msi」）历史上不可靠 ——
- * v4.1.3 的 Release 作业在 dist 里一个安装包都没找到，这是当前最可疑的环节。
- * 改名后 Release 资产名也变成稳定的 ASCII（如 teacher-windows-latest-0.msi）。
+ * 两个关键点：
+ *   1. v5 起 Cargo 工作区把 target 目录收在**仓库根**（`<root>/target/<triple>/release/bundle`），
+ *      不再是每个客户端自己的 `src-tauri/target/...` —— 两条路径都要找。
+ *   2. `actions/upload-artifact` 对非 ASCII 文件名（「课堂积分-教师端_...msi」）不可靠，
+ *      所以拷进 bundle-out/ 时统一改成 `app-os-N.ext` 的稳定 ASCII 名。
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.join(SCRIPT_DIR, '..');
 
 const argv = process.argv.slice(2);
 function arg(name, fallback) {
@@ -24,10 +26,10 @@ function arg(name, fallback) {
 const app = arg('app', 'teacher');
 const osName = arg('os', 'unknown');
 const target = arg('target', '');
+const cwd = process.cwd();
 
 const EXTENSIONS = ['.msi', '.exe', '.dmg', '.appimage', '.deb', '.apk'];
 
-/** 在客户端目录里找 bundle 产物（移动端与桌面端路径不同） */
 function findBundles(dir, depth) {
   if (depth > 6 || !fs.existsSync(dir)) return [];
   let out = [];
@@ -39,19 +41,36 @@ function findBundles(dir, depth) {
   return out;
 }
 
-const cwd = process.cwd();
-const bases = target
-  ? [
-      path.join(cwd, 'src-tauri', 'target', target, 'release', 'bundle'),
-      path.join(cwd, 'src-tauri', 'gen', 'android', 'app', 'build', 'outputs', 'apk')
-    ]
-  : [path.join(cwd, 'src-tauri', 'target', 'release', 'bundle')];
+/** 候选目录：workspace 根的 target（v5 主路径）+ 客户端自己的 target（旧路径兜底）+ APK 产物 */
+const bases = [
+  path.join(ROOT, 'target', target, 'release', 'bundle'),
+  path.join(cwd, 'src-tauri', 'target', target, 'release', 'bundle'),
+  path.join(cwd, 'src-tauri', 'gen', 'android', 'app', 'build', 'outputs', 'apk'),
+];
 
 const found = [];
 for (const b of bases) found.push(...findBundles(b, 0));
 
+// workspace 根的 target 是所有客户端共享的，必须按本客户端的 productName 过滤，
+// 否则学生端作业会把教师端的 MSI 也传上去
+let productName = '';
+try {
+  const conf = JSON.parse(fs.readFileSync(path.join(cwd, 'src-tauri', 'tauri.conf.json'), 'utf8'));
+  productName = conf.productName || '';
+} catch { /* 读不到就不过滤（旧路径各自独立，不会混） */ }
+
+let picked = found;
+if (productName) {
+  picked = found.filter((f) => path.basename(f).includes(productName));
+  if (!picked.length) {
+    console.error(`::error::找到了 ${found.length} 个安装包，但都不属于本客户端（productName=${productName}）`);
+    process.exit(1);
+  }
+}
+
 if (!found.length) {
   console.error('::error::没有找到任何安装包（找过：' + bases.join('，') + '）');
+  console.error('::error::若也没有 workspace 根 target/，多半是 tauri build 没产出 bundle —— 看上一步日志');
   process.exit(1);
 }
 
@@ -59,7 +78,7 @@ const outDir = path.join(cwd, 'bundle-out');
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 
-found.forEach((f, i) => {
+picked.forEach((f, i) => {
   const ext = path.extname(f);
   const name = `${app}-${osName}-${i}${ext}`;
   fs.copyFileSync(f, path.join(outDir, name));

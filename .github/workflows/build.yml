@@ -194,7 +194,12 @@ jobs:
         working-directory: apps/student
         run: |
           npm install
-          npx tauri android init --ci || true
+          # 仓库里提交的 gen/android 是**旧版 CLI 生成的**；直接 init 会被"已存在"跳过，
+          # 新 CLI 的 android-studio-script 读不到匹配的 .tauri 配置就退出 1
+          # （Gradle 四个 rustBuild 任务全是 npm exit 1 就是这么来的）。
+          # 所以 CI 里每次都删掉重建，manifest 补丁由下一步重新打。
+          rm -rf src-tauri/gen/android
+          npx tauri android init --ci
 
       - name: 放行明文流量（真机连 ws://教师机IP 必需）
         run: node scripts/patch-android-manifest.mjs --app student --require
@@ -210,17 +215,17 @@ jobs:
       #   ① Gradle "What went wrong" 的**原因行**（> 开头的那句才是真话）
       #   ② 日志尾部
       #   ③ 其余 grep 命中
-      - name: 失败注解①——Gradle 的真正原因
+      - name: 失败注解①——CLI 的真正原因
         if: failure()
         working-directory: apps/student
         run: |
           if [ -f android-build.log ]; then
+            # 真因在 npm（= tauri CLI android-studio-script）自己的输出里；
+            # CLI 的报错是首字母大写的 "Error/Failed to"，小写锚定抓不到
+            grep -inE "cli-options-server|failed to|error\[|error:|panicked" android-build.log \
+              | head -8 | while IFS= read -r l; do echo "::error::$l"; done || true
             grep -A 5 "What went wrong" android-build.log \
-              | head -6 | while IFS= read -r l; do echo "::error::$l"; done || true
-            # 真因在 npm 的 stderr 里：Gradle 的 rust 任务跑
-            # "npm run -- tauri android android-studio-script …"，退出前 CLI 打的那几行
-            grep -B 4 "non-zero exit value" android-build.log \
-              | head -4 | while IFS= read -r l; do echo "::error::【npm 输出】$l"; done || true
+              | head -4 | while IFS= read -r l; do echo "::error::$l"; done || true
           else
             echo "::error::没有 android-build.log（失败发生在更早的步骤）"
           fi
