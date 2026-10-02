@@ -116,13 +116,18 @@ jobs:
             echo "::error::没有生成 tauri-build.log（失败发生在安装依赖阶段）"
           fi
 
+      - name: 归集安装包（改成 ASCII 文件名再上传）
+        if: success()
+        working-directory: apps/${{ matrix.app }}
+        run: node ../../scripts/collect-bundles.mjs --app ${{ matrix.app }} --os ${{ matrix.os }} --target ${{ matrix.target }}
+
       - name: 上传安装包
         if: success()
         uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.app }}-${{ matrix.os }}
-          path: apps/${{ matrix.app }}/src-tauri/target/${{ matrix.target }}/release/bundle/**
-          if-no-files-found: warn
+          path: apps/${{ matrix.app }}/bundle-out/*
+          if-no-files-found: error
 
   android:
     needs: prepare-ui
@@ -239,12 +244,17 @@ jobs:
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT NDK_HOME=$NDK_HOME" >> "$GITHUB_STEP_SUMMARY"
           { echo '```'; ls "$ANDROID_SDK_ROOT/ndk" 2>/dev/null; rustup target list --installed 2>/dev/null; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: 归集 APK（改成 ASCII 文件名再上传）
+        if: success()
+        working-directory: apps/student
+        run: node ../../scripts/collect-bundles.mjs --app student --os android --target aarch64-linux-android
+
       - uses: actions/upload-artifact@v7
         if: success()
         with:
           name: android-apk
-          path: apps/student/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
-          if-no-files-found: warn
+          path: apps/student/bundle-out/*
+          if-no-files-found: error
 
   # ------------------------------------------------------------------
   # Draft Release：**统一在这里创建一次**。
