@@ -55,8 +55,45 @@ function gotoPhase(key) {
   else ElMessage.success('已切到「' + (PHASES.find((x) => x.key === p) || {}).label + '」，大屏同步切换');
 }
 
-function toggleAccepting() {
-  const on = !accepting.value;
+/* ---------- 课堂节奏：计时器 + 签到（大屏/学生端经 meta 快照同步） ---------- */
+
+/** 开始计时：大屏与学生端会显示同一个倒计时（按结束时刻本地渲染） */
+function startTimer(seconds: number, label: string) {
+  CI.classroom.setTimer(seconds, label);
+  ElMessage.success(`已开始 ${seconds} 秒计时（${label}），大屏同步显示`);
+}
+function stopTimer() {
+  CI.classroom.clearTimer();
+  ElMessage.info('已停止计时');
+}
+
+/** 剩余毫秒（靠 tick 每秒重算）；没在计时为 null */
+const timerLeft = computed<number | null>(() => {
+  void tick.value;
+  const end = store.runtime.timerEndsAt;
+  if (!end) return null;
+  return Math.max(0, end - Date.now());
+});
+const timerRunning = computed(() => timerLeft.value !== null);
+const timerLabel = computed(() => store.runtime.timerLabel || '');
+const timerUrgent = computed(() => timerLeft.value !== null && timerLeft.value <= 10000);
+const timerText = computed(() => {
+  if (timerLeft.value === null) return '';
+  const total = Math.ceil(Math.max(0, timerLeft.value) / 1000);
+  return Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0');
+});
+
+/** 签到：已入座队伍 / 全部队伍 */
+const checkin = computed<{ seated: number; total: number; rate: number }>(() => {
+  void tick.value;
+  const teams = store.teams || [];
+  const online: Record<string, boolean> = {};
+  (presence.value.teams || []).forEach((t: any) => { if (t.online) online[t.teamId] = true; });
+  const seated = teams.filter((t) => online[t.id]).length;
+  return { seated, total: teams.length, rate: teams.length ? Math.round((seated / teams.length) * 100) : 0 };
+});
+
+function toggleAccepting() {  const on = !accepting.value;
   CI.classroom.setAccepting(on);
   ElMessage.success(on ? '已开始接收学生作答' : '已停止接收学生作答');
 }
@@ -218,6 +255,28 @@ onUnmounted(() => { window.removeEventListener('keydown', onKey); clearInterval(
             <el-button size="small" @click="copyJoin">复制学生端地址</el-button>
             <el-button size="small" @click="openStage()">打开大屏</el-button>
           </el-space>
+
+          <!-- 课堂节奏：计时器（大屏与学生端会同步显示倒计时） -->
+          <div class="timer-row">
+            <span class="timer-label">计时器</span>
+            <el-space wrap>
+              <el-button size="small" @click="startTimer(30, '思考')">30 秒</el-button>
+              <el-button size="small" @click="startTimer(60, '随堂练习')">1 分钟</el-button>
+              <el-button size="small" @click="startTimer(120, '小组讨论')">2 分钟</el-button>
+              <el-button size="small" type="danger" plain :disabled="!timerRunning" @click="stopTimer()">停止</el-button>
+            </el-space>
+            <el-tag v-if="timerRunning" size="small" :type="timerUrgent ? 'danger' : 'primary'" effect="dark">
+              ⏱ {{ timerText }}<template v-if="timerLabel"> · {{ timerLabel }}</template>
+            </el-tag>
+          </div>
+
+          <!-- 签到：已入座队伍 / 全部队伍 -->
+          <div class="checkin-row">
+            <span class="timer-label">签到</span>
+            <el-tag size="small" :type="checkin.rate >= 100 ? 'success' : (checkin.rate > 0 ? 'warning' : 'info')" effect="plain">
+              {{ checkin.seated }} / {{ checkin.total }} 队已入座（{{ checkin.rate }}%）
+            </el-tag>
+          </div>
           <div class="join">{{ joinUrl }}</div>
 
           <div class="qr-wrap">
@@ -306,6 +365,9 @@ onUnmounted(() => { window.removeEventListener('keydown', onKey); clearInterval(
 .qbtns { display: flex; gap: 8px; flex-wrap: wrap; }
 .muted { color: var(--ci-text-weak); }
 .join { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: #334155; word-break: break-all; margin-bottom: 10px; }
+/* 课堂节奏：计时器与签到 */
+.timer-row, .checkin-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.timer-label { font-size: 12px; color: var(--el-text-color-secondary); flex: none; }
 .qr-wrap { margin-bottom: 12px; }
 .qr { width: 160px; height: 160px; image-rendering: pixelated; }
 .qr-tip { color: var(--ci-text-weak); font-size: 12px; line-height: 1.8; background: #fbfbfd; border: 1px dashed var(--ci-line); border-radius: 8px; padding: 10px; }

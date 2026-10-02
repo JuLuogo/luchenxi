@@ -151,6 +151,60 @@
     };
   }
 
+  /* ------------------------------------------------------------------ *
+   * 课堂计时器（学习通「计时器」控件的做法）
+   *   · 只存**结束时刻**，不存剩余秒数、也不广播 tick
+   *   · 大屏/学生端各自按 endsAt - now 本地渲染，一秒刷新一次
+   *   · 好处：断网倒计时照走，枢纽不必每秒发消息
+   * ------------------------------------------------------------------ */
+
+  /** 开始计时（seconds <= 0 等价于停止）；返回结束时刻或 null */
+  function setTimer(seconds, label) {
+    var secs = Number(seconds) || 0;
+    return CI.store.tx('class-timer', function (s) {
+      if (secs <= 0) {
+        s.runtime.timerEndsAt = null;
+        s.runtime.timerLabel = '';
+        return null;
+      }
+      s.runtime.timerEndsAt = Date.now() + secs * 1000;
+      s.runtime.timerLabel = label || '';
+      return s.runtime.timerEndsAt;
+    }, { type: '课堂计时', detail: function (s, r) { return r ? (secs + ' 秒' + (label ? '（' + label + '）' : '')) : '停止计时'; } });
+  }
+
+  /** 停止计时 */
+  function clearTimer() { return setTimer(0, ''); }
+
+  /** 剩余毫秒：没在计时 → null；到点/过点 → 0 */
+  function timerLeft(now) {
+    var end = CI.store.get().runtime.timerEndsAt;
+    if (!end) return null;
+    return Math.max(0, end - (now || Date.now()));
+  }
+
+  /** 剩余时间显示成 m:ss（向上取整：还剩 0.4 秒也显示 1 秒） */
+  function formatLeft(ms) {
+    var total = Math.ceil(Math.max(0, ms) / 1000);
+    var m = Math.floor(total / 60);
+    var sec = total % 60;
+    return m + ':' + (sec < 10 ? '0' + sec : String(sec));
+  }
+
+  /** 签到统计：已入座队伍 / 全部队伍（presence.teams 里 online 的队算已到） */
+  function checkinStats(s) {
+    s = s || CI.store.get();
+    var teams = s.teams || [];
+    var online = {};
+    ((presence && presence.teams) || []).forEach(function (t) { if (t.online) online[t.teamId] = true; });
+    var seated = teams.filter(function (t) { return online[t.id]; }).length;
+    return {
+      seated: seated,
+      total: teams.length,
+      rate: teams.length ? Math.round((seated / teams.length) * 100) : 0
+    };
+  }
+
   function pushFeed(s, item) {
     var c = box(s);
     c.feed.unshift(Object.assign({ id: U.uid('fd'), at: Date.now() }, item));
@@ -698,6 +752,11 @@
       /* 课堂环节：大屏/学生端据此决定"现在显示什么" */
       phase: phase(s),
       phaseLabel: PHASE_LABEL[phase(s)] || '待机',
+      /* 课堂计时器：只广播"结束时刻"，各端本地渲染倒计时（断网也照走） */
+      timerEndsAt: s.runtime.timerEndsAt || null,
+      timerLabel: s.runtime.timerLabel || '',
+      /* 签到统计：已入座的队伍 / 全部队伍（学习通的「签到」经验） */
+      checkin: checkinStats(s),
       /* 当前被点到的学生（点名环节大屏放大显示） */
       sid: sid,
       sidName: stu ? stu.name : '',
@@ -729,6 +788,9 @@
     resolvePending: resolvePending, dropPending: dropPending,
     addBuzz: addBuzz, clearBuzz: clearBuzz, clearFeed: clearFeed,
     setAccepting: setAccepting, setReveal: setReveal, isRevealed: isRevealed, moveQuestion: moveQuestion,
+    /* 课堂节奏：计时器 + 签到统计 */
+    setTimer: setTimer, clearTimer: clearTimer, timerLeft: timerLeft, formatLeft: formatLeft,
+    checkinStats: checkinStats,
     focusBuzz: focusBuzz, loadRemoteState: loadRemoteState, applyRemote: applyRemote,
     pickAnswerer: pickAnswerer, currentQuestion: currentQuestion, box: box,
     lastAutoResult: function () { return lastAutoResult; },

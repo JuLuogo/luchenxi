@@ -698,6 +698,68 @@ group('rev 单调性（过期写入防护的配套约束）');
   ok(r4 >= 300, '本机 rev 始终不低于枢纽曾达到的 rev（否则写入会被 409 拒绝）');
 })();
 
+/* ================= 13. 课堂节奏：计时器与签到 ================= */
+group('课堂节奏（计时器 / 签到）');
+
+(function () {
+  const CLS3 = CI.classroom;
+  S.replaceState(S.defaultState());
+
+  /* ---- 计时器：只存结束时刻，各端本地渲染 ---- */
+  eq(CLS3.timerLeft(), null, '没在计时时剩余时间为 null');
+
+  const before = Date.now();
+  const ends = CLS3.setTimer(90, '随堂练习');
+  ok(ends > before, 'setTimer 返回结束时刻');
+  eq(S.get().runtime.timerLabel, '随堂练习', '计时器带说明文字');
+  const left = CLS3.timerLeft();
+  ok(left > 88 * 1000 && left <= 90 * 1000, '剩余时间约 90 秒（实际 ' + left + 'ms）');
+
+  // 显示口径：向上取整
+  eq(CLS3.formatLeft(90 * 1000), '1:30', '90 秒显示 1:30');
+  eq(CLS3.formatLeft(59 * 1000 + 400), '1:00', '59.4 秒向上取整显示 1:00');
+  eq(CLS3.formatLeft(400), '0:01', '还剩 0.4 秒显示 0:01');
+  eq(CLS3.formatLeft(0), '0:00', '到点显示 0:00');
+  eq(CLS3.formatLeft(600 * 1000), '10:00', '10 分钟显示 10:00');
+
+  // 快照要带上（大屏/学生端据此显示）
+  const meta = CLS3.metaPayload();
+  eq(meta.timerEndsAt, ends, '快照带出计时结束时刻');
+  eq(meta.timerLabel, '随堂练习', '快照带出计时说明');
+
+  // 停止：传 0 秒等价于停止
+  CLS3.clearTimer();
+  eq(CLS3.timerLeft(), null, 'clearTimer 之后没有剩余时间');
+  eq(S.get().runtime.timerEndsAt, null, '停止后结束时刻被清空');
+  eq(S.get().runtime.timerLabel, '', '停止后说明被清空');
+  CLS3.setTimer(30, '讨论');
+  CLS3.setTimer(0, '');
+  eq(CLS3.timerLeft(), null, '传 0 秒 = 停止');
+
+  /* ---- 签到统计：按 presence 里 online 的队伍数 ---- */
+  const teams = S.get().teams;
+  CLS3.setPresence({ hostOnline: true, teams: [] });
+  let ck = CLS3.checkinStats(S.get());
+  eq(ck.total, teams.length, '签到总数 = 队伍数（' + teams.length + '）');
+  eq(ck.seated, 0, '没人入座时签到 0');
+  eq(ck.rate, 0, '签到率 0%');
+
+  CLS3.setPresence({ hostOnline: true, teams: [{ teamId: teams[0].id, online: true, label: teams[0].name, at: Date.now() }] });
+  ck = CLS3.checkinStats(S.get());
+  eq(ck.seated, 1, '一队在线时签到 1');
+  eq(ck.rate, Math.round((1 / teams.length) * 100), '签到率按队伍数折算');
+
+  CLS3.setPresence({ hostOnline: true, teams: teams.map((t) => ({ teamId: t.id, online: true, label: t.name, at: Date.now() })) });
+  ck = CLS3.checkinStats(S.get());
+  eq(ck.seated, teams.length, '全部在线时签到满');
+  eq(ck.rate, 100, '签到率 100%');
+  eq(CLS3.metaPayload().checkin.rate, 100, '快照带出签到统计');
+
+  // 复位，避免影响后续用例
+  CLS3.setPresence({ hostOnline: false, teams: [] });
+  CLS3.clearTimer();
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

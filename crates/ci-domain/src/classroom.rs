@@ -84,6 +84,14 @@ pub struct Runtime {
     /// 当前被点到的学生（点名环节大屏用）
     #[serde(default)]
     pub sid: Option<String>,
+    /// 课堂计时器结束时刻（ms 时间戳）；None = 没在计时。
+    /// 大屏/学生端按这个时刻**本地**渲染倒计时，不需要每秒广播。
+    #[serde(default)]
+    #[cfg_attr(feature = "bindings", specta(type = Option<specta_typescript::Number>))]
+    pub timer_ends_at: Option<i64>,
+    /// 计时器说明（如「随堂练习」「小组讨论」），显示在倒计时旁边
+    #[serde(default)]
+    pub timer_label: String,
 }
 
 impl Default for Runtime {
@@ -95,6 +103,8 @@ impl Default for Runtime {
             accepting: false,
             reveal: false,
             sid: None,
+            timer_ends_at: None,
+            timer_label: String::new(),
         }
     }
 }
@@ -103,6 +113,49 @@ impl Runtime {
     pub fn phase(&self) -> Phase {
         Phase::parse(&self.phase)
     }
+}
+
+/* ------------------------------------------------------------------ *
+ * 课堂计时器（对应学习通的「计时器」控件）
+ *
+ * 设计要点：只存**结束时刻**，不存剩余秒数、也不广播 tick ——
+ * 大屏/学生端各自按 `timerEndsAt - now` 本地渲染，一秒一次刷新。
+ * 这样网络断了倒计时也照常走，枢纽不必每秒发消息。
+ * ------------------------------------------------------------------ */
+
+/// 开始计时（`seconds <= 0` 等价于停止）
+pub fn set_timer(rt: &mut Runtime, seconds: i64, label: &str, now_ms: i64) -> Option<i64> {
+    if seconds <= 0 {
+        rt.timer_ends_at = None;
+        rt.timer_label = String::new();
+        return None;
+    }
+    let ends = now_ms + seconds * 1000;
+    rt.timer_ends_at = Some(ends);
+    rt.timer_label = label.to_string();
+    Some(ends)
+}
+
+/// 停止计时
+pub fn clear_timer(rt: &mut Runtime) {
+    rt.timer_ends_at = None;
+    rt.timer_label = String::new();
+}
+
+/// 剩余毫秒（没在计时返回 None；已到点返回 0）
+pub fn timer_left(rt: &Runtime, now_ms: i64) -> Option<i64> {
+    rt.timer_ends_at.map(|end| (end - now_ms).max(0))
+}
+
+/// 计时是否已结束（没在计时算"未在计时"，返回 false）
+pub fn timer_expired(rt: &Runtime, now_ms: i64) -> bool {
+    matches!(timer_left(rt, now_ms), Some(0))
+}
+
+/// 把剩余毫秒显示成 `m:ss`（大屏用；与 JS 的 formatLeft 同一口径）
+pub fn format_left(ms: i64) -> String {
+    let total = (ms.max(0) + 999) / 1000; // 向上取整：还剩 0.4 秒也显示 1 秒
+    format!("{}:{:02}", total / 60, total % 60)
 }
 
 /// 切换课堂环节（**修改传入的 runtime**，返回切换后的环节）
@@ -891,6 +944,40 @@ mod tests {
     }
 
     /* ---- 与 tests/logic.test.js 第 12 组「课堂环节与大屏数据」逐条对应 ---- */
+
+    #[test]
+    fn timer_counts_down_from_a_deadline() {
+        let mut rt = Runtime::default();
+        assert_eq!(timer_left(&rt, 1000), None, "没在计时 → None");
+        assert!(!timer_expired(&rt, 1000));
+
+        // 开始 90 秒
+        let ends = set_timer(&mut rt, 90, "随堂练习", 1_000_000).unwrap();
+        assert_eq!(ends, 1_090_000, "结束时刻 = now + 90s");
+        assert_eq!(rt.timer_label, "随堂练习");
+        assert_eq!(timer_left(&rt, 1_000_000), Some(90_000));
+        assert_eq!(timer_left(&rt, 1_045_000), Some(45_000));
+        assert_eq!(timer_left(&rt, 1_090_000), Some(0), "到点即 0");
+        assert_eq!(timer_left(&rt, 1_200_000), Some(0), "过点不会变负数");
+        assert!(timer_expired(&rt, 1_090_001));
+
+        // 显示口径：向上取整，59.4 秒显示 1:00，0.4 秒显示 0:01
+        assert_eq!(format_left(90_000), "1:30");
+        assert_eq!(format_left(59_400), "1:00");
+        assert_eq!(format_left(400), "0:01");
+        assert_eq!(format_left(0), "0:00");
+        assert_eq!(format_left(600_000), "10:00");
+
+        // 停止
+        clear_timer(&mut rt);
+        assert_eq!(timer_left(&rt, 1_000_000), None);
+        assert_eq!(rt.timer_label, "");
+        // seconds <= 0 也等价于停止
+        set_timer(&mut rt, 30, "讨论", 0);
+        assert!(timer_left(&rt, 0).is_some());
+        assert_eq!(set_timer(&mut rt, 0, "", 0), None);
+        assert_eq!(timer_left(&rt, 0), None, "传 0 秒 = 停止");
+    }
 
     #[test]
     fn phases_and_labels() {

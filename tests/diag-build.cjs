@@ -1,22 +1,22 @@
-/* 诊断：取 android 注解的完整文本（不截断），找 "This means you..." 的完整解释 */
+/* 诊断：查指定 tag 的 build 运行状态 */
 'use strict';
 const H = { 'User-Agent': 'x', 'Accept': 'application/vnd.github+json' };
 const BASE = 'https://api.github.com/repos/JuLuogo/luchenxi';
+const want = process.argv[2] || 'v4.1.6';
 (async () => {
-  const runs = await (await fetch(BASE + '/actions/runs?per_page=8', { headers: H })).json();
-  const build = (runs.workflow_runs || []).find((w) => w.name === 'build' && w.head_branch === 'v4.1.5');
+  const runs = await (await fetch(BASE + '/actions/runs?per_page=12', { headers: H })).json();
+  const all = (runs.workflow_runs || []).filter((w) => w.name === 'build');
+  console.log('  最近的 build 运行：');
+  all.forEach((w) => console.log('    ' + String(w.head_branch).padEnd(8) + ' ' + w.status + ' ' + (w.conclusion || '')));
+  const build = all.find((w) => w.head_branch === want);
+  if (!build) { console.log('  没找到 ' + want); return; }
+  console.log('\n  ' + want + ': ' + build.status + ' ' + (build.conclusion || ''));
   const jobs = await (await fetch(BASE + '/actions/runs/' + build.id + '/jobs', { headers: H })).json();
-  const andr = (jobs.jobs || []).find((j) => j.name === 'android');
-  const id = andr.check_run_url.split('/').pop();
-  const ann = await (await fetch(BASE + '/check-runs/' + id + '/annotations?per_page=100', { headers: H })).json();
-  // 打印含 validate library 的完整消息
-  ann.filter((x) => /validate library|runtime symbols/.test(String(x.message))).slice(0, 3).forEach((x) => {
-    console.log('---- 完整注解 ----');
-    console.log(String(x.message).replace(/\u001b\[[0-9;]*m/g, ''));
-  });
-  // 也看看有没有 cargo/ndk 相关的行
-  console.log('\n---- 含 cargo/ndk/ABI 的行 ----');
-  ann.filter((x) => /cargo|ndk|ABI|abi|target/i.test(String(x.message))).slice(0, 8).forEach((x) => {
-    console.log('  · ' + String(x.message).replace(/\u001b\[[0-9;]*m/g, '').slice(0, 300));
-  });
+  for (const j of jobs.jobs || []) {
+    const m = j.conclusion === 'success' ? '✅' : (j.conclusion === 'failure' ? '❌' : '⏳');
+    console.log('  ' + m + ' ' + j.name);
+    if (j.conclusion === 'failure') {
+      for (const s of j.steps || []) if (s.conclusion === 'failure') console.log('       ✘ ' + s.name);
+    }
+  }
 })().catch((e) => { console.error('失败: ' + e.message); process.exit(1); });

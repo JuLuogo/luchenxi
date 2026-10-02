@@ -280,6 +280,13 @@ export type Runtime = {
 	reveal?: boolean,
 	/**  当前被点到的学生（点名环节大屏用） */
 	sid?: string | null,
+	/**
+	 *  课堂计时器结束时刻（ms 时间戳）；None = 没在计时。
+	 *  大屏/学生端按这个时刻**本地**渲染倒计时，不需要每秒广播。
+	 */
+	timerEndsAt?: number | null,
+	/**  计时器说明（如「随堂练习」「小组讨论」），显示在倒计时旁边 */
+	timerLabel?: string,
 };
 
 /**  一条积分流水（与 `store.js` 的 `normalizeRecord` 字段一致） */

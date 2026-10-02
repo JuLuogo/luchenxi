@@ -77,6 +77,30 @@ const joinUrl = computed(() => 'http://' + HOST + '/join?room=' + encodeURICompo
 const qrUrl = computed(() => 'http://' + HOST + '/qr.png?text=' + encodeURIComponent(joinUrl.value));
 const qrFailed = ref(false);
 
+/* ---------- 课堂节奏：签到率 + 倒计时 ---------- */
+
+/** 签到：已入座队伍 / 全部队伍（教师端在 meta 里算好） */
+const checkin = computed<{ seated: number; total: number; rate: number }>(
+  () => meta.value.checkin || { seated: 0, total: 0, rate: 0 }
+);
+
+/** 剩余毫秒：靠 tick 每秒重算；没在计时为 null */
+const timerLeft = computed<number | null>(() => {
+  void tick.value;
+  const end = meta.value.timerEndsAt;
+  if (!end) return null;
+  return Math.max(0, end - Date.now());
+});
+
+function formatLeft(ms: number): string {
+  const total = Math.ceil(Math.max(0, ms) / 1000);
+  return Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0');
+}
+
+const timerText = computed(() => (timerLeft.value === null ? '' : formatLeft(timerLeft.value)));
+/** 最后 10 秒变红，提醒学生收尾 */
+const timerUrgent = computed(() => timerLeft.value !== null && timerLeft.value <= 10000);
+
 const phaseTitle = computed(() => ({
   idle: '等待上课', rollcall: '随机点名', question: '出题 · 作答', review: '点评总结'
 }[phase.value] || '等待上课'));
@@ -89,7 +113,7 @@ function optShape(i) { return OPT_SHAPES[i % OPT_SHAPES.length]; }
 
 function timeText() { return new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }); }
 
-onMounted(() => { connect(); timer = setInterval(() => { tick.value += 1; }, 5000); });
+onMounted(() => { connect(); timer = setInterval(() => { tick.value += 1; }, 1000); });
 onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
 </script>
 
@@ -102,6 +126,11 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
         <span class="phase-pill">{{ phaseTitle }}</span>
       </div>
       <div class="right">
+        <!-- 课堂计时器：老师投的倒计时，本地按结束时刻渲染（断网照走） -->
+        <span v-if="timerText" class="chip timer" :class="{ urgent: timerUrgent }">
+          ⏱ {{ timerText }}<b v-if="meta.timerLabel"> · {{ meta.timerLabel }}</b>
+        </span>
+        <span v-if="checkin.total" class="chip">签到 <b>{{ checkin.seated }}/{{ checkin.total }}</b></span>
         <span class="chip">房间 <b>{{ ROOM }}</b></span>
         <span class="chip">{{ timeText() }}</span>
         <span class="dot" :class="{ ok: connected }" />
@@ -250,6 +279,13 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
   border: 1px solid var(--c-line); border-radius: 999px; padding: 4px 12px;
 }
 .chip b { color: var(--c-text); }
+/* 课堂计时器：正常蓝色，最后 10 秒变红并轻微呼吸 */
+.chip.timer {
+  font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: .5px;
+  color: #1d4ed8; background: #eef2ff; border-color: #c7d2fe;
+}
+.chip.timer.urgent { color: #fff; background: #dc2626; border-color: #dc2626; animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .72; } }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c-bad); }
 .dot.ok { background: var(--c-ok); }
 
