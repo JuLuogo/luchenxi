@@ -966,6 +966,44 @@ for (const [early, late, enough] of [[50, 50, true], [40, 70, true], [70, 40, tr
   }
 }
 
+
+/* ---------- 用例集：选项分布（analysis.js::optionDistribution）---------- *
+ * "哪个干扰项最吸引人" —— 大屏点评环节显示"40% 的人选了 B"的依据 */
+const optionDistCases = [];
+
+function mkOptionDistCase(name, specs) {
+  globalThis.localStorage.clear();
+  S.replaceState(S.defaultState());
+  const teams = S.get().teams;
+  const a = S.addStudent('甲', teams[0].id);
+  const b = S.addStudent('乙', teams[0].id);
+  const c = S.addStudent('丙', teams[0].id);
+  const sid = (x) => (typeof x === 'string' ? x : x.id);
+  const q = S.addQuestion({ stem: '选一选', tier: 'basic', options: ['甲', '乙', '丙'], answer: 'A' });
+  const qz = S.createQuiz('随堂测', [q.id]);
+  // specs: [picked, result]
+  specs.forEach(([picked, result], i) => {
+    const who = [a, b, c][i % 3];
+    S.recordResult({
+      sid: sid(who), qid: q.id, tier: 'basic', result, quizId: qz.id,
+      picked: picked, note: picked ? picked + '. …' : '跳过'
+    });
+  });
+  const got = CI.analysis.optionDistribution(S.get(), q.id);
+  optionDistCases.push({
+    name,
+    options: q.options,
+    answer: q.answer,
+    records: specs.map(([picked, result]) => ({ picked, result })),
+    expect: got.map((o) => ({ key: o.key, text: o.text, count: o.count, rate: o.rate, correct: o.correct }))
+  });
+}
+
+mkOptionDistCase('选项分布：1A 2B（B 是最吸引人的干扰项）', [['A', 'correct'], ['B', 'wrong'], ['B', 'wrong']]);
+mkOptionDistCase('选项分布：含跳过（不进分母）', [['A', 'correct'], ['B', 'wrong'], ['', 'skip']]);
+mkOptionDistCase('选项分布：全对', [['A', 'correct'], ['A', 'correct']]);
+mkOptionDistCase('选项分布：无人作答', []);
+
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
@@ -979,7 +1017,8 @@ const payload = {
   questionStats,
   mistakes: mistakeCases,
   report: reportCases,
-  composite: compositeCases
+  composite: compositeCases,
+  optionDist: optionDistCases
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
@@ -989,7 +1028,8 @@ if (CHECK) {
     console.log('[ok] parity.json 与 JS 参考实现一致（能力 ' + cases.length + ' + 判分 ' + grading.length +
     ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' + 课堂 ' + classroom.length + ' + 抽题 ' + drawCases.length + ' + 题目统计 ' + questionStats.length +
     ' + 错题本 ' + mistakeCases.length + ' + 报告 ' + reportCases.length +
-    ' + 多维评价 ' + (compositeCases.participation.length + compositeCases.growth.length + compositeCases.decayed.length + compositeCases.evaluate.length) + ' 组）');
+    ' + 多维评价 ' + (compositeCases.participation.length + compositeCases.growth.length + compositeCases.decayed.length + compositeCases.evaluate.length) +
+    ' + 选项分布 ' + optionDistCases.length + ' 组）');
     process.exit(0);
   }
   console.error('[stale] parity.json 与 JS 参考实现不一致 —— 运行 node scripts/gen-parity-fixtures.mjs 重新生成');

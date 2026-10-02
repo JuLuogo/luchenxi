@@ -67,7 +67,7 @@ const phase = computed(() => meta.value.phase || 'idle');
  */
 const question = computed(() => meta.value.question || (state.value && state.value.question) || null);
 const teams = computed<any[]>(() => ((state.value && state.value.teams) || []).slice().sort((a, b) => b.score - a.score));
-const students = computed<any[]>(() => ((state.value && state.value.students) || []).slice().sort((a, b) => b.score - a.score));
+// 注：原来这里算了一份按积分排序的学生名单（光荣榜用）；2026-10 去掉个人排名后不再需要。
 const teamStats = computed<any[]>(() => (meta.value.teamStats || []).filter((t) => t.teamId !== 'all'));
 const ability = computed(() => meta.value.ability || null);
 const buzz = computed<any[]>(() => (meta.value.buzz || []).slice(0, 5));
@@ -234,12 +234,18 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
         </div>
         <div v-if="!teamStats.length" class="empty">还没有作答数据</div>
 
-        <div class="side-title mt">🏆 光荣榜</div>
-        <div v-for="(s, i) in students.slice(0, 6)" :key="s.id" class="stu-row">
-          <span class="stu-rank" :class="'r' + (i + 1)">{{ i + 1 }}</span>
-          <span class="stu-name">{{ s.name }}</span>
-          <span class="stu-team">{{ s.teamName }}</span>
-          <span class="stu-score">{{ s.score }}</span>
+        <!--
+          这里原来是「🏆 光荣榜」（个人积分前 6 名）。2026-10 按调研结论**去掉个人排名**：
+          公开的个人排名有实证风险（国内教师反馈"垫底的学生每次抬头就看见自己名字在最后面，
+          逐渐产生抵触心理"；国外 n=176 的真实课堂里 16% 学生因速度计分与公开排名退出评价）。
+          个人成绩只发给学生自己的手机；大屏改为显示**全班分布**（见右侧选项分布与各队对比）。
+        -->
+        <div v-if="meta.optionDist && meta.optionDist.length" class="side-title mt">📊 本题选项分布</div>
+        <div v-for="o in meta.optionDist" :key="o.key" class="opt-row">
+          <span class="opt-key" :class="{ right: o.correct }">{{ o.key }}</span>
+          <span class="opt-bar"><span class="opt-fill" :class="{ right: o.correct }" :style="{ width: o.rate + '%' }" /></span>
+          <span class="opt-rate">{{ o.rate }}%</span>
+          <span class="opt-text">{{ o.text }}</span>
         </div>
       </section>
       <section class="rev-right">
@@ -422,6 +428,19 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
   display: flex; justify-content: space-between; padding: 8px 32px;
   border-top: 1px solid var(--c-line); color: var(--c-text-3); font-size: 13px; background: #fff;
 }
+
+/* 选项分布：正确项绿色、干扰项灰色；条宽 = 选择比例 */
+.opt-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 14px; }
+.opt-key {
+  width: 22px; height: 22px; flex: none; border-radius: 6px; background: #e2e8f0; color: #475569;
+  font-size: 12px; font-weight: 700; text-align: center; line-height: 22px;
+}
+.opt-key.right { background: #dcfce7; color: #15803d; }
+.opt-bar { flex: 1; min-width: 40px; height: 10px; border-radius: 999px; background: #f1f5f9; overflow: hidden; }
+.opt-fill { display: block; height: 100%; background: #94a3b8; }
+.opt-fill.right { background: #22c55e; }
+.opt-rate { flex: none; width: 42px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--c-text-2); }
+.opt-text { flex: none; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--c-text-3); font-size: 12px; }
 
 /* 点评环节的讲评建议（正确率最低的几道题） */
 .review-tips {

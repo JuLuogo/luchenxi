@@ -325,6 +325,9 @@
         note: desc,
         by: 'student',
         rank: rank,
+        // 学生选的选项字母（如 "AB"）：大屏据此画"错选分布"
+        // 学生选的选项字母（如 "AB"）：大屏据此画"错选分布"（哪个干扰项最吸引人）
+        picked: Array.isArray(cmd.choice) ? cmd.choice.join('') : (cmd.choice || ''),
         // 多答案题的部分得分：按命中比例算出来的 ratio（见 grade.js::auto）
         ratio: graded.ratio
       });
@@ -759,6 +762,11 @@
       timerLabel: s.runtime.timerLabel || '',
       /* 签到统计：已入座的队伍 / 全部队伍（学习通的「签到」经验） */
       checkin: checkinStats(s),
+      /* 选项分布（错选分布）：哪个干扰项最吸引人 —— 大屏据此显示"40% 的人选了 B"，
+         比"谁对谁错"更有讲评价值（Wayground 的 Questions 视图就是这个） */
+      optionDist: (function () {
+        try { return CI.analysis.optionDistribution(s, s.runtime.qid || null); } catch (e) { return []; }
+      })(),
       /* 讲评建议：正确率最低的几道题（点评环节大屏直接显示，老师照着讲） */
       hardestQuestions: (function () {
         try {

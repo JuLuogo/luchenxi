@@ -13,7 +13,7 @@
 
 use ci_domain::{
     ability_of_tiers, answer_key, apply_pick, auto, build_report, decayed_rate, evaluate, growth_score,
-    participation_rate, default_tiers, describe_submission,
+    option_distribution, participation_rate, default_tiers, describe_submission,
     draw_questions, finalize_feed, handle_cmd, mistake_board, question_stats, report_markdown,
     rollcall_pick, score_of_input, set_phase_named, student_mistakes, validate_question, BankQuestion,
     Checkin, ClassStudent, ClassTeam, CmdOutcome, DrawOpts, PickOpts, Question, RollcallSettings,
@@ -38,6 +38,8 @@ struct Fixture {
     mistakes: Vec<MistakeCase>,
     report: Vec<ReportCase>,
     composite: CompositeCases,
+    #[serde(rename = "optionDist")]
+    option_dist: Vec<OptionDistCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -602,6 +604,32 @@ struct EvalPartRow {
     valid: bool,
 }
 
+
+#[derive(Debug, Deserialize)]
+struct OptionDistCase {
+    name: String,
+    options: Vec<String>,
+    answer: String,
+    records: Vec<OptionDistRecord>,
+    expect: Vec<OptionDistRow>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OptionDistRecord {
+    #[serde(default)]
+    picked: String,
+    result: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct OptionDistRow {
+    key: String,
+    text: String,
+    count: u32,
+    rate: i64,
+    correct: bool,
+}
+
 fn fixtures_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("..")
@@ -1075,6 +1103,7 @@ fn question_stats_matches_js_reference() {
                 points: r.points,
                 source: "student".to_string(),
                 note: String::new(),
+                picked: String::new(),
                 at: i as i64,
                 by: String::new(),
             })
@@ -1169,6 +1198,7 @@ fn mistakes_match_js_reference() {
                 points: r.points,
                 source: "student".to_string(),
                 note: r.note.clone(),
+                picked: String::new(),
                 at: r.at,
                 by: String::new(),
             })
@@ -1238,6 +1268,7 @@ fn report_matches_js_reference() {
                 points: r.points,
                 source: "student".to_string(),
                 note: String::new(),
+                picked: String::new(),
                 at: k as i64,
                 by: String::new(),
             })
@@ -1403,6 +1434,7 @@ fn composite_matches_js_reference() {
                 points: 0.0,
                 source: "student".into(),
                 note: String::new(),
+                picked: String::new(),
                 at: if r.at == 0 { i as i64 + 1 } else { r.at },
                 by: String::new(),
             })
@@ -1445,4 +1477,55 @@ fn composite_matches_js_reference() {
 
     println!("\n✅ 多维度评价：{} 组用例与 JS 参考实现逐字段一致",
         c.participation.len() + c.growth.len() + c.decayed.len() + c.evaluate.len());
+}
+
+/// 选项分布：每个选项多少人选（分母只算作答者，跳过不进分母）
+#[test]
+fn option_dist_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.option_dist.is_empty(), "基准里没有选项分布用例");
+    for case in &fx.option_dist {
+        let q = BankQuestion {
+            id: "q1".into(),
+            tier: "basic".into(),
+            stem: "选一选".into(),
+            answer: case.answer.clone(),
+            options: case.options.clone(),
+            ..Default::default()
+        };
+        let records: Vec<ScoreRecord> = case
+            .records
+            .iter()
+            .enumerate()
+            .map(|(i, r)| ScoreRecord {
+                id: format!("r{}", i + 1),
+                sid: Some("s1".into()),
+                qid: Some("q1".into()),
+                tier: "basic".into(),
+                quiz_id: None,
+                result: r.result.clone(),
+                base: 0.0,
+                ratio: 0.0,
+                points: 0.0,
+                source: "student".into(),
+                note: String::new(),
+                picked: r.picked.clone(),
+                at: i as i64 + 1,
+                by: String::new(),
+            })
+            .collect();
+        let got = option_distribution(&records, &q);
+        assert_eq!(got.len(), case.expect.len(), "[{}] 选项数", case.name);
+        for (i, want) in case.expect.iter().enumerate() {
+            let g = &got[i];
+            let n = format!("{} #{}", case.name, i + 1);
+            assert_eq!(g.key, want.key, "[{}] 选项字母", n);
+            assert_eq!(g.text, want.text, "[{}] 选项文本", n);
+            assert_eq!(g.count, want.count, "[{}] 选择人数", n);
+            assert_eq!(g.rate, want.rate, "[{}] 占比", n);
+            assert_eq!(g.correct, want.correct, "[{}] 是否正确项", n);
+        }
+        println!("  ✔ {} → {}", case.name, got.iter().map(|o| format!("{} {}%", o.key, o.rate)).collect::<Vec<_>>().join(" / "));
+    }
+    println!("\n✅ 选项分布：{} 组用例与 JS 参考实现逐字段一致", fx.option_dist.len());
 }

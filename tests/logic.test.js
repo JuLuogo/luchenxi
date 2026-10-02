@@ -1249,6 +1249,66 @@ group('多维度评价');
   eq(ev2.participation, 100, '重复作答同一题不增加参与度（按题目去重）');
 })();
 
+/* ================= 20. 选项分布（大屏"40% 的人选了 B"） ================= */
+group('选项分布（错选分布）');
+
+(function () {
+  const A = CI.analysis;
+  S.replaceState(S.defaultState());
+  const team = S.get().teams[0].id;
+  const sid = (x) => (typeof x === 'string' ? x : x.id);
+  const a = S.addStudent('甲', team);
+  const b = S.addStudent('乙', team);
+  const c = S.addStudent('丙', team);
+  const q = S.addQuestion({ stem: '选一选', tier: 'basic', options: ['甲', '乙', '丙'], answer: 'A' });
+  const qz = S.createQuiz('随堂测', [q.id]);
+
+  S.recordResult({ sid: sid(a), qid: q.id, tier: 'basic', result: 'correct', quizId: qz.id, picked: 'A' });
+  S.recordResult({ sid: sid(b), qid: q.id, tier: 'basic', result: 'wrong', quizId: qz.id, picked: 'B' });
+  S.recordResult({ sid: sid(c), qid: q.id, tier: 'basic', result: 'wrong', quizId: qz.id, picked: 'B' });
+
+  const dist = A.optionDistribution(S.get(), q.id);
+  eq(dist.length, 3, '每个选项一条');
+  eq(dist[0].key, 'A', '选项字母');
+  eq(dist[0].correct, true, 'A 标为正确项');
+  eq(dist[0].count, 1, '1 人选了 A');
+  eq(dist[0].rate, 33, '1/3 → 33%');
+  eq(dist[1].count, 2, '2 人选了 B —— B 就是最吸引人的干扰项');
+  eq(dist[1].rate, 67, '2/3 → 67%');
+  eq(dist[1].correct, false, 'B 是干扰项');
+  eq(dist[2].count, 0, '没人选 C');
+  eq(dist[2].rate, 0, '0%');
+
+  // 跳过不进分母（Plickers 的口径：没作答的题不算进正确率）
+  S.recordResult({ sid: sid(a), qid: q.id, tier: 'basic', result: 'skip', quizId: qz.id, picked: '' });
+  const dist2 = A.optionDistribution(S.get(), q.id);
+  eq(dist2[0].rate, 33, '跳过的人不进分母，占比不变');
+  eq(dist2[1].rate, 67, '干扰项占比也不变');
+
+  // 老数据没有 picked → 从可读文本 note 兜底解析
+  const old = S.addStudent('老数据', team);
+  S.recordResult({ sid: sid(old), qid: q.id, tier: 'basic', result: 'correct', quizId: qz.id, note: 'A. 甲' });
+  const dist3 = A.optionDistribution(S.get(), q.id);
+  eq(dist3[0].count, 2, '老数据从 note 解析出 A（1 + 1）');
+
+  // 多选题：各选项占比之和可以 > 100%
+  const q2 = S.addQuestion({ stem: '多选', tier: 'basic', options: ['甲', '乙', '丙'], answer: 'AB' });
+  const qz2 = S.createQuiz('多选测', [q2.id]);
+  S.recordResult({ sid: sid(a), qid: q2.id, tier: 'basic', result: 'correct', quizId: qz2.id, picked: 'AB' });
+  S.recordResult({ sid: sid(b), qid: q2.id, tier: 'basic', result: 'wrong', quizId: qz2.id, picked: 'A' });
+  const dist4 = A.optionDistribution(S.get(), q2.id);
+  eq(dist4[0].rate, 100, '两人都选了 A → 100%');
+  eq(dist4[1].rate, 50, '一人选了 B → 50%');
+  eq(dist4[2].rate, 0, '没人选 C');
+
+  // 题不存在 / 无人作答都不崩
+  eq(A.optionDistribution(S.get(), '不存在的题').length, 0, '题不存在 → 空数组');
+  const q3 = S.addQuestion({ stem: '没人答', tier: 'basic', options: ['甲', '乙'], answer: 'A' });
+  const dist5 = A.optionDistribution(S.get(), q3.id);
+  eq(dist5.length, 2, '没人作答也有结构');
+  eq(dist5[0].rate, 0, '全 0（不除零）');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

@@ -220,6 +220,7 @@ mod tests {
             source: "student".into(),
             note: note.into(),
             at,
+            picked: String::new(),
             by: String::new(),
         }
     }

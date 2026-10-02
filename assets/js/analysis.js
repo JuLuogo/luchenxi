@@ -532,6 +532,47 @@
     return out;
   }
 
+  /**
+   * 选项分布（错选分布）：每个选项有多少人选
+   *
+   * 为什么有用：老师最想知道的是"**哪个干扰项最吸引人**"——那直接指向错误概念，
+   * 比"谁对谁错"更有讲评价值（Wayground 的 Questions 视图就是这个）。
+   * 优先用流水的 picked 字段（新数据）；老数据从可读文本 note 里兜底解析。
+   */
+  function optionDistribution(state, qid) {
+    var s = state || CI.store.get();
+    var q = CI.store.question(s, qid);
+    if (!q) return [];
+    var letters = CI.grade.LETTERS;
+    var correct = CI.grade.parseChoice(q.answer);
+    var counts = (q.options || []).map(function () { return 0; });
+    var answered = 0;
+    CI.store.recordsOf(s, { qid: qid }).forEach(function (r) {
+      var picked = r.picked
+        ? String(r.picked).toUpperCase().replace(/[^A-Z]/g, '').split('')
+        : String(r.note || '').split('/').map(function (seg) {
+            var m = seg.trim().match(/^([A-Za-z])\./);
+            return m ? m[1].toUpperCase() : '';
+          }).filter(function (x) { return x; });
+      if (!picked.length) return;   // 跳过 / 空答案不进分母
+      answered += 1;
+      picked.forEach(function (k) {
+        var i = letters.indexOf(k);
+        if (i >= 0 && i < counts.length) counts[i] += 1;
+      });
+    });
+    return (q.options || []).map(function (text, i) {
+      var key = letters[i] || '?';
+      return {
+        key: key,
+        text: text,
+        count: counts[i],
+        rate: answered > 0 ? Math.round((counts[i] / answered) * 100) : 0,
+        correct: correct.indexOf(key) >= 0
+      };
+    });
+  }
+
   /** 题目维度的课后结论（一句话；没有作答返回 null） */
   function questionReviewLine(stats) {
     var answered = (stats || []).filter(function (x) { return x.attempts > 0; });
@@ -1133,7 +1174,7 @@
     studentCSV: studentCSV,
     classCSV: classCSV,
     questionCSV: questionCSV,
-    questionStats: questionStats,
+    questionStats: questionStats, optionDistribution: optionDistribution,
     questionReviewLine: questionReviewLine,
     studentMistakes: studentMistakes, mistakeBoard: mistakeBoard,
     // 多维度评价（正确性 / 参与度 / 进步）

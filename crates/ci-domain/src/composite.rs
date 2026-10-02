@@ -195,6 +195,7 @@ mod tests {
             source: "student".into(),
             note: String::new(),
             at,
+            picked: String::new(),
             by: String::new(),
         }
     }

@@ -187,6 +187,9 @@ pub struct ScoreRecord {
     pub points: f64,
     pub source: String,
     pub note: String,
+    /// 学生具体选了哪些选项（如 "AB"）—— 用于"错选分布"（哪个干扰项最吸引人）
+    #[serde(default)]
+    pub picked: String,
     #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub at: i64,
     /// 操作来源页签，便于排查
@@ -467,13 +470,13 @@ mod tests {
                     id: "rc1".into(), sid: Some("s1".into()), qid: Some("q1".into()),
                     tier: "basic".into(), quiz_id: Some("qz1".into()), result: "correct".into(),
                     base: 3.0, ratio: 1.0, points: 3.0, source: "quiz".into(),
-                    note: String::new(), at: 1, by: String::new(),
+                    note: String::new(), picked: "A".into(), at: 1, by: String::new(),
                 },
                 ScoreRecord {
                     id: "rc2".into(), sid: Some("s1".into()), qid: None,
                     tier: String::new(), quiz_id: None, result: "manual".into(),
                     base: 0.0, ratio: 0.0, points: -0.5, source: "manual".into(),
-                    note: String::new(), at: 2, by: String::new(),
+                    note: String::new(), picked: String::new(), at: 2, by: String::new(),
                 },
             ],
         });

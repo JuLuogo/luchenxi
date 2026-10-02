@@ -317,6 +317,8 @@ export type ScoreRecord = {
 	points: number,
 	source: string,
 	note: string,
+	/**  学生具体选了哪些选项（如 "AB"）—— 用于"错选分布"（哪个干扰项最吸引人） */
+	picked?: string,
 	at: number,
 	/**  操作来源页签，便于排查 */
 	by: string,

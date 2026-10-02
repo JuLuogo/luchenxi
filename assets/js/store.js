@@ -214,6 +214,8 @@
       points: num(r.points, 0),    // 实际记入积分（可为负）
       source: r.source || 'quiz',  // quiz | quick | rollcall | manual | reset | student
       note: str(r.note),
+      // 学生具体选了哪些选项（如 "AB"）—— 用于"错选分布"（哪个干扰项最吸引人）
+      picked: str(r.picked),
       at: num(r.at, Date.now()),
       by: str(r.by)                // 操作来源页签，便于排查
     };
@@ -701,6 +703,7 @@
       points: computePoints({ result: result, base: base, ratio: opt.ratio, fast: opt.fast, rank: opt.rank }),
       source: opt.source || 'quiz',
       note: opt.note || '',
+      picked: opt.picked || '',
       at: Date.now(),
       by: opt.by || ''
     });

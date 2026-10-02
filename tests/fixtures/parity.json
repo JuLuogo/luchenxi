@@ -7531,5 +7531,174 @@
         }
       }
     ]
-  }
+  },
+  "optionDist": [
+    {
+      "name": "选项分布：1A 2B（B 是最吸引人的干扰项）",
+      "options": [
+        "甲",
+        "乙",
+        "丙"
+      ],
+      "answer": "A",
+      "records": [
+        {
+          "picked": "A",
+          "result": "correct"
+        },
+        {
+          "picked": "B",
+          "result": "wrong"
+        },
+        {
+          "picked": "B",
+          "result": "wrong"
+        }
+      ],
+      "expect": [
+        {
+          "key": "A",
+          "text": "甲",
+          "count": 1,
+          "rate": 33,
+          "correct": true
+        },
+        {
+          "key": "B",
+          "text": "乙",
+          "count": 2,
+          "rate": 67,
+          "correct": false
+        },
+        {
+          "key": "C",
+          "text": "丙",
+          "count": 0,
+          "rate": 0,
+          "correct": false
+        }
+      ]
+    },
+    {
+      "name": "选项分布：含跳过（不进分母）",
+      "options": [
+        "甲",
+        "乙",
+        "丙"
+      ],
+      "answer": "A",
+      "records": [
+        {
+          "picked": "A",
+          "result": "correct"
+        },
+        {
+          "picked": "B",
+          "result": "wrong"
+        },
+        {
+          "picked": "",
+          "result": "skip"
+        }
+      ],
+      "expect": [
+        {
+          "key": "A",
+          "text": "甲",
+          "count": 1,
+          "rate": 50,
+          "correct": true
+        },
+        {
+          "key": "B",
+          "text": "乙",
+          "count": 1,
+          "rate": 50,
+          "correct": false
+        },
+        {
+          "key": "C",
+          "text": "丙",
+          "count": 0,
+          "rate": 0,
+          "correct": false
+        }
+      ]
+    },
+    {
+      "name": "选项分布：全对",
+      "options": [
+        "甲",
+        "乙",
+        "丙"
+      ],
+      "answer": "A",
+      "records": [
+        {
+          "picked": "A",
+          "result": "correct"
+        },
+        {
+          "picked": "A",
+          "result": "correct"
+        }
+      ],
+      "expect": [
+        {
+          "key": "A",
+          "text": "甲",
+          "count": 2,
+          "rate": 100,
+          "correct": true
+        },
+        {
+          "key": "B",
+          "text": "乙",
+          "count": 0,
+          "rate": 0,
+          "correct": false
+        },
+        {
+          "key": "C",
+          "text": "丙",
+          "count": 0,
+          "rate": 0,
+          "correct": false
+        }
+      ]
+    },
+    {
+      "name": "选项分布：无人作答",
+      "options": [
+        "甲",
+        "乙",
+        "丙"
+      ],
+      "answer": "A",
+      "records": [],
+      "expect": [
+        {
+          "key": "A",
+          "text": "甲",
+          "count": 0,
+          "rate": 0,
+          "correct": true
+        },
+        {
+          "key": "B",
+          "text": "乙",
+          "count": 0,
+          "rate": 0,
+          "correct": false
+        },
+        {
+          "key": "C",
+          "text": "丙",
+          "count": 0,
+          "rate": 0,
+          "correct": false
+        }
+      ]
+    }
+  ]
 }

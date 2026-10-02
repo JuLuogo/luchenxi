@@ -149,6 +149,80 @@ pub fn question_stats(
     out
 }
 
+/// 一个选项的分布
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OptionCount {
+    pub key: String,
+    pub text: String,
+    /// 多少人选了这个选项
+    pub count: u32,
+    /// 占比（百分比整数，分母是"作答人数"）
+    pub rate: i64,
+    /// 是不是正确选项
+    pub correct: bool,
+}
+
+/// 从一条流水里取出学生选的选项字母
+///
+/// 优先用 `picked`（新数据直接存字母）；老数据没有它，就从可读文本 `note` 里兜底解析
+/// （格式是 `A. 甲 / B. 乙`，取每段开头的字母）。
+fn picked_letters(r: &ScoreRecord) -> Vec<char> {
+    if !r.picked.is_empty() {
+        return r.picked.chars().filter(|c| c.is_ascii_alphabetic()).map(|c| c.to_ascii_uppercase()).collect();
+    }
+    // 兜底：解析 note 里的 "X. " 前缀
+    let mut out = Vec::new();
+    for seg in r.note.split('/') {
+        let seg = seg.trim();
+        let mut it = seg.chars();
+        if let Some(c) = it.next() {
+            if c.is_ascii_alphabetic() && it.next() == Some('.') {
+                out.push(c.to_ascii_uppercase());
+            }
+        }
+    }
+    out
+}
+
+/// 选项分布：每个选项有多少人选（含正确选项与各干扰项）
+///
+/// 分母是"作答人数"（跳过/空答案不计入），所以各选项占比之和可能 < 100%（多选时 > 100%）。
+pub fn option_distribution(records: &[ScoreRecord], q: &BankQuestion) -> Vec<OptionCount> {
+    let letters: Vec<char> = crate::grade::LETTERS.chars().collect();
+    let correct: Vec<char> = crate::grade::parse_choice(&q.answer);
+    let mut counts = vec![0u32; q.options.len()];
+    let mut answered = 0u32;
+    for r in records {
+        let picked = picked_letters(r);
+        if picked.is_empty() {
+            continue; // 跳过 / 空答案不进分母
+        }
+        answered += 1;
+        for c in picked {
+            if let Some(i) = letters.iter().position(|l| *l == c) {
+                if i < counts.len() {
+                    counts[i] += 1;
+                }
+            }
+        }
+    }
+    q.options
+        .iter()
+        .enumerate()
+        .map(|(i, text)| {
+            let key = letters.get(i).copied().unwrap_or('?').to_string();
+            OptionCount {
+                key: key.clone(),
+                text: text.clone(),
+                count: counts[i],
+                rate: if answered > 0 { ((counts[i] as f64 / answered as f64) * 100.0).round() as i64 } else { 0 },
+                correct: correct.contains(&key.chars().next().unwrap_or('?')),
+            }
+        })
+        .collect()
+}
+
 /// 课后评价用的"题目维度"结论（一句话，供学情总结与讲评建议使用）
 ///
 /// 只在**有题目统计**时给结论；一道题都没答则返回 None。
@@ -214,6 +288,7 @@ mod tests {
             source: "student".into(),
             note: String::new(),
             at,
+            picked: String::new(),
             by: String::new(),
         }
     }
@@ -301,6 +376,53 @@ mod tests {
         let cut = short_stem(&long);
         assert_eq!(cut.chars().count(), 41, "40 字 + 省略号");
         assert!(cut.ends_with('…'));
+    }
+
+    #[test]
+    fn option_distribution_counts_picks() {
+        // 4 人作答：选了 A、B、B、跳过 → 分母只算 3 人（跳过不进分母）
+        let q = BankQuestion {
+            id: "q1".into(),
+            tier: "basic".into(),
+            stem: "选一选".into(),
+            answer: "A".into(),
+            options: vec!["甲".into(), "乙".into(), "丙".into()],
+            ..Default::default()
+        };
+        let mut recs = vec![
+            rec("s1", Some("q1"), "correct", 3.0, 1),
+            rec("s2", Some("q1"), "wrong", 0.0, 2),
+            rec("s3", Some("q1"), "wrong", 0.0, 3),
+            rec("s4", Some("q1"), "skip", 0.0, 4),
+        ];
+        recs[0].picked = "A".into();
+        recs[1].picked = "B".into();
+        recs[2].picked = "B".into();
+        recs[3].picked = String::new(); // 跳过
+
+        let dist = option_distribution(&recs, &q);
+        assert_eq!(dist.len(), 3, "每个选项一条");
+        assert_eq!(dist[0].key, "A");
+        assert_eq!(dist[0].count, 1);
+        assert_eq!(dist[0].rate, 33, "1/3 人选了正确项");
+        assert!(dist[0].correct, "A 是正确项");
+        assert_eq!(dist[1].count, 2, "B 是最吸引人的干扰项");
+        assert_eq!(dist[1].rate, 67, "2/3 = 67%（分母是 3 个作答者）");
+        assert!(!dist[1].correct, "B 是干扰项");
+        assert_eq!(dist[2].count, 0);
+        assert_eq!(dist[2].rate, 0);
+
+        // 老数据没有 picked：从可读文本 note 里兜底解析（格式 "A. 甲"）
+        let mut old = rec("s5", Some("q1"), "correct", 3.0, 5);
+        old.picked = String::new();
+        old.note = "A. 甲".into();
+        let d2 = option_distribution(&[old], &q);
+        assert_eq!(d2[0].count, 1, "老数据从 note 解析出 A");
+        assert_eq!(d2[0].rate, 100);
+
+        // 无人作答：全 0，不能除零
+        let empty = option_distribution(&[], &q);
+        assert!(empty.iter().all(|o| o.rate == 0 && o.count == 0));
     }
 
     #[test]
