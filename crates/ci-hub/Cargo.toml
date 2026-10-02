@@ -9,6 +9,8 @@ authors.workspace = true
 [dependencies]
 ci-protocol = { path = "../ci-protocol" }
 ci-store = { path = "../ci-store" }
+# 网页版要判分/算分/点名，只能经枢纽调用 Rust 核心（展示层不得含业务判断）
+ci-domain = { path = "../ci-domain" }
 axum = { workspace = true }
 tokio = { workspace = true }
 tower-http = { workspace = true }
@@ -20,3 +22,5 @@ serde_json = { workspace = true }
 
 [dev-dependencies]
 tokio-tungstenite = { workspace = true }
+# 领域端点用真 HTTP 打（起一个枢纽再请求），比只测函数更接近前端实际用法
+reqwest = { version = "0.12", features = ["json"] }

@@ -152,7 +152,9 @@ pub struct Axis {
 
 /// 能力评价结果
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
-#[derive(Debug, Clone, PartialEq)]
+// 只 derive Serialize：能序列化给前端就够了。
+// Deserialize 做不到 —— 里面嵌的 Grade 用的是 &'static str 字段（常量表），借不进来。
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Ability {
     pub axes: Vec<Axis>,
     /// 综合分（掌握度 × 覆盖系数）

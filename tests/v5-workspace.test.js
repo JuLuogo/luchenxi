@@ -55,7 +55,10 @@ const deps = (rel) => (read(rel).match(/^(ci-[a-z]+)\s*=/gm) || []).map((s) => s
 eq(deps('crates/ci-protocol/Cargo.toml'), [], 'ci-protocol 不依赖任何 ci-* crate（最底层）');
 eq(deps('crates/ci-domain/Cargo.toml'), [], 'ci-domain 不依赖其它 ci-* crate（纯规则，可单测）');
 eq(deps('crates/ci-store/Cargo.toml'), [], 'ci-store 不依赖 ci-hub/ci-core');
-eq(deps('crates/ci-hub/Cargo.toml').sort(), ['ci-protocol', 'ci-store'], 'ci-hub 只依赖 protocol + store');
+// ci-hub 多了 ci-domain：领域端点（/api/domain/*）让网页版能直接调用 Rust 核心，
+// 而不是在浏览器里再实现一份规则（docs/14 §2 的硬规矩）
+eq(deps('crates/ci-hub/Cargo.toml').sort(), ['ci-domain', 'ci-protocol', 'ci-store'],
+  'ci-hub 依赖 protocol + store + domain（领域端点需要 domain）');
 eq(deps('crates/ci-core/Cargo.toml').sort(), ['ci-domain', 'ci-hub', 'ci-protocol', 'ci-store'],
   'ci-core 汇聚 domain + hub + store + protocol');
 
@@ -240,6 +243,30 @@ ok(vueTs.length >= VUE_TS_FLOOR,
 ok(vueTs.length === vueFiles.length, '没有漏网的 JS 组件（共 ' + vueFiles.length + ' 个）');
 ok(fs.existsSync(path.join(ROOT, 'web', 'src', 'shared', 'class-store.ts')), 'Pinia store 已是 TS');
 ok(!fs.existsSync(path.join(ROOT, 'web', 'src', 'shared', 'class-store.js')), '旧的 class-store.js 已删除（不留双份）');
+
+
+/* ================= 8. P4：网页版由 Rust 核心驱动（领域端点） ================= */
+
+console.log('\n== 领域端点（网页版调 Rust 核心的入口） ==');
+
+ok(has('crates/ci-hub/src/domain_api.rs'), '存在领域端点模块（ci-hub/src/domain_api.rs）');
+const hubLib = read('crates/ci-hub/src/lib.rs');
+['/api/domain/grade', '/api/domain/score', '/api/domain/ability', '/api/domain/pick'].forEach((ep) => {
+  ok(hubLib.includes(ep), '枢纽挂了 ' + ep + '（网页版据此调用 Rust 核心，而不是在前端重写规则）');
+});
+const hubToml = read('crates/ci-hub/Cargo.toml');
+ok(/^ci-domain\s*=/m.test(hubToml), 'ci-hub 依赖 ci-domain（领域端点直接调 Rust 实现，不复制规则）');
+ok(has('crates/ci-hub/tests/domain_api.rs'), '领域端点有集成测试（起真枢纽 + 真 HTTP）');
+
+// 点名的随机源必须是可注入种子的（否则测试断言不了具体结果）
+const domainApi = read('crates/ci-hub/src/domain_api.rs');
+ok(/XorShift64::seed/.test(domainApi), '点名端点用可传入的种子（同种子 → 同一个人，可复现）');
+
+// 出包链路：Android 必须装 cargo-ndk（Tauri 的 Android 交叉编译依赖它）
+const buildYml = read('.github/workflows/build.yml');
+ok(/cargo-ndk/.test(buildYml), 'build 工作流安装 cargo-ndk（Tauri Android 交叉编译必需）');
+ok(!/name: 创建 Draft Release\n\s+continue-on-error/.test(buildYml), 'Release 失败不再被 continue-on-error 掩盖');
+ok(/gh release view/.test(buildYml), 'Release 创建后有"确认资产"的一步（给安装包在不在一个明确结论）');
 
 console.log('\n' + '-'.repeat(44));
 if (failures.length) {

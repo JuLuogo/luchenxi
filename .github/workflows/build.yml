@@ -169,6 +169,22 @@ jobs:
       - name: 准备前端资源
         run: node scripts/sync-ui.mjs student
 
+      # Tauri 的 Android 交叉编译依赖 cargo-ndk（CLI 内部调它把 lib*.so 编出来再交给 Gradle）。
+      # runner 上**没有预装**，缺了它在 `:app:rustBuild*Release` 阶段就会挂 —— 这是上一轮
+      # Android 作业失败的原因（其余平台全绿、只有它红）。
+      - name: 安装 cargo-ndk（Android 交叉编译必需）
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-ndk
+
+      - name: 校验 Android 工具链
+        run: |
+          echo "cargo-ndk: $(cargo ndk --version)"
+          echo "NDK_HOME=$NDK_HOME"
+          ls "$NDK_HOME" | head -5
+          rustup target list --installed
+          java -version 2>&1 | head -2
+
       - name: 初始化 Android 工程
         working-directory: apps/student
         run: |
@@ -235,15 +251,22 @@ jobs:
         run: gh release delete "${{ github.ref_name }}" --yes --cleanup-tag=false || true
 
       - name: 创建 Draft Release
-        # 安装包已由各矩阵作业上传为 artifact（运行页面可直接下载）；
-        # Release 只是打包展示，出问题不该把整条流水线判红。
-        continue-on-error: true
+        # 这里**故意不加 continue-on-error**：上一轮它被标成"成功"，实际 Release 根本没建出来
+        # （API 查 releases/tags/v4.0.0 是 404），排查全靠猜。宁可红得明白。
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: '课堂积分 ${{ github.ref_name }}'
           draft: true
           files: dist/**
+
+      - name: 确认 Release 与资产（给"安装包在不在"一个明确结论）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "${{ github.ref_name }}" --json tagName,isDraft,assets \
+            --jq '"Release \(.tagName) draft=\(.isDraft) 资产 \(.assets|length) 个", (.assets[] | "  · \(.name)  \(.size) 字节")' \
+            || { echo "::error::Release 未创建成功"; exit 1; }
 
   # ------------------------------------------------------------------
   # iOS：v4 只做"预留"。真正出包需要 macOS 运行器 + Apple 开发者证书/描述文件，

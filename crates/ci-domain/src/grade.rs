@@ -205,8 +205,11 @@ impl Question {
 /// 学生提交
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Submission {
+    #[serde(default)]
     pub choice: Vec<String>,
+    #[serde(default)]
     pub text: String,
+    #[serde(default)]
     pub skip: bool,
 }
 

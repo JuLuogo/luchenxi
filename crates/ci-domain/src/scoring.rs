@@ -193,20 +193,29 @@ pub struct ScoreSnapshot {
 
 /// 计分输入（对应 recordResult 的参数）
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ScoreInput {
+    #[serde(default)]
     pub sid: String,
+    #[serde(default)]
     pub qid: Option<String>,
     /// 显式题型（不给就从题目取）
+    #[serde(default)]
     pub tier: Option<String>,
     /// 题目题型（用于兜底）
+    #[serde(default)]
     pub question_tier: Option<String>,
     /// 题目自定义分值
+    #[serde(default)]
     pub custom_points: Option<f64>,
     /// 显式基准分（优先级最高）
+    #[serde(default)]
     pub base: Option<f64>,
+    #[serde(default)]
     pub result: String,
+    #[serde(default)]
     pub fast: bool,
+    #[serde(default)]
     pub source: Option<String>,
 }
 

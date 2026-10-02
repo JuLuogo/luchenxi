@@ -7,6 +7,10 @@
 //!
 //! 为什么用 Rust 重写：安装成桌面 App 后，教师机不应再依赖 Node 运行时。
 
+/// 领域能力 HTTP 端点（判分/计分/能力/点名）：网页版据此调用 Rust 核心，
+/// 而不是在浏览器里再实现一份规则（docs/14 §2 的硬规矩）
+pub mod domain_api;
+
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
@@ -219,6 +223,11 @@ pub fn router(state: HubState) -> Router {
         .route("/api/backup", get(api_backup))
         .route("/api/restore", axum::routing::post(api_restore))
         .route("/api/stats", get(api_stats))
+        // 领域能力：网页版通过这几个端点调用 Rust 核心，而不是在前端重写规则
+        .route("/api/domain/grade", axum::routing::post(domain_api::grade))
+        .route("/api/domain/score", axum::routing::post(domain_api::score))
+        .route("/api/domain/ability", axum::routing::post(domain_api::ability))
+        .route("/api/domain/pick", axum::routing::post(domain_api::pick_handler))
         // 二维码：与 Node 版同一路径与查询参数（?text=…）。
         // 返回 SVG（浏览器 <img> 直接渲染），省掉 image/png 依赖。
         .route("/qr.png", get(qr_image))
