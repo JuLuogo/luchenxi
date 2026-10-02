@@ -201,7 +201,7 @@
 
     box.innerHTML = '<div class="panel-title">学生明细 <span class="panel-sub">（按积分排序，得分率低于阈值且样本足够的题型标红）</span></div>' +
       (rows.length ? '<div class="table-scroll"><table class="data-table"><thead><tr>' +
-        '<th>名次</th><th>姓名</th><th>队伍</th><th>积分</th><th>作答</th><th>整体得分率</th>' +
+        '<th>名次</th><th>姓名</th><th>队伍</th><th>积分</th><th>综合表现</th><th>作答</th><th>整体得分率</th>' +
         s.tiers.map(function (t) { return '<th>' + U.escapeHTML(t.label) + '</th>'; }).join('') +
         '<th>被点</th><th>评定</th><th></th>' +
         '</tr></thead><tbody>' +
@@ -212,11 +212,20 @@
             var weak = hit.attempts >= U.num(s.settings.minSample, 2) && hit.creditRate < U.num(s.settings.weakThreshold, 0.6) * 100;
             return '<td class="' + (weak ? 'cell-weak' : '') + '">' + hit.creditRate + '%<span class="cell-sub">(' + hit.attempts + '题)</span></td>';
           }).join('');
+          // 综合表现（正确性 / 参与度 / 进步 三维加权）：鼠标悬停可看下钻
+          var ev = CI.analysis.studentEvaluation(s, r.sid, scopeOpts());
+          var evCell = ev
+            ? '<td title="' + U.escapeHTML(ev.parts.map(function (x) {
+                return x.label + ' ' + x.value + '×' + Math.round(x.weight) + '% = ' + x.contribution;
+              }).join(' ｜ ') + (ev.parts.some(function (x) { return !x.valid; }) ? '（有维度样本不足，已按有效权重归一）' : '')) +
+              '"><b>' + ev.total + '</b><span class="cell-sub">/100</span></td>'
+            : '<td class="cell-empty">—</td>';
           return '<tr>' +
             '<td>' + r.rank + '</td>' +
             '<td><b>' + U.escapeHTML(r.name) + '</b></td>' +
             '<td>' + U.escapeHTML(r.teamName) + '</td>' +
             '<td><b>' + r.score + '</b></td>' +
+            evCell +
             '<td>' + r.attempts + '</td>' +
             '<td>' + r.creditRate + '%</td>' +
             cells +
@@ -295,7 +304,13 @@
             statCard('当前积分', st.score + ' 分', st.teamName) +
             statCard('作答题次', st.total.attempts + '', '答对 ' + st.total.correct + ' · 部分 ' + st.total.half + ' · 错 ' + st.total.wrong + ' · 跳过 ' + st.total.skip) +
             statCard('加权得分率', st.total.creditRate + '%', '严格正确率 ' + st.total.correctRate + '%') +
-            statCard('被点名', st.rolls + ' 次', '综合评定：' + st.level.label) +
+            (function () {
+        var ev = CI.analysis.studentEvaluation(s, sid, scopeOpts());
+        if (!ev) return '';
+        return statCard('综合表现', ev.total + '<span style="font-size:13px;color:#94a3b8">/100</span>',
+          '正确性 ' + ev.parts[0].value + ' ｜ 参与度 ' + ev.parts[1].value + ' ｜ 进步 ' + (ev.parts[2].valid ? ev.parts[2].value : '样本不足'));
+      })() +
+      statCard('被点名', st.rolls + ' 次', '综合评定：' + st.level.label) +
           '</div>' +
           '<div class="panel-title">题型得分率</div>' + (tierBars || '<div class="empty">暂无数据</div>') +
           '<div class="panel-title">文字总结</div>' +

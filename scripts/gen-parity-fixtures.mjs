@@ -894,6 +894,78 @@ mkReportCase('报告：签到不满（1/2）', { seated: 1, rate: 50 });
 mkReportCase('报告：薄弱阈值 0.9（阈值必须跟随设置）', { weakThreshold: 0.9 });
 
 
+
+/* ---------- 用例集：多维度评价（analysis.js::evaluate 等）---------- *
+ * 纯函数：参与度 / 进步 / 衰减平均掌握度 / 三维加权（含失效维度重归一） */
+const compositeCases = { participation: [], growth: [], decayed: [], evaluate: [] };
+
+// 参与度：答错也算参与，只看"答没答"
+for (const [answered, total] of [[5, 5], [3, 5], [0, 5], [3, 0], [9, 5]]) {
+  compositeCases.participation.push({
+    name: '参与度 ' + answered + '/' + total,
+    answered, total,
+    expect: CI.analysis.participationRate(answered, total)
+  });
+}
+
+// 进步：与自己前后半段比（50 = 持平）
+for (const [early, late, enough] of [[50, 50, true], [40, 70, true], [70, 40, true], [0, 100, true], [100, 0, true], [40, 70, false]]) {
+  compositeCases.growth.push({
+    name: '进步 ' + early + '→' + late + (enough ? '' : '（样本不足）'),
+    early, late, enough,
+    expect: CI.analysis.growthScore(early, late, enough)
+  });
+}
+
+// 衰减平均掌握度：同样的流水，decay 不同结果不同
+{
+  const mk = (results) => results.map((r, i) => ({ sid: 's1', qid: 'q1', result: r, at: i + 1, points: 0, tier: 'basic' }));
+  const sets = [
+    ['先错三次后答对', ['wrong', 'wrong', 'wrong', 'correct']],
+    ['先对三次后答错', ['correct', 'correct', 'correct', 'wrong']],
+    ['两次半对', ['half', 'half']],
+    ['单条答对', ['correct']],
+    ['含手动调整', ['correct', 'manual', 'wrong']],
+    ['空', []]
+  ];
+  for (const [name, results] of sets) {
+    for (const [halfRatio, decay] of [[0.5, 0.65], [0.4, 0.5], [0.5, 1], [0.5, 0]]) {
+      compositeCases.decayed.push({
+        name: name + '（半对系数 ' + halfRatio + '，衰减 ' + decay + '）',
+        records: mk(results), halfRatio, decay,
+        expect: CI.analysis.decayedRate(mk(results), halfRatio, decay)
+      });
+    }
+  }
+}
+
+// 三维加权：含失效维度重归一与全 0 权重
+{
+  const w1 = { mastery: 60, participation: 25, growth: 15 };
+  const w2 = { mastery: 20, participation: 60, growth: 20 };
+  const w3 = { mastery: 0, participation: 0, growth: 0 };
+  const rows = [
+    ['默认权重', 80, 100, 60, true, w1],
+    ['默认权重·全满', 100, 100, 100, true, w1],
+    ['默认权重·全零', 0, 0, 0, true, w1],
+    ['进步样本不足（应重归一）', 80, 100, 0, false, w1],
+    ['参与为主的权重', 0, 100, 50, true, w2],
+    ['全 0 权重（不能除零）', 50, 50, 50, true, w3]
+  ];
+  for (const [name, mastery, participation, growth, valid, w] of rows) {
+    const r = CI.analysis.evaluate(mastery, participation, growth, valid, w);
+    compositeCases.evaluate.push({
+      name,
+      mastery, participation, growth, growthValid: valid, weights: w,
+      expect: {
+        total: r.total,
+        weightUsed: r.weightUsed,
+        parts: r.parts.map((p) => ({ key: p.key, value: p.value, weight: p.weight, contribution: p.contribution, valid: p.valid }))
+      }
+    });
+  }
+}
+
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
@@ -906,7 +978,8 @@ const payload = {
   draw: drawCases,
   questionStats,
   mistakes: mistakeCases,
-  report: reportCases
+  report: reportCases,
+  composite: compositeCases
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
@@ -915,7 +988,8 @@ if (CHECK) {
   if (current === text) {
     console.log('[ok] parity.json 与 JS 参考实现一致（能力 ' + cases.length + ' + 判分 ' + grading.length +
     ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' + 课堂 ' + classroom.length + ' + 抽题 ' + drawCases.length + ' + 题目统计 ' + questionStats.length +
-    ' + 错题本 ' + mistakeCases.length + ' + 报告 ' + reportCases.length + ' 组）');
+    ' + 错题本 ' + mistakeCases.length + ' + 报告 ' + reportCases.length +
+    ' + 多维评价 ' + (compositeCases.participation.length + compositeCases.growth.length + compositeCases.decayed.length + compositeCases.evaluate.length) + ' 组）');
     process.exit(0);
   }
   console.error('[stale] parity.json 与 JS 参考实现不一致 —— 运行 node scripts/gen-parity-fixtures.mjs 重新生成');
@@ -935,3 +1009,5 @@ drawCases.forEach((c) => console.log('   · ' + c.name.padEnd(34) + '抽 ' + c.e
 questionStats.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.expect.length + ' 道题'));
 mistakeCases.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.expectOne.items.length + ' 道错题 / 榜上 ' + c.expectBoard.length + ' 人'));
 reportCases.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.expect.markdown.split('\n').length + ' 行 Markdown'));
+console.log('   · 多维评价：参与度 ' + compositeCases.participation.length + ' + 进步 ' + compositeCases.growth.length +
+  ' + 衰减平均 ' + compositeCases.decayed.length + ' + 加权 ' + compositeCases.evaluate.length + ' 组');

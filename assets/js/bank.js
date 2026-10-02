@@ -466,7 +466,17 @@
           '<div class="fld-row">' +
             '<label class="fld"><span>薄弱阈值（得分率低于）</span><input type="number" id="setWeak" step="0.05" min="0" max="1" value="' + U.num(st.weakThreshold, 0.6) + '"></label>' +
             '<label class="fld"><span>优势阈值（得分率高于）</span><input type="number" id="setStrong" step="0.05" min="0" max="1" value="' + U.num(st.strongThreshold, 0.85) + '"></label>' +
-            '<label class="fld"><span>最少样本量</span><input type="number" id="setMinSample" min="1" value="' + U.num(st.minSample, 2) + '"></label>' +
+            '<label class="fld"><span>最少样本量</span><input type="number" id="setMinSample" min="1" value="' + U.num(st.minSample, 5) + '"></label>' +
+          '</div>' +
+          '<div class="fld-row">' +
+            '<label class="fld"><span>评价权重 · 正确性</span><input type="number" id="setWMastery" min="0" max="100" value="' + U.num((st.evalWeights || {}).mastery, 60) + '"></label>' +
+            '<label class="fld"><span>评价权重 · 参与度</span><input type="number" id="setWPart" min="0" max="100" value="' + U.num((st.evalWeights || {}).participation, 25) + '"></label>' +
+            '<label class="fld"><span>评价权重 · 进步</span><input type="number" id="setWGrowth" min="0" max="100" value="' + U.num((st.evalWeights || {}).growth, 15) + '"></label>' +
+            '<label class="fld"><span>掌握度衰减（最近一次占比）</span><input type="number" id="setDecay" step="0.05" min="0" max="1" value="' + U.num(st.decayRatio, 0.65) + '"></label>' +
+          '</div>' +
+          '<div class="hint-inline">评价权重是「综合表现」的三个维度占比（不必和为 100，会自动按有效维度归一）；' +
+            '参与度只看「答没答」不论对错，进步与自己前半段比。掌握度衰减 = 最近一次作答占多少（0.65 表示更看重现在会什么）。</div>' +
+          '<div class="fld-row">' +
           '</div>' +
           '<div class="hint-inline">数值以 0~1 小数填写，例如 0.6 表示 60%。判定薄弱需同时满足「作答次数 ≥ 最少样本量」。</div>' +
         '</div>' +
@@ -493,7 +503,13 @@
       quickCountsAsAttempt: (el('setQuickCount') || {}).value === '1',
       weakThreshold: Number((el('setWeak') || {}).value),
       strongThreshold: Number((el('setStrong') || {}).value),
-      minSample: Number((el('setMinSample') || {}).value) || 1
+      minSample: Number((el('setMinSample') || {}).value) || 1,
+      evalWeights: {
+        mastery: Number((el('setWMastery') || {}).value) || 0,
+        participation: Number((el('setWPart') || {}).value) || 0,
+        growth: Number((el('setWGrowth') || {}).value) || 0
+      },
+      decayRatio: (el('setDecay') || {}).value === '' ? 0.65 : Number((el('setDecay') || {}).value)
     });
     closeEditor();
   }

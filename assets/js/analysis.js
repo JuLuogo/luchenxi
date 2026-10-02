@@ -857,6 +857,128 @@
 
 
   /* ------------------------------------------------------------------ *
+   * 多维度评价：正确性 / 参与度 / 进步（与 Rust composite.rs 同契约）
+   *   为什么加：只奖励"答对"会变成"谁话多谁分高"，也看不出学生的变化；
+   *   成熟做法是 3~4 个维度加权，且**权重必须可配置**（调研：没有任何研究给出"正确权重"）。
+   * ------------------------------------------------------------------ */
+
+  /** 参与度：作答过的题数 / 应作答的题数（**答错也算参与**） */
+  function participationRate(answered, total) {
+    if (!total) return 0;
+    return Math.round((Math.min(U.num(answered, 0), total) / total) * 100);
+  }
+
+  /** 进步分：与自己前后半段比（50 = 持平；样本不足时 valid=false，不计入总分） */
+  function growthScore(early, late, enough) {
+    if (!enough) return 0;
+    return Math.max(0, Math.min(100, 50 + (U.num(late, 0) - U.num(early, 0))));
+  }
+
+  /** 衰减平均掌握度：decay 给最近一次，其余给此前平均（默认 0.65/0.35，看重"现在会什么"） */
+  function decayedRate(records, halfRatio, decay) {
+    var scored = (records || []).filter(function (r) {
+      return r.result === 'correct' || r.result === 'half' || r.result === 'wrong' || r.result === 'skip';
+    }).map(function (r) {
+      if (r.result === 'correct') return 1;
+      if (r.result === 'half') return U.num(halfRatio, 0.5);
+      return 0;
+    });
+    if (!scored.length) return 0;
+    var last = scored[scored.length - 1];
+    if (scored.length === 1) return Math.round(last * 100);
+    var prior = scored.slice(0, -1).reduce(function (a, b) { return a + b; }, 0) / (scored.length - 1);
+    var d = Math.max(0, Math.min(1, U.num(decay, 0.65)));
+    return Math.round((last * d + prior * (1 - d)) * 100);
+  }
+
+  /** 评价权重（跟随设置，缺省 60/25/15） */
+  function evalWeights(s) {
+    var w = (s && s.settings && s.settings.evalWeights) || {};
+    return {
+      mastery: U.num(w.mastery, 60),
+      participation: U.num(w.participation, 25),
+      growth: U.num(w.growth, 15)
+    };
+  }
+
+  /**
+   * 综合表现：三维加权求和，**可下钻**
+   *   失效维度（如进步样本不足）自动剔除，权重按有效维度重新归一 ——
+   *   否则"数据不足"会被凭空扣掉那部分权重。
+   */
+  function evaluate(mastery, participation, growth, growthValid, weights) {
+    var w = weights || { mastery: 60, participation: 25, growth: 15 };
+    var clamp = function (x) { return Math.max(0, Math.min(100, U.num(x, 0))); };
+    var parts = [
+      { key: 'mastery', label: '正确性', value: clamp(mastery), weight: U.num(w.mastery, 0), contribution: 0, valid: true,
+        hint: '掌握度（答对 + 半对按系数折算），用衰减平均更看重最近表现' },
+      { key: 'participation', label: '参与度', value: clamp(participation), weight: U.num(w.participation, 0), contribution: 0, valid: true,
+        hint: '本节课作答过的题数占比 —— 答错也算参与' },
+      { key: 'growth', label: '进步', value: clamp(growth), weight: U.num(w.growth, 0), contribution: 0, valid: !!growthValid,
+        hint: growthValid ? '与自己前半段比：50 = 持平，>50 进步，<50 退步' : '样本还太少，暂时不评进步（不作 0 分处理）' }
+    ];
+    var weightUsed = parts.filter(function (p) { return p.valid; })
+      .reduce(function (a, p) { return a + Math.max(0, p.weight); }, 0);
+    var total = 0;
+    parts.forEach(function (p) {
+      if (!p.valid || weightUsed <= 0) { p.contribution = 0; return; }
+      var eff = Math.max(0, p.weight) / weightUsed * 100;   // 按有效维度重新归一
+      p.contribution = Math.round(p.value * eff) / 100;
+      total += p.contribution;
+    });
+    return { total: Math.round(total), parts: parts, weightUsed: Math.round(weightUsed * 100) / 100 };
+  }
+
+  /**
+   * 单个学生的综合表现（把状态里的数据取齐后调 evaluate）
+   * @param {Object} opts {quizId} —— 与其它统计一致：省略 = 本节课（当前试卷）
+   */
+  function studentEvaluation(state, sid, opts) {
+    opts = opts || {};
+    var s = state || CI.store.get();
+    var quizId = opts.quizId === undefined ? ((s.runtime && s.runtime.quizId) || null) : opts.quizId;
+    var stats = studentStats(s, sid, { quizId: quizId });
+    if (!stats) return null;
+
+    var recs = CI.store.recordsOf(s, { sid: sid, quizId: quizId }).filter(function (r) { return counts(s, r); });
+    var halfRatio = U.num(settings(s).halfRatio, 0.5);
+    var decay = U.num(settings(s).decayRatio, 0.65);
+
+    // 参与度：本节课作答过的**题目数** / 试卷题数（同一题答多次只算一道）
+    var qz = quizId ? CI.store.quiz(s, quizId) : null;
+    var totalQ = qz ? (qz.questionIds || []).length : 0;
+    var seen = {};
+    recs.forEach(function (r) { if (r.qid) seen[r.qid] = true; });
+    var answered = Object.keys(seen).length;
+
+    // 进步：与自己前后半段比（每人至少 4 条流水才评，否则该维度失效）
+    var enough = recs.length >= 4;
+    var half = Math.floor(recs.length / 2);
+    var rateOf = function (list) {
+      if (!list.length) return 0;
+      var sum = list.reduce(function (a, r) {
+        return a + (r.result === 'correct' ? 1 : (r.result === 'half' ? halfRatio : 0));
+      }, 0);
+      return Math.round((sum / list.length) * 100);
+    };
+    var early = enough ? rateOf(recs.slice(0, half)) : 0;
+    var late = enough ? rateOf(recs.slice(half)) : 0;
+
+    var mastery = decayedRate(recs, halfRatio, decay);
+    var participation = participationRate(answered, totalQ);
+    var growth = growthScore(early, late, enough);
+    var result = evaluate(mastery, participation, growth, enough, evalWeights(s));
+    result.mastery = mastery;
+    result.participation = participation;
+    result.growth = growth;
+    result.growthEarly = early;
+    result.growthLate = late;
+    result.answered = answered;
+    result.totalQuestions = totalQ;
+    return result;
+  }
+
+  /* ------------------------------------------------------------------ *
    * 能力评价：按题型画雷达（"六边形战士"式），给出综合能力与文字评价
    * ------------------------------------------------------------------ */
 
@@ -1014,6 +1136,9 @@
     questionStats: questionStats,
     questionReviewLine: questionReviewLine,
     studentMistakes: studentMistakes, mistakeBoard: mistakeBoard,
+    // 多维度评价（正确性 / 参与度 / 进步）
+    participationRate: participationRate, growthScore: growthScore, decayedRate: decayedRate,
+    evalWeights: evalWeights, evaluate: evaluate, studentEvaluation: studentEvaluation,
     buildReport: buildReport, toMarkdown: toMarkdown, classReport: classReport,
     counts: counts,
     ability: ability,

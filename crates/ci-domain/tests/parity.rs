@@ -12,12 +12,13 @@
 //! CI 校验基准是否过期：`node scripts/gen-parity-fixtures.mjs --check`
 
 use ci_domain::{
-    ability_of_tiers, answer_key, apply_pick, auto, build_report, default_tiers, describe_submission,
+    ability_of_tiers, answer_key, apply_pick, auto, build_report, decayed_rate, evaluate, growth_score,
+    participation_rate, default_tiers, describe_submission,
     draw_questions, finalize_feed, handle_cmd, mistake_board, question_stats, report_markdown,
     rollcall_pick, score_of_input, set_phase_named, student_mistakes, validate_question, BankQuestion,
     Checkin, ClassStudent, ClassTeam, CmdOutcome, DrawOpts, PickOpts, Question, RollcallSettings,
-    ReportInput, Runtime, ScoreInput, ScoreRecord, ScoringSettings, StateStudent, Student, StudentCmd,
-    Submission, Team, TeamStat, TierStat,
+    EvalWeights, ReportInput, Runtime, ScoreInput, ScoreRecord, ScoringSettings, StateStudent, Student,
+    StudentCmd, Submission, Team, TeamStat, TierStat,
 };
 use serde_json::json;
 use serde::Deserialize;
@@ -36,6 +37,7 @@ struct Fixture {
     question_stats: Vec<QsCase>,
     mistakes: Vec<MistakeCase>,
     report: Vec<ReportCase>,
+    composite: CompositeCases,
 }
 
 #[derive(Debug, Deserialize)]
@@ -526,6 +528,78 @@ struct ReportStudentRow {
     correct: u32,
     #[serde(rename = "creditRate")]
     credit_rate: i64,
+}
+
+
+#[derive(Debug, Deserialize)]
+struct CompositeCases {
+    participation: Vec<ParticipationCase>,
+    growth: Vec<GrowthCase>,
+    decayed: Vec<DecayedCase>,
+    evaluate: Vec<EvaluateCase>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ParticipationCase {
+    name: String,
+    answered: u32,
+    total: u32,
+    expect: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct GrowthCase {
+    name: String,
+    early: i64,
+    late: i64,
+    enough: bool,
+    expect: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct DecayedCase {
+    name: String,
+    records: Vec<CompositeRecordRow>,
+    #[serde(rename = "halfRatio")]
+    half_ratio: f64,
+    decay: f64,
+    expect: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct CompositeRecordRow {
+    result: String,
+    #[serde(default)]
+    at: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct EvaluateCase {
+    name: String,
+    mastery: i64,
+    participation: i64,
+    growth: i64,
+    #[serde(rename = "growthValid")]
+    growth_valid: bool,
+    weights: EvalWeights,
+    expect: EvaluateExpect,
+}
+
+#[derive(Debug, Deserialize)]
+struct EvaluateExpect {
+    total: i64,
+    #[serde(rename = "weightUsed")]
+    weight_used: f64,
+    parts: Vec<EvalPartRow>,
+}
+
+#[derive(Debug, Deserialize)]
+struct EvalPartRow {
+    key: String,
+    value: i64,
+    weight: f64,
+    contribution: f64,
+    valid: bool,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -1289,4 +1363,86 @@ fn report_matches_js_reference() {
     }
 
     println!("\n✅ 课后课堂报告：{} 组用例与 JS 参考实现逐行一致", fx.report.len());
+}
+
+/// 多维度评价：参与度 / 进步 / 衰减平均掌握度 / 三维加权（含失效维度重归一）
+#[test]
+fn composite_matches_js_reference() {
+    let fx = load();
+    let c = &fx.composite;
+
+    // 参与度
+    for case in &c.participation {
+        let got = participation_rate(case.answered, case.total);
+        assert_eq!(got, case.expect, "[{}] 参与度", case.name);
+    }
+    println!("  ✔ 参与度 {} 组", c.participation.len());
+
+    // 进步
+    for case in &c.growth {
+        let got = growth_score(case.early, case.late, case.enough);
+        assert_eq!(got, case.expect, "[{}] 进步分", case.name);
+    }
+    println!("  ✔ 进步 {} 组", c.growth.len());
+
+    // 衰减平均掌握度
+    for case in &c.decayed {
+        let records: Vec<ScoreRecord> = case
+            .records
+            .iter()
+            .enumerate()
+            .map(|(i, r)| ScoreRecord {
+                id: format!("r{}", i + 1),
+                sid: Some("s1".into()),
+                qid: Some("q1".into()),
+                tier: "basic".into(),
+                quiz_id: None,
+                result: r.result.clone(),
+                base: 0.0,
+                ratio: 0.0,
+                points: 0.0,
+                source: "student".into(),
+                note: String::new(),
+                at: if r.at == 0 { i as i64 + 1 } else { r.at },
+                by: String::new(),
+            })
+            .collect();
+        let got = decayed_rate(&records, case.half_ratio, case.decay);
+        assert_eq!(got, case.expect, "[{}] 衰减平均掌握度", case.name);
+    }
+    println!("  ✔ 衰减平均掌握度 {} 组", c.decayed.len());
+
+    // 三维加权
+    for case in &c.evaluate {
+        let got = evaluate(case.mastery, case.participation, case.growth, case.growth_valid, &case.weights);
+        let n = &case.name;
+        assert_eq!(got.total, case.expect.total, "[{}] 综合分", n);
+        assert!(
+            (got.weight_used - case.expect.weight_used).abs() < 1e-9,
+            "[{}] 有效权重：{} vs {}",
+            n,
+            got.weight_used,
+            case.expect.weight_used
+        );
+        assert_eq!(got.parts.len(), case.expect.parts.len(), "[{}] 维度数", n);
+        for (i, want) in case.expect.parts.iter().enumerate() {
+            let g = &got.parts[i];
+            assert_eq!(g.key, want.key, "[{}] 维度 #{} key", n, i + 1);
+            assert_eq!(g.value, want.value, "[{}] 维度 #{} 原始值", n, i + 1);
+            assert!((g.weight - want.weight).abs() < 1e-9, "[{}] 维度 #{} 权重", n, i + 1);
+            assert!(
+                (g.contribution - want.contribution).abs() < 1e-9,
+                "[{}] 维度 #{} 贡献分：{} vs {}",
+                n,
+                i + 1,
+                g.contribution,
+                want.contribution
+            );
+            assert_eq!(g.valid, want.valid, "[{}] 维度 #{} 是否有效", n, i + 1);
+        }
+    }
+    println!("  ✔ 三维加权 {} 组", c.evaluate.len());
+
+    println!("\n✅ 多维度评价：{} 组用例与 JS 参考实现逐字段一致",
+        c.participation.len() + c.growth.len() + c.decayed.len() + c.evaluate.len());
 }

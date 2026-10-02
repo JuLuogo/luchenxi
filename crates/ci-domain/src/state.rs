@@ -44,6 +44,16 @@ pub struct Settings {
     /// 判定薄弱/优势所需最少作答次数
     #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub min_sample: i64,
+    /// 多维度评价权重（正确性 / 参与度 / 进步）—— 调研：权重没有实证最优值，属课程政策
+    #[serde(default)]
+    pub eval_weights: crate::composite::EvalWeights,
+    /// 掌握度衰减平均系数：最近一次占多少（默认 0.65，看重"现在会什么"）
+    #[serde(default = "default_decay_ratio")]
+    pub decay_ratio: f64,
+}
+
+fn default_decay_ratio() -> f64 {
+    0.65
 }
 
 impl Default for Settings {
@@ -56,6 +66,8 @@ impl Default for Settings {
             weak_threshold: 0.6,
             strong_threshold: 0.85,
             min_sample: 5,
+            eval_weights: crate::composite::EvalWeights::default(),
+            decay_ratio: 0.65,
         }
     }
 }

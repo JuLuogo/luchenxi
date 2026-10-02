@@ -136,7 +136,10 @@
         buzzRankBonuses: [],   // 抢答名次加分（默认关闭）：设为 [2,1] 表示第1个抢答的队+2、第2个+1
         weakThreshold: 0.6,    // 正确率低于该值 → 薄弱
         strongThreshold: 0.85, // 正确率高于该值 → 优势
-        minSample: 5           // 判定等级/薄弱所需最少作答次数（调研：少于 5 题的分类极不稳定）
+        minSample: 5,          // 判定等级/薄弱所需最少作答次数（调研：少于 5 题的分类极不稳定）
+        // 多维度评价权重（百分比；调研：权重没有实证最优值，属课程政策 → 可配置）
+        evalWeights: { mastery: 60, participation: 25, growth: 15 },
+        decayRatio: 0.65       // 掌握度衰减平均：最近一次占 65%（Otus 默认，看重「现在会什么」）
       },
       tiers: clone(DEFAULT_TIERS),
       tags: ['集合与逻辑', '函数与导数', '三角函数', '数列', '立体几何', '解析几何', '概率统计'],

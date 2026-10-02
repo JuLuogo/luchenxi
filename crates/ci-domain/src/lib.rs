@@ -13,6 +13,7 @@
 
 pub mod ability;
 pub mod classroom;
+pub mod composite;
 pub mod draw;
 pub mod grade;
 pub mod mistakes;
@@ -25,6 +26,9 @@ pub mod state;
 pub use ability::{
     ability_comment, ability_of_tiers, grade_by_key, pct, Ability, Axis, Bucket, Grade, TierStat,
     GRADES,
+};
+pub use composite::{
+    decayed_rate, evaluate, growth_score, participation_rate, EvalPart, EvalWeights, Evaluation,
 };
 pub use draw::{candidates as draw_candidates, draw as draw_questions, DrawOpts};
 pub use mistakes::{mistake_board, student_mistakes, MistakeItem, StudentMistakes};

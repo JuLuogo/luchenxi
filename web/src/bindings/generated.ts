@@ -174,6 +174,16 @@ export type CmdResult = {
 	score: ScoreRequest | null,
 };
 
+/**  三个维度的权重（百分比，调用方保证和为 100） */
+export type EvalWeights = {
+	/**  正确性（掌握度） */
+	mastery: number | null,
+	/**  参与度（出席/作答，不论对错） */
+	participation: number | null,
+	/**  进步（个体内比较） */
+	growth: number | null,
+};
+
 /**  实时流条目（教师端右上角滚动显示） */
 export type FeedItem = {
 	kind: string,
@@ -378,6 +388,10 @@ export type Settings = {
 	strongThreshold: number | null,
 	/**  判定薄弱/优势所需最少作答次数 */
 	minSample: number,
+	/**  多维度评价权重（正确性 / 参与度 / 进步）—— 调研：权重没有实证最优值，属课程政策 */
+	evalWeights?: EvalWeights,
+	/**  掌握度衰减平均系数：最近一次占多少（默认 0.65，看重"现在会什么"） */
+	decayRatio?: number | null,
 };
 
 /**

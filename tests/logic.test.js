@@ -1144,6 +1144,99 @@ group('评价口径：等级统一 · 样本量 · 课次边界');
   ok(!!payloadAfter.question.answerKey, '公布答案后同时下发正确答案');
 })();
 
+/* ================= 19. 多维度评价（正确性 / 参与度 / 进步） ================= */
+group('多维度评价');
+
+(function () {
+  const A = CI.analysis;
+
+  /* ---- 参与度：答错也算参与 ---- */
+  eq(A.participationRate(5, 5), 100, '全答了 → 100%');
+  eq(A.participationRate(3, 5), 60, '答了 3/5 → 60%');
+  eq(A.participationRate(0, 5), 0, '一道没答 → 0%');
+  eq(A.participationRate(3, 0), 0, '没有题时不给分（也不崩）');
+  eq(A.participationRate(9, 5), 100, '答多了不超过 100%');
+
+  /* ---- 进步：与自己比 ---- */
+  eq(A.growthScore(50, 50, true), 50, '持平 = 50 分');
+  eq(A.growthScore(40, 70, true), 80, '进步 30 个点 → 80 分');
+  eq(A.growthScore(70, 40, true), 20, '退步 30 个点 → 20 分（不是 0 分，它是相对自己的信号）');
+  eq(A.growthScore(0, 100, true), 100, '封顶 100');
+  eq(A.growthScore(100, 0, true), 0, '下限 0');
+  eq(A.growthScore(40, 70, false), 0, '样本不足 → 0（由 valid=false 决定不计入）');
+
+  /* ---- 衰减平均掌握度：看重"现在会什么" ---- */
+  const recs = (list) => list.map((r, i) => ({ sid: 's1', qid: 'q1', result: r, at: i + 1, tier: 'basic' }));
+  eq(A.decayedRate(recs(['wrong', 'wrong', 'wrong', 'correct']), 0.5, 0.65), 65,
+    '先错三次后答对 → 65（累计平均只有 25，这就是"看重最近"的意义）');
+  eq(A.decayedRate(recs(['wrong', 'wrong', 'wrong', 'correct']), 0.5, 1), 100, 'decay=1 → 完全看最近一次');
+  eq(A.decayedRate(recs(['wrong', 'wrong', 'wrong', 'correct']), 0.5, 0), 0, 'decay=0 → 完全看此前平均');
+  eq(A.decayedRate(recs(['correct', 'correct', 'correct', 'wrong']), 0.5, 0.65), 35,
+    '反过来：先对三次后答错 → 35（最近一次 0×0.65 + 此前平均 1×0.35）');
+  eq(A.decayedRate(recs(['half', 'half']), 0.5, 0.65), 50, '两次半对 → 50');
+  eq(A.decayedRate(recs(['half', 'half']), 0.4, 0.65), 40, '半对系数 0.4 → 40');
+  eq(A.decayedRate(recs(['correct']), 0.5, 0.65), 100, '只有一条流水');
+  eq(A.decayedRate([], 0.5, 0.65), 0, '没有流水 → 0');
+  eq(A.decayedRate(recs(['correct', 'manual', 'wrong']), 0.5, 0.65), 35,
+    '手动加减不进分子分母（剩下 对→错 两条：0×0.65 + 1×0.35）');
+
+  /* ---- 三维加权与下钻 ---- */
+  const w = { mastery: 60, participation: 25, growth: 15 };
+  const e = A.evaluate(80, 100, 60, true, w);
+  eq(e.total, 82, '80×0.6 + 100×0.25 + 60×0.15 = 82');
+  eq(e.parts.length, 3, '三个维度可下钻');
+  eq(e.parts[0].contribution, 48, '正确性贡献 48');
+  eq(e.parts[1].contribution, 25, '参与度贡献 25');
+  eq(e.parts[2].contribution, 9, '进步贡献 9');
+  eq(e.weightUsed, 100, '三个维度都有效时权重和 100');
+
+  // 失效维度要重归一，否则"数据不足"会被凭空扣掉 15 分
+  const e2 = A.evaluate(80, 100, 0, false, w);
+  eq(e2.weightUsed, 85, '进步维度失效 → 有效权重 85');
+  eq(e2.parts[2].valid, false, '进步维度标为无效');
+  eq(e2.parts[2].contribution, 0, '无效维度贡献 0');
+  ok(e2.total > 80, '剔除后重新归一，总分不会被压到 80 以下（实际 ' + e2.total + '）');
+  eq(e2.total, Math.round(80 * 60 / 85 + 100 * 25 / 85), '重归一算法：按有效权重比例分摊');
+
+  // 权重可配置（调研：权重没有实证最优值，属课程政策）
+  const e3 = A.evaluate(0, 100, 50, true, { mastery: 20, participation: 60, growth: 20 });
+  eq(e3.total, 70, '改成"参与为主"的权重 → 0×0.2 + 100×0.6 + 50×0.2 = 70');
+  const e4 = A.evaluate(50, 50, 50, true, { mastery: 0, participation: 0, growth: 0 });
+  eq(e4.total, 0, '全 0 权重不能除零');
+  eq(e4.weightUsed, 0, '全 0 权重时有效权重为 0');
+
+  /* ---- 整链路：从状态里算一个学生的综合表现 ---- */
+  S.replaceState(S.defaultState());
+  const team = S.get().teams[0].id;
+  const sid = (x) => (typeof x === 'string' ? x : x.id);
+  const stu = S.addStudent('小明', team);
+  const qs = [];
+  for (let i = 0; i < 4; i++) qs.push(S.addQuestion({ stem: '第' + (i + 1) + '题', tier: 'basic', answer: 'A' }));
+  const qz = S.createQuiz('本节课', qs.map((q) => q.id));
+  S.setCurrentQuiz(qz.id);
+  // 前两题错、后两题对（"越学越好"）
+  S.recordResult({ sid: sid(stu), qid: qs[0].id, tier: 'basic', result: 'wrong', quizId: qz.id });
+  S.recordResult({ sid: sid(stu), qid: qs[1].id, tier: 'basic', result: 'wrong', quizId: qz.id });
+  S.recordResult({ sid: sid(stu), qid: qs[2].id, tier: 'basic', result: 'correct', quizId: qz.id });
+  S.recordResult({ sid: sid(stu), qid: qs[3].id, tier: 'basic', result: 'correct', quizId: qz.id });
+
+  const ev = A.studentEvaluation(S.get(), sid(stu), { quizId: qz.id });
+  eq(ev.answered, 4, '答了 4 道题');
+  eq(ev.totalQuestions, 4, '本节课共 4 道题');
+  eq(ev.participation, 100, '参与度 100%');
+  eq(ev.growthEarly, 0, '前半段掌握度 0（两题都错）');
+  eq(ev.growthLate, 100, '后半段掌握度 100（两题都对）');
+  eq(ev.growth, 100, '进步分 100（从 0 到 100）');
+  eq(ev.mastery, 77, '衰减平均 77（最近一次 1×0.65 + 此前三次均值 0.33×0.35），累计口径只有 50');
+  ok(ev.total > 50, '综合表现高于"累计掌握度"，体现"越学越好"：' + ev.total);
+  eq(ev.parts[2].value, 100, '下钻能看到进步维度 100');
+
+  // 只答一半的参与度
+  S.recordResult({ sid: sid(stu), qid: qs[0].id, tier: 'basic', result: 'correct', quizId: qz.id });
+  const ev2 = A.studentEvaluation(S.get(), sid(stu), { quizId: qz.id });
+  eq(ev2.participation, 100, '重复作答同一题不增加参与度（按题目去重）');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

@@ -6579,5 +6579,957 @@
         "markdown": "# 课堂报告 · 24机械高考公开课\n\n> 房间 default ｜ 生成于 2023-11-15 06:13\n\n## 一、出勤\n\n- 签到 **2 / 2 队**（100%）\n\n## 二、整体\n\n- 作答 **4 题次**：答对 2、部分正确 1、答错 1、跳过 0\n- 整体掌握度 **63%**，累计得分 **9.5 分**\n\n> 全班表现不错，继续保持\n\n## 三、各队对比\n\n| 队伍 | 答对 | 作答 | 掌握度 | 得分 | 人数 |\n| --- | --- | --- | --- | --- | --- |\n| 全班 | 2 | 4 | 63% | — | 3 |\n| 红队 | 2 | 3 | 83% | 9.5 | 2 |\n| 蓝队 | 0 | 1 | 0% | 0 | 1 |\n\n## 四、题型掌握\n\n| 题型 | 作答 | 答对 | 掌握度 | 正确率 |\n| --- | --- | --- | --- | --- |\n| 基础题 | 2 | 1 | 75% | 50% |\n| 拔高题 | 2 | 1 | 50% | 50% |\n\n## 五、题目正确率（讲评顺序）\n\n| # | 题目 | 题型 | 作答 | 答对 | 正确率 | 未答对 |\n| --- | --- | --- | --- | --- | --- | --- |\n| 1 | 第一题：1+1=? | 基础题 | 2 | 1 | 50% | 0 |\n| 2 | 第二题：求导 | 拔高题 | 2 | 1 | 50% | 1 |\n\n> 本套题共 2 道有作答，整体正确率 50%。最需要讲评的是「第一题：1+1=?」（正确率 50%，2 人作答，0 人答错或跳过）；掌握最好的是「第二题：求导」（正确率 50%）。\n\n## 六、学生表现\n\n| 名次 | 学生 | 队伍 | 积分 | 作答 | 答对 | 掌握度 |\n| --- | --- | --- | --- | --- | --- | --- |\n| 1 | 甲 | 红队 | 8 | 2 | 2 | 100% |\n| 2 | 乙 | 红队 | 1.5 | 1 | 0 | 50% |\n| 3 | 丙 | 蓝队 | 0 | 1 | 0 | 0% |\n\n- **表现突出**：甲（8 分，掌握度 100%）、乙（1.5 分，掌握度 50%）、丙（0 分，掌握度 0%）\n- **需要关注**：丙（掌握度 0%）、乙（掌握度 50%）\n\n---\n\n*由课堂积分系统生成（Rust 核心 ci-domain::report）*\n"
       }
     }
-  ]
+  ],
+  "composite": {
+    "participation": [
+      {
+        "name": "参与度 5/5",
+        "answered": 5,
+        "total": 5,
+        "expect": 100
+      },
+      {
+        "name": "参与度 3/5",
+        "answered": 3,
+        "total": 5,
+        "expect": 60
+      },
+      {
+        "name": "参与度 0/5",
+        "answered": 0,
+        "total": 5,
+        "expect": 0
+      },
+      {
+        "name": "参与度 3/0",
+        "answered": 3,
+        "total": 0,
+        "expect": 0
+      },
+      {
+        "name": "参与度 9/5",
+        "answered": 9,
+        "total": 5,
+        "expect": 100
+      }
+    ],
+    "growth": [
+      {
+        "name": "进步 50→50",
+        "early": 50,
+        "late": 50,
+        "enough": true,
+        "expect": 50
+      },
+      {
+        "name": "进步 40→70",
+        "early": 40,
+        "late": 70,
+        "enough": true,
+        "expect": 80
+      },
+      {
+        "name": "进步 70→40",
+        "early": 70,
+        "late": 40,
+        "enough": true,
+        "expect": 20
+      },
+      {
+        "name": "进步 0→100",
+        "early": 0,
+        "late": 100,
+        "enough": true,
+        "expect": 100
+      },
+      {
+        "name": "进步 100→0",
+        "early": 100,
+        "late": 0,
+        "enough": true,
+        "expect": 0
+      },
+      {
+        "name": "进步 40→70（样本不足）",
+        "early": 40,
+        "late": 70,
+        "enough": false,
+        "expect": 0
+      }
+    ],
+    "decayed": [
+      {
+        "name": "先错三次后答对（半对系数 0.5，衰减 0.65）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 3,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 4,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 0.65,
+        "expect": 65
+      },
+      {
+        "name": "先错三次后答对（半对系数 0.4，衰减 0.5）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 3,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 4,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.4,
+        "decay": 0.5,
+        "expect": 50
+      },
+      {
+        "name": "先错三次后答对（半对系数 0.5，衰减 1）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 3,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 4,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 1,
+        "expect": 100
+      },
+      {
+        "name": "先错三次后答对（半对系数 0.5，衰减 0）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 3,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 4,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 0,
+        "expect": 0
+      },
+      {
+        "name": "先对三次后答错（半对系数 0.5，衰减 0.65）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 3,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 4,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 0.65,
+        "expect": 35
+      },
+      {
+        "name": "先对三次后答错（半对系数 0.4，衰减 0.5）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 3,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 4,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.4,
+        "decay": 0.5,
+        "expect": 50
+      },
+      {
+        "name": "先对三次后答错（半对系数 0.5，衰减 1）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 3,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 4,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 1,
+        "expect": 0
+      },
+      {
+        "name": "先对三次后答错（半对系数 0.5，衰减 0）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 3,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 4,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 0,
+        "expect": 100
+      },
+      {
+        "name": "两次半对（半对系数 0.5，衰减 0.65）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "half",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "half",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 0.65,
+        "expect": 50
+      },
+      {
+        "name": "两次半对（半对系数 0.4，衰减 0.5）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "half",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "half",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.4,
+        "decay": 0.5,
+        "expect": 40
+      },
+      {
+        "name": "两次半对（半对系数 0.5，衰减 1）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "half",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "half",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 1,
+        "expect": 50
+      },
+      {
+        "name": "两次半对（半对系数 0.5，衰减 0）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "half",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "half",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 0,
+        "expect": 50
+      },
+      {
+        "name": "单条答对（半对系数 0.5，衰减 0.65）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 0.65,
+        "expect": 100
+      },
+      {
+        "name": "单条答对（半对系数 0.4，衰减 0.5）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.4,
+        "decay": 0.5,
+        "expect": 100
+      },
+      {
+        "name": "单条答对（半对系数 0.5，衰减 1）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 1,
+        "expect": 100
+      },
+      {
+        "name": "单条答对（半对系数 0.5，衰减 0）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 0,
+        "expect": 100
+      },
+      {
+        "name": "含手动调整（半对系数 0.5，衰减 0.65）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "manual",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 3,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 0.65,
+        "expect": 35
+      },
+      {
+        "name": "含手动调整（半对系数 0.4，衰减 0.5）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "manual",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 3,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.4,
+        "decay": 0.5,
+        "expect": 50
+      },
+      {
+        "name": "含手动调整（半对系数 0.5，衰减 1）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "manual",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 3,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 1,
+        "expect": 0
+      },
+      {
+        "name": "含手动调整（半对系数 0.5，衰减 0）",
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "at": 1,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "manual",
+            "at": 2,
+            "points": 0,
+            "tier": "basic"
+          },
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "wrong",
+            "at": 3,
+            "points": 0,
+            "tier": "basic"
+          }
+        ],
+        "halfRatio": 0.5,
+        "decay": 0,
+        "expect": 100
+      },
+      {
+        "name": "空（半对系数 0.5，衰减 0.65）",
+        "records": [],
+        "halfRatio": 0.5,
+        "decay": 0.65,
+        "expect": 0
+      },
+      {
+        "name": "空（半对系数 0.4，衰减 0.5）",
+        "records": [],
+        "halfRatio": 0.4,
+        "decay": 0.5,
+        "expect": 0
+      },
+      {
+        "name": "空（半对系数 0.5，衰减 1）",
+        "records": [],
+        "halfRatio": 0.5,
+        "decay": 1,
+        "expect": 0
+      },
+      {
+        "name": "空（半对系数 0.5，衰减 0）",
+        "records": [],
+        "halfRatio": 0.5,
+        "decay": 0,
+        "expect": 0
+      }
+    ],
+    "evaluate": [
+      {
+        "name": "默认权重",
+        "mastery": 80,
+        "participation": 100,
+        "growth": 60,
+        "growthValid": true,
+        "weights": {
+          "mastery": 60,
+          "participation": 25,
+          "growth": 15
+        },
+        "expect": {
+          "total": 82,
+          "weightUsed": 100,
+          "parts": [
+            {
+              "key": "mastery",
+              "value": 80,
+              "weight": 60,
+              "contribution": 48,
+              "valid": true
+            },
+            {
+              "key": "participation",
+              "value": 100,
+              "weight": 25,
+              "contribution": 25,
+              "valid": true
+            },
+            {
+              "key": "growth",
+              "value": 60,
+              "weight": 15,
+              "contribution": 9,
+              "valid": true
+            }
+          ]
+        }
+      },
+      {
+        "name": "默认权重·全满",
+        "mastery": 100,
+        "participation": 100,
+        "growth": 100,
+        "growthValid": true,
+        "weights": {
+          "mastery": 60,
+          "participation": 25,
+          "growth": 15
+        },
+        "expect": {
+          "total": 100,
+          "weightUsed": 100,
+          "parts": [
+            {
+              "key": "mastery",
+              "value": 100,
+              "weight": 60,
+              "contribution": 60,
+              "valid": true
+            },
+            {
+              "key": "participation",
+              "value": 100,
+              "weight": 25,
+              "contribution": 25,
+              "valid": true
+            },
+            {
+              "key": "growth",
+              "value": 100,
+              "weight": 15,
+              "contribution": 15,
+              "valid": true
+            }
+          ]
+        }
+      },
+      {
+        "name": "默认权重·全零",
+        "mastery": 0,
+        "participation": 0,
+        "growth": 0,
+        "growthValid": true,
+        "weights": {
+          "mastery": 60,
+          "participation": 25,
+          "growth": 15
+        },
+        "expect": {
+          "total": 0,
+          "weightUsed": 100,
+          "parts": [
+            {
+              "key": "mastery",
+              "value": 0,
+              "weight": 60,
+              "contribution": 0,
+              "valid": true
+            },
+            {
+              "key": "participation",
+              "value": 0,
+              "weight": 25,
+              "contribution": 0,
+              "valid": true
+            },
+            {
+              "key": "growth",
+              "value": 0,
+              "weight": 15,
+              "contribution": 0,
+              "valid": true
+            }
+          ]
+        }
+      },
+      {
+        "name": "进步样本不足（应重归一）",
+        "mastery": 80,
+        "participation": 100,
+        "growth": 0,
+        "growthValid": false,
+        "weights": {
+          "mastery": 60,
+          "participation": 25,
+          "growth": 15
+        },
+        "expect": {
+          "total": 86,
+          "weightUsed": 85,
+          "parts": [
+            {
+              "key": "mastery",
+              "value": 80,
+              "weight": 60,
+              "contribution": 56.47,
+              "valid": true
+            },
+            {
+              "key": "participation",
+              "value": 100,
+              "weight": 25,
+              "contribution": 29.41,
+              "valid": true
+            },
+            {
+              "key": "growth",
+              "value": 0,
+              "weight": 15,
+              "contribution": 0,
+              "valid": false
+            }
+          ]
+        }
+      },
+      {
+        "name": "参与为主的权重",
+        "mastery": 0,
+        "participation": 100,
+        "growth": 50,
+        "growthValid": true,
+        "weights": {
+          "mastery": 20,
+          "participation": 60,
+          "growth": 20
+        },
+        "expect": {
+          "total": 70,
+          "weightUsed": 100,
+          "parts": [
+            {
+              "key": "mastery",
+              "value": 0,
+              "weight": 20,
+              "contribution": 0,
+              "valid": true
+            },
+            {
+              "key": "participation",
+              "value": 100,
+              "weight": 60,
+              "contribution": 60,
+              "valid": true
+            },
+            {
+              "key": "growth",
+              "value": 50,
+              "weight": 20,
+              "contribution": 10,
+              "valid": true
+            }
+          ]
+        }
+      },
+      {
+        "name": "全 0 权重（不能除零）",
+        "mastery": 50,
+        "participation": 50,
+        "growth": 50,
+        "growthValid": true,
+        "weights": {
+          "mastery": 0,
+          "participation": 0,
+          "growth": 0
+        },
+        "expect": {
+          "total": 0,
+          "weightUsed": 0,
+          "parts": [
+            {
+              "key": "mastery",
+              "value": 50,
+              "weight": 0,
+              "contribution": 0,
+              "valid": true
+            },
+            {
+              "key": "participation",
+              "value": 50,
+              "weight": 0,
+              "contribution": 0,
+              "valid": true
+            },
+            {
+              "key": "growth",
+              "value": 50,
+              "weight": 0,
+              "contribution": 0,
+              "valid": true
+            }
+          ]
+        }
+      }
+    ]
+  }
 }
