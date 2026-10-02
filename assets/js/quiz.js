@@ -47,6 +47,7 @@
         '<select id="quizSelect" onchange="CI.quizUI.selectQuiz(this.value)">' + opts + '</select>' +
         '<button class="btn btn-plus" onclick="CI.quizUI.newQuiz()">＋ 新建一套题</button>' +
         (qz ? '<button class="btn" onclick="CI.quizUI.drawQuestions()">🎲 随机抽题</button>' : '') +
+        '<button class="btn" onclick="CI.quizUI.createRetest()">🔁 一键重测卷</button>' +
         (qz ? '<button class="btn" onclick="CI.quizUI.renameQuiz()">重命名</button>' : '') +
         (qz ? '<button class="btn" onclick="CI.quizUI.exportCSV()">导出本套流水</button>' : '') +
         (qz && !qz.closedAt ? '<button class="btn btn-minus" onclick="CI.quizUI.closeQuiz()">结束本套题</button>' : '') +
@@ -192,6 +193,31 @@
     var ids = s.bank.filter(function (q) { return q.tier === tierKey; }).map(function (q) { return q.id; });
     if (!ids.length) { alert('该题型下没有题目'); return; }
     CI.store.addQuestionsToQuiz(qz.id, ids);
+    render();
+  }
+
+  /**
+   * 一键生成重测卷（错题重做）
+   *
+   * 把"答对率低于阈值"的题单独组一套新试卷，下一节课或课后直接用 ——
+   * 提取练习是投产比最高的学习机制（Roediger & Karpicke 2006：只做重测不给反馈，
+   * 一周后回忆 61%，重复阅读组读了 14 次也只有 40%）。
+   * 阈值照抄 Kahoot 报告的 Create（答对率 < 35%）。
+   */
+  function createRetest() {
+    var s = CI.store.get();
+    var weak = CI.analysis.retestQuestions(s, {});
+    if (!weak.length) {
+      alert('本节课没有"答对率低于 35%"的题，暂时不需要重测卷（也可以先讲评）');
+      return;
+    }
+    var stamp = new Date().toLocaleDateString('zh-CN');
+    var qz = CI.store.createQuiz('重测 · ' + stamp, weak.map(function (x) { return x.qid; }));
+    if (qz) {
+      CI.store.setCurrentQuiz(qz.id);
+      alert('已生成「' + qz.name + '」：' + weak.length + ' 道题\n' +
+        weak.map(function (x, i) { return (i + 1) + '. ' + x.stem + '（正确率 ' + x.correctRate + '%）'; }).join('\n'));
+    }
     render();
   }
 
@@ -522,6 +548,7 @@
     selectQuiz: selectQuiz, newQuiz: newQuiz, renameQuiz: renameQuiz, closeQuiz: closeQuiz, deleteQuiz: deleteQuiz,
     addSelected: addSelected, addAllTier: addAllTier, addToCurrent: addToCurrent,
     drawQuestions: drawQuestions,
+    createRetest: createRetest,
     setQuestion: setQuestion, moveQuestion: moveQuestion, removeQuestion: removeQuestion,
     setStudent: setStudent, judge: judge, batchQuick: batchQuick,
     removeRecord: removeRecord, exportCSV: exportCSV,

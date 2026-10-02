@@ -1307,6 +1307,33 @@ group('选项分布（错选分布）');
   const dist5 = A.optionDistribution(S.get(), q3.id);
   eq(dist5.length, 2, '没人作答也有结构');
   eq(dist5[0].rate, 0, '全 0（不除零）');
+
+  /* ---- 错题重做：挑出"需要重测"的题 ---- */
+  S.replaceState(S.defaultState());
+  const t1 = S.get().teams[0].id;
+  const s1 = S.addStudent('甲', t1);
+  const s2 = S.addStudent('乙', t1);
+  const hard = S.addQuestion({ stem: '全班都不会的题', tier: 'advanced', answer: 'B' });
+  const easy = S.addQuestion({ stem: '全班都会的题', tier: 'basic', answer: 'A' });
+  const mid = S.addQuestion({ stem: '一半会的题', tier: 'basic', answer: 'A' });
+  const rq = S.createQuiz('本节课', [hard.id, easy.id, mid.id]);
+  S.setCurrentQuiz(rq.id);
+  S.recordResult({ sid: sid(s1), qid: hard.id, tier: 'advanced', result: 'wrong', quizId: rq.id });
+  S.recordResult({ sid: sid(s2), qid: hard.id, tier: 'advanced', result: 'wrong', quizId: rq.id });
+  S.recordResult({ sid: sid(s1), qid: easy.id, tier: 'basic', result: 'correct', quizId: rq.id });
+  S.recordResult({ sid: sid(s2), qid: easy.id, tier: 'basic', result: 'correct', quizId: rq.id });
+  S.recordResult({ sid: sid(s1), qid: mid.id, tier: 'basic', result: 'correct', quizId: rq.id });
+  S.recordResult({ sid: sid(s2), qid: mid.id, tier: 'basic', result: 'wrong', quizId: rq.id });
+
+  const retest = A.retestQuestions(S.get(), {});
+  eq(retest.length, 1, '只有"全班都不会"那道题进了重测（阈值 35%）');
+  eq(retest[0].qid, hard.id, '重测的就是那道难题');
+  eq(retest[0].correctRate, 0, '它的正确率是 0%');
+  // 阈值可调：放宽到 60% 时"一半会"的题也进来
+  const looser = A.retestQuestions(S.get(), { threshold: 0.6 });
+  eq(looser.length, 2, '阈值放宽到 60% → 两道题进重测');
+  // 只看本节课：把范围切到别的试卷就没有了
+  eq(A.retestQuestions(S.get(), { quizId: null }).length, 1, '全部课次范围下仍是那一道');
 })();
 
 /* ================= 汇总 ================= */
