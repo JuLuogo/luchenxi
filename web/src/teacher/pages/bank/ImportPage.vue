@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 题库中心 · 批量导入
  * 解析器直接用 CI.bankUI.parseImport（与旧版同一套规则，已被测试覆盖），
@@ -13,7 +13,7 @@ const store = useClassStore();
 const text = ref('');
 const defTier = ref(store.tiers.length ? store.tiers[0].key : 'basic');
 const dedupe = ref(true);
-const fileInput = ref(null);
+const fileInput = ref<any>(null);
 
 const SAMPLE = [
   '集合 {1,2,3} 的子集个数是？ | 6 ; 8 ; 9 | B',

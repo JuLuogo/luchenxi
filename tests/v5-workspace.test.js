@@ -234,9 +234,10 @@ function walkVue(dir) {
 }
 const vueFiles = walkVue(path.join(ROOT, 'web', 'src'));
 const vueTs = vueFiles.filter((f) => /lang\s*=\s*["']ts["']/.test(fs.readFileSync(f, 'utf8')));
-const VUE_TS_FLOOR = 3;
+const VUE_TS_FLOOR = 24;   // 棘轮已拉满：全部组件都必须是 TS，只许保持
 ok(vueTs.length >= VUE_TS_FLOOR,
-  '组件 TS 化棘轮：至少 ' + VUE_TS_FLOOR + ' 个 <script setup lang="ts">（当前 ' + vueTs.length + '/' + vueFiles.length + '）');
+  '组件 TS 化棘轮：' + VUE_TS_FLOOR + ' 个组件全部是 <script setup lang="ts">（当前 ' + vueTs.length + '/' + vueFiles.length + '）');
+ok(vueTs.length === vueFiles.length, '没有漏网的 JS 组件（共 ' + vueFiles.length + ' 个）');
 ok(fs.existsSync(path.join(ROOT, 'web', 'src', 'shared', 'class-store.ts')), 'Pinia store 已是 TS');
 ok(!fs.existsSync(path.join(ROOT, 'web', 'src', 'shared', 'class-store.js')), '旧的 class-store.js 已删除（不留双份）');
 

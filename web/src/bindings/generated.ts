@@ -292,10 +292,10 @@ export type ScoreRecord = {
 	quizId: string | null,
 	result: string,
 	/**  该题基准分 */
-	base: number | null,
-	ratio: number | null,
+	base: number,
+	ratio: number,
 	/**  实际记入积分（可为负） */
-	points: number | null,
+	points: number,
 	source: string,
 	note: string,
 	at: number,

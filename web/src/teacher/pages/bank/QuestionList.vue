@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 题库中心 · 题目列表
  * 只做"看与选"：筛选、批量选择、加入试卷、删除；新建/编辑走独立子页。
@@ -16,7 +16,7 @@ const keyword = ref('');
 const tierFilter = ref('');
 const typeFilter = ref('');
 const tagFilter = ref('');
-const selected = ref([]);
+const selected = ref<any[]>([]);
 
 const typeLabel = (q) => CI.grade.typeLabel(q);
 

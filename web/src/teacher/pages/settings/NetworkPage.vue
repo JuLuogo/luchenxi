@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 系统设置 · 组网（EasyTier）
  * 配置持久化与命令行拼装直接用 CI.net（与 Rust 侧参数表一致，已被 75 项测试覆盖）；
@@ -11,13 +11,12 @@ import { CI } from '../../../shared/bridge';
 const form = ref(CI.net.cfg());
 const runtime = ref({ running: false, busy: false, error: '', lastArgs: [] });
 const inClient = ref(CI.net.inClient());
-const check = ref(null);
+const check = ref<any>(null);
 
 function persist() {
   form.value = CI.net.saveCfg({ ...form.value });
 }
 
-const args = computed(() => CI.net.buildArgs(persistValue()));
 const cmd = computed(() => CI.net.cmdline(persistValue()));
 
 function persistValue() {

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 数据分析 · 排行榜与导出
  * 榜单一律取 CI.analysis.ranking / teamRanking（口径与旧版一致）；
@@ -27,7 +27,8 @@ const teamAbilityOf = computed(() => {
   return map;
 });
 
-const personOption = computed(() => {
+// ECharts option 是第三方配置形状，逐字段标注收益低：边界处用 any
+const personOption = computed<any>(() => {
   const top = ranking.value.slice(0, 12).slice().reverse();
   return {
     tooltip: { trigger: 'axis' },
@@ -44,7 +45,8 @@ const personOption = computed(() => {
   };
 });
 
-const teamOption = computed(() => ({
+// ECharts option 是第三方配置形状（type 字段会被推成 string），逐字段标注收益低：边界处用 any
+const teamOption = computed<any>(() => ({
   tooltip: { trigger: 'item', formatter: '{b}：{c} 分（{d}%）' },
   series: [{
     type: 'pie',
@@ -55,7 +57,8 @@ const teamOption = computed(() => ({
 }));
 
 /** 分数分布：把个人分档统计，方便看两极分化 */
-const distOption = computed(() => {
+// ECharts option 是第三方配置形状，逐字段标注收益低：边界处用 any
+const distOption = computed<any>(() => {
   const buckets = [
     { label: '0 分', test: (v) => v <= 0 },
     { label: '1–5 分', test: (v) => v > 0 && v <= 5 },

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 教学管理 · 课堂协同（两栏：上方作答控制，下方在线小组 + 抢答/待确认/实时流）
  * 所有写入都走 CI.classroom，前端只负责展示与触发，保证与旧版、学生端、大屏行为一致。
@@ -14,7 +14,6 @@ const timer = setInterval(() => { tick.value += 1; }, 2000);   // 让在线状�
 
 const box = computed(() => { void tick.value; return CI.classroom.box(store.state); });
 const presence = computed(() => { void tick.value; return CI.classroom.presence() || { teams: [], hostOnline: false }; });
-const serverInfo = computed(() => CI.sync.serverInfo() || {});
 const revealed = computed(() => { void tick.value; return CI.classroom.isRevealed(store.state, store.currentQuestion); });
 const accepting = computed(() => !!store.runtime.accepting);
 const currentQ = computed(() => store.currentQuestion);
@@ -217,7 +216,7 @@ onUnmounted(() => { window.removeEventListener('keydown', onKey); clearInterval(
 
           <el-space wrap style="margin-bottom: 12px">
             <el-button size="small" @click="copyJoin">复制学生端地址</el-button>
-            <el-button size="small" @click="window.open('/stage?room=' + CI.sync.room(), '_blank')">打开大屏</el-button>
+            <el-button size="small" @click="openStage()">打开大屏</el-button>
           </el-space>
           <div class="join">{{ joinUrl }}</div>
 

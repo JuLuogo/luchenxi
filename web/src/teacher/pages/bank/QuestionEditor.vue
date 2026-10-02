@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 题库中心 · 新建 / 编辑题目
  * 支持 ?id=xxx 进入编辑态。保存前调用 CI.grade.validateQuestion 做"判分风险"自检。
@@ -14,7 +14,7 @@ const route = useRoute();
 const router = useRouter();
 
 const editingId = ref('');
-const form = ref(blank());
+const form = ref<Record<string, any>>(blank());
 const optionsText = ref('');
 
 function blank() {

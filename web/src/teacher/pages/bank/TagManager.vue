@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 题库中心 · 标签管理
  * 标签是从题目里聚合出来的（store.tags），这里做重命名 / 合并 / 删除这类批量维护。
@@ -6,11 +6,10 @@
 import { computed, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useClassStore } from '../../../shared/class-store';
-import { CI } from '../../../shared/bridge';
 
 const store = useClassStore();
 const keyword = ref('');
-const selected = ref([]);
+const selected = ref<any[]>([]);
 
 const list = computed(() => store.tags.filter((t) => !keyword.value || t.name.indexOf(keyword.value) >= 0));
 
@@ -28,7 +27,7 @@ function tierOf(tag) {
 async function rename(tag) {
   const { value } = await ElMessageBox.prompt('新标签名（会更新所有用到它的题目）', '重命名标签', {
     inputValue: tag.name
-  }).catch(() => ({}));
+  }).catch(() => ({ value: '' }));
   const next = (value || '').trim();
   if (!next || next === tag.name) return;
   let n = 0;
@@ -48,7 +47,7 @@ async function merge(tag) {
   const { value } = await ElMessageBox.prompt(
     '把「' + tag.name + '」合并到哪个标签？\n可选：' + options.map((t) => t.name).join('、'),
     '合并标签'
-  ).catch(() => ({}));
+  ).catch(() => ({ value: '' }));
   const target = (value || '').trim();
   if (!target) return;
   let n = 0;

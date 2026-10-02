@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 班级与积分：队伍 + 学生名单 + 记分。
  * 页面内部再分三块（队伍 / 名单表格 / 分数流水），不再像旧版那样把所有控件平铺。
@@ -11,7 +11,7 @@ const store = useClassStore();
 
 const keyword = ref('');
 const teamFilter = ref('');
-const selected = ref([]);          // 多选的学生 id，用于批量操作
+const selected = ref<any[]>([]);          // 多选的学生 id，用于批量操作
 const detailSid = ref('');         // 右侧抽屉：某个学生的分数明细
 
 const filtered = computed(() => store.students.filter((s) => {
@@ -30,11 +30,11 @@ const drawerRecords = computed(() => (detailSid.value ? store.recordsOf(detailSi
 
 /* ---------- 队伍 ---------- */
 async function addTeam() {
-  const { value } = await ElMessageBox.prompt('队伍名称', '新增队伍', { inputPlaceholder: '例如：第一组' }).catch(() => ({}));
+  const { value } = await ElMessageBox.prompt('队伍名称', '新增队伍', { inputPlaceholder: '例如：第一组' }).catch(() => ({ value: '' }));
   if (value) { store.addTeam(value); ElMessage.success('已新增队伍'); }
 }
 async function renameTeam(t) {
-  const { value } = await ElMessageBox.prompt('队伍名称', '重命名', { inputValue: t.name }).catch(() => ({}));
+  const { value } = await ElMessageBox.prompt('队伍名称', '重命名', { inputValue: t.name }).catch(() => ({ value: '' }));
   if (value) store.updateTeam(t.id, { name: value });
 }
 async function removeTeam(t) {
@@ -58,20 +58,20 @@ function openBulk() {
 function doBulk() {
   const text = bulkText.value.trim();
   if (!text) { ElMessage.warning('请先粘贴名单'); return; }
-  const res = store.addStudentsBulk(text, bulkTeam.value || undefined);
+  const res = store.addStudentsBulk(text, bulkTeam.value || '');
   bulkOpen.value = false;
   ElMessage.success(`已添加 ${(res && res.added) || 0} 名学生`);
 }
 
 async function renameStudent(s) {
-  const { value } = await ElMessageBox.prompt('学生姓名', '重命名', { inputValue: s.name }).catch(() => ({}));
+  const { value } = await ElMessageBox.prompt('学生姓名', '重命名', { inputValue: s.name }).catch(() => ({ value: '' }));
   if (value) store.updateStudent(s.id, { name: value });
 }
 async function moveStudent(s) {
   const list = store.teams.map((t) => `${t.id}｜${t.name}`).join('\n');
   const { value } = await ElMessageBox.prompt(
     '输入要移入的队伍（复制前面的 id）\n' + list, '调整队伍', { inputPlaceholder: 'team id' }
-  ).catch(() => ({}));
+  ).catch(() => ({ value: '' }));
   if (value && store.teams.some((t) => t.id === value.trim())) {
     store.updateStudent(s.id, { teamId: value.trim() });
     ElMessage.success('已调整');
@@ -95,7 +95,7 @@ function quick(sid, tierKey) {
   }
 }
 async function manual(sid) {
-  const { value } = await ElMessageBox.prompt('加多少分？（负数为扣分）', '手动调整', { inputValue: '1' }).catch(() => ({}));
+  const { value } = await ElMessageBox.prompt('加多少分？（负数为扣分）', '手动调整', { inputValue: '1' }).catch(() => ({ value: '' }));
   if (value === undefined || value === '') return;
   const delta = Number(value);
   if (!isFinite(delta) || delta === 0) { ElMessage.error('请输入非 0 数字'); return; }
@@ -113,7 +113,7 @@ async function undo() {
 }
 async function clearAll() {
   await ElMessageBox.confirm('清空全部记分（名单、题库、试卷保留）？此操作不可撤销。', '清空分数', { type: 'warning' })
-    .then(() => { store.clearRecords(); ElMessage.success('已清空'); }).catch(() => {});
+    .then(() => { store.clearRecords({}); ElMessage.success('已清空'); }).catch(() => {});
 }
 
 /* ---------- 批量操作 ---------- */

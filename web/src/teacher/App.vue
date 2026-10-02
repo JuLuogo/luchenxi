@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 教师端外壳：左侧分级菜单 + 顶栏状态 + 路由内容区。
  * 顶栏把「课程名 / 同步状态 / 存储后端 / 房间号 / 学生端地址」这些"全局一眼要看到"的信息固定住，
@@ -27,7 +27,6 @@ const rt = reactive({
   room: '',
   studentUrl: ''
 });
-let runtime = null;
 
 /** 顶栏状态点样式 */
 const syncClass = computed(() => {
@@ -71,7 +70,7 @@ function openStage() {
 }
 
 onMounted(() => {
-  runtime = createRuntime({
+  const runtime = createRuntime({
     onStatus: (info) => {
       rt.statusText = info.statusText;
       rt.statusKind = info.statusKind;
@@ -102,8 +101,10 @@ onMounted(() => {
 const shortcutOpen = ref(false);
 function bindShortcuts() {
   window.addEventListener('keydown', (e) => {
-    const tag = (e.target && e.target.tagName) || '';
-    if (/INPUT|TEXTAREA|SELECT/.test(tag) || (e.target && e.target.isContentEditable)) return;
+    // 事件目标要收窄成元素：EventTarget 上没有 tagName / isContentEditable
+    const el = e.target as HTMLElement | null;
+    const tag = (el && el.tagName) || '';
+    if (/INPUT|TEXTAREA|SELECT/.test(tag) || (el && el.isContentEditable)) return;
     const key = e.key;
 
     // 点名页：1/2/3/4 判分（由 RollPage 内部处理），这里只做全局跳转与课堂控制

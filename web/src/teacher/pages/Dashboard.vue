@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 概览页：只放"现在该干什么"的信息，不放业务操作。
  * 统计口径全部来自 CI.analysis / CI.store，不在界面里重算。
@@ -29,7 +29,7 @@ const steps = computed(() => ([
   { title: '建名单', desc: store.students.length ? `${store.students.length} 名学生 · ${store.teams.length} 支队伍` : '还没有学生', done: store.students.length > 0, to: '/class' },
   { title: '建题库', desc: store.bank.length ? `${store.bank.length} 道题 · ${store.tags.length} 个标签` : '题库为空', done: store.bank.length > 0, to: '/bank' },
   { title: '组一套题', desc: store.quizzes.length ? `${store.quizzes.length} 套试卷` : '还没有试卷', done: store.quizzes.length > 0, to: '/papers' },
-  { title: '开始上课', desc: presence.online ? `${presence.online} 支队伍在线` : '学生端还未入座', done: presence.online > 0, to: '/classroom' }
+  { title: '开始上课', desc: presence.value.online ? `${presence.value.online} 支队伍在线` : '学生端还未入座', done: presence.value.online > 0, to: '/classroom' }
 ]));
 </script>
 

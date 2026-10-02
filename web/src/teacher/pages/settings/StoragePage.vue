@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 系统设置 · 存储与备份
  * 客户端的落库是 Rust 直连 SQLite（invoke），网页版走枢纽 HTTP；这里把状态与兜底动作集中起来。

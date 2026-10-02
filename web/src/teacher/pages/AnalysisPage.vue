@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 数据分析 · 学情分析
  * 数字全部来自 CI.analysis（与旧版同一口径）；图表用 ECharts，本页懒加载。
@@ -41,7 +41,8 @@ const tierRows = computed(() => store.tiers.map((t) => {
   };
 }));
 
-const barOption = computed(() => ({
+// ECharts option 是第三方配置形状：边界处用 any
+const barOption = computed<any>(() => ({
   tooltip: { trigger: 'axis' },
   legend: { data: ['答对', '半对', '答错', '跳过'] },
   grid: { left: 40, right: 20, top: 40, bottom: 30 },
@@ -55,7 +56,8 @@ const barOption = computed(() => ({
   ]
 }));
 
-const rateOption = computed(() => ({
+// ECharts option 是第三方配置形状：边界处用 any
+const rateOption = computed<any>(() => ({
   tooltip: { trigger: 'axis', formatter: '{b}：正确率 {c}%' },
   grid: { left: 40, right: 20, top: 20, bottom: 30 },
   xAxis: { type: 'category', data: tierRows.value.map((t) => t.label) },

@@ -144,9 +144,15 @@ pub struct ScoreRecord {
     pub quiz_id: Option<String>,
     pub result: String,
     /// 该题基准分
+    // 金额字段永远是有限数：显式导成 number，前端不必到处判空
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub base: f64,
+    // 金额字段永远是有限数：显式导成 number，前端不必到处判空
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub ratio: f64,
     /// 实际记入积分（可为负）
+    // 金额字段永远是有限数：显式导成 number，前端不必到处判空
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub points: f64,
     pub source: String,
     pub note: String,

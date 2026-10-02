@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 能力评价面板：按题型画雷达 + 综合评级 + 文字评价（个人 / 队伍 / 全班）。
  *
@@ -31,10 +31,11 @@ const current = computed(() => {
 const classAxes = computed(() => (board.value.class ? board.value.class.axes : []));
 
 /** 雷达图：当前对象一条，全班平均一条做对比 */
-const radarOption = computed(() => {
+// ECharts option 是第三方配置形状：边界处用 any
+const radarOption = computed<any>(() => {
   const axes = classAxes.value;
   const cur = current.value;
-  const series = [];
+  const series: any[] = [];
   if (cur && cur.id !== 'all') {
     series.push({
       value: cur.axes.map((a) => a.rate),

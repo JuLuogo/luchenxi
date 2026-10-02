@@ -1,8 +1,9 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 试卷中心 · 试卷列表
  * 一套试卷 = 一次随堂测的题目集合；「设为当前」后课堂协同页的上一题/下一题就在这套题里移动。
  */
+import type { BankQuestion } from '@/bindings/state';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -13,7 +14,8 @@ const router = useRouter();
 const newName = ref('');
 
 const rows = computed(() => store.quizzes.map((q) => {
-  const qs = (q.questionIds || []).map((id) => store.bank.find((x) => x.id === id)).filter(Boolean);
+  const qs = (q.questionIds || []).map((id) => store.bank.find((x) => x.id === id))
+    .filter((x): x is BankQuestion => !!x);
   const records = q.records || [];
   const total = qs.reduce((a, x) => a + store.questionPoints(x), 0);
   const answered = new Set(records.map((r) => r.sid)).size;
@@ -40,11 +42,12 @@ function create() {
 }
 
 async function rename(row) {
-  const { value } = await ElMessageBox.prompt('试卷名称', '重命名', { inputValue: row.name }).catch(() => ({}));
+  const { value } = await ElMessageBox.prompt('试卷名称', '重命名', { inputValue: row.name }).catch(() => ({ value: '' }));
   if (value) store.updateQuiz(row.id, { name: value });
 }
 function duplicate(row) {
   const src = store.quizzes.find((q) => q.id === row.id);
+  if (!src) return;
   const quiz = store.createQuiz(row.name + '（副本）', (src.questionIds || []).slice(), src.note || '');
   ElMessage.success('已复制为：' + quiz.name);
 }

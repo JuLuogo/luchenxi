@@ -1,17 +1,20 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 系统设置 · 房间与大屏
  * 房间号决定"谁能看到谁"；学生端地址与二维码都在这里集中管理（旧版散在课堂协同页顶部）。
  */
 import { computed, onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { useClassStore } from '../../../shared/class-store';
 import { CI } from '../../../shared/bridge';
 
-const store = useClassStore();
 const roomInput = ref(CI.sync.room());
 const info = ref(CI.sync.serverInfo());
 const qrFailed = ref(false);
+
+/** 新窗口打开大屏：模板作用域里拿不到 window，必须走 setup 函数 */
+function openStage(): void {
+  window.open(stageUrl.value, '_blank');
+}
 
 const studentUrl = computed(() => {
   try { return CI.sync.joinURL(window.location.origin); } catch (e) { return ''; }
@@ -49,7 +52,7 @@ const addresses = computed(() => {
       </div>
       <div class="actions">
         <el-button @click="copy(stageUrl, '大屏地址')">复制大屏地址</el-button>
-        <el-button type="primary" @click="window.open(stageUrl, '_blank')">打开大屏</el-button>
+        <el-button type="primary" @click="openStage()">打开大屏</el-button>
       </div>
     </div>
 

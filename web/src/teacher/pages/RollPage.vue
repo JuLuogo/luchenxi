@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 教学管理 · 随机点名（简洁模式）
  * 只显示姓名的大字号区域 + 快捷判分；判分后自动进入下一人，课堂节奏最紧。
@@ -10,8 +10,8 @@ import { useClassStore } from '../../shared/class-store';
 import { CI } from '../../shared/bridge';
 
 const store = useClassStore();
-const current = ref(null);          // { sid, name, teamName }
-const history = ref([]);            // 本次课堂的点名顺序
+const current = ref<any>(null);          // { sid, name, teamName }
+const history = ref<any[]>([]);            // 本次课堂的点名顺序
 const settings = ref({ ...store.state.rollcall });
 
 /** 候选池预览（让学生知道还有多少人没被点到） */

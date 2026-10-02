@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 系统设置 · 关于与文档
  * 把"当前跑在什么环境里"讲清楚，减少排障时间（浏览器 / 客户端、协议版本、数据落点）。
@@ -6,7 +6,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { CI } from '../../../shared/bridge';
 
-const info = ref({});
+const info = ref<Record<string, any>>({});
 const settings = computed(() => CI.store.get().settings || {});
 
 onMounted(() => {
@@ -54,8 +54,6 @@ onMounted(() => {
           <h3 class="panel-title">课程信息</h3>
           <el-descriptions :column="1" border size="small">
             <el-descriptions-item label="课程名">{{ settings.courseName }}</el-descriptions-item>
-            <el-descriptions-item label="班级">{{ settings.className || '—' }}</el-descriptions-item>
-            <el-descriptions-item label="教师">{{ settings.teacher || '—' }}</el-descriptions-item>
           </el-descriptions>
           <div class="hint">课程信息可在「班级与积分」页顶部修改（第二批开放内联编辑）。</div>
         </div>

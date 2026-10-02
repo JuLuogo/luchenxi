@@ -1,8 +1,9 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 试卷中心 · 组卷编辑器（左库右卷 + 一键抽题）
  * 左侧从题库筛选勾选，右侧是当前试卷；支持上移/下移排序、移除、一键按题型抽题。
  */
+import type { BankQuestion } from '@/bindings/state';
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -15,7 +16,8 @@ const router = useRouter();
 const quizId = computed(() => String(route.params.id || ''));
 const quiz = computed(() => store.quizzes.find((q) => q.id === quizId.value) || null);
 const ids = computed(() => (quiz.value ? quiz.value.questionIds || [] : []));
-const picked = computed(() => ids.value.map((id) => store.bank.find((q) => q.id === id)).filter(Boolean));
+const picked = computed<BankQuestion[]>(() => ids.value.map((id) => store.bank.find((q) => q.id === id))
+  .filter((x): x is BankQuestion => !!x));
 
 /* ---------- 左侧筛选 ---------- */
 const keyword = ref('');
@@ -31,7 +33,7 @@ const available = computed(() => store.bank.filter((q) => {
   return true;
 }));
 
-const checked = ref([]);
+const checked = ref<any[]>([]);
 function addChecked() {
   if (!checked.value.length) { ElMessage.warning('先在左侧勾选题目'); return; }
   const res = store.addQuestionsToQuiz(quizId.value, checked.value.slice());
@@ -64,7 +66,7 @@ function clearAll() {
 
 /* ---------- 一键抽题 ---------- */
 const drawOpen = ref(false);
-const drawCount = ref({});
+const drawCount = ref<Record<string, any>>({});
 function openDraw() {
   const init = {};
   store.tiers.forEach((t, i) => { init[t.key] = i < 2 ? 1 : 0; });
@@ -103,10 +105,12 @@ const byTier = computed(() => store.tiers.map((t) => ({
 })).filter((x) => x.count > 0));
 
 function rename() {
+  if (!quiz.value) return;
   ElMessageBox.prompt('试卷名称', '重命名', { inputValue: quiz.value.name })
     .then(({ value }) => { if (value) store.updateQuiz(quizId.value, { name: value }); }).catch(() => {});
 }
 function saveNote() {
+  if (!quiz.value) return;
   ElMessageBox.prompt('试卷说明（例如：覆盖集合与函数，含 2 道拔高）', '试卷说明', { inputValue: quiz.value.note || '' })
     .then(({ value }) => store.updateQuiz(quizId.value, { note: value || '' })).catch(() => {});
 }
