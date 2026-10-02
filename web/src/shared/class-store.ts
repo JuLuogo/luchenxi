@@ -11,7 +11,14 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { CI } from './bridge';
-import type { ClassroomState, Question, ScoreRecord, Student, Team, Tier } from '@/bindings/state';
+import type {
+  BankQuestion,
+  ClassroomState,
+  ScoreRecord,
+  Student,
+  Team,
+  Tier
+} from '@/bindings/state';
 
 type Timer = ReturnType<typeof setTimeout> | null;
 
@@ -36,7 +43,7 @@ export const useClassStore = defineStore('class', () => {
     (state.value.teams || []).slice().sort((a, b) => (a.order || 0) - (b.order || 0))
   );
   const students = computed<Student[]>(() => state.value.students || []);
-  const bank = computed<Question[]>(() => state.value.bank || []);
+  const bank = computed<BankQuestion[]>(() => state.value.bank || []);
   const quizzes = computed(() => state.value.quizzes || []);
   const runtime = computed(() => state.value.runtime || ({} as ClassroomState['runtime']));
   const logs = computed(() => (state.value.logs || []).slice(-200).reverse());
@@ -48,9 +55,8 @@ export const useClassStore = defineStore('class', () => {
   /** 全部标签（含出现次数，供标签管理页用） */
   const tags = computed(() => {
     const map = new Map<string, number>();
-    bank.value.forEach((q) =>
-      (q as Question & { tags?: string[] }).tags?.forEach((t) => map.set(t, (map.get(t) || 0) + 1))
-    );
+    // tags 现在是 Rust 生成的类型（BankQuestion.tags: string[]），不需要再断言
+    bank.value.forEach((q) => (q.tags || []).forEach((t) => map.set(t, (map.get(t) || 0) + 1)));
     return [...map.entries()]
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh'));
@@ -64,7 +70,7 @@ export const useClassStore = defineStore('class', () => {
   const recordsOf = (sid: string): ScoreRecord[] =>
     (CI.store.recordsOf(state.value, sid) as ScoreRecord[]).slice().reverse();
   const describeRecord = (rec: ScoreRecord): string => CI.store.describeRecord(state.value, rec);
-  const questionPoints = (q: Question): number => CI.store.questionPoints(state.value, q);
+  const questionPoints = (q: BankQuestion): number => CI.store.questionPoints(state.value, q);
   const lastRecord = (): ScoreRecord | null => CI.store.lastRecord(state.value);
   const answeredAlready = (qid: string, sid: string): boolean =>
     CI.store.answeredAlready(state.value, currentQuiz.value ? currentQuiz.value.id : '', qid, sid);

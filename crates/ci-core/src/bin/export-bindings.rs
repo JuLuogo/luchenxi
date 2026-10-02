@@ -17,6 +17,10 @@ fn collect() -> specta::Types {
     };
     use ci_domain::grade::Question;
     use ci_domain::scoring::{ScoreSnapshot, ScoringSettings, Tier};
+    use ci_domain::state::{
+        BankQuestion, ClassroomBox, ClassroomState, LogItem, Quiz, RollHistoryEntry, RollcallState,
+        ScoreRecord, Settings, Student, Team,
+    };
 
     specta::Types::default()
         // 课堂状态与角色
@@ -39,6 +43,18 @@ fn collect() -> specta::Types {
         .register::<CmdResult>()
         .register::<ScoreRequest>()
         .register::<TeamStat>()
+        // 整份课堂状态（前端最核心的类型：CI.store.get() 的返回形状）
+        .register::<ClassroomState>()
+        .register::<Settings>()
+        .register::<Team>()
+        .register::<Student>()
+        .register::<BankQuestion>()
+        .register::<ScoreRecord>()
+        .register::<Quiz>()
+        .register::<RollcallState>()
+        .register::<RollHistoryEntry>()
+        .register::<LogItem>()
+        .register::<ClassroomBox>()
         // 能力评价（雷达图与画像）
         .register::<Ability>()
         .register::<Axis>()

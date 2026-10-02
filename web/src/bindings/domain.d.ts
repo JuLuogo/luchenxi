@@ -37,11 +37,13 @@ declare global {
   var CI: DomainApi;
   /** 学生端领域层（assets/js/student.js） */
   // eslint-disable-next-line no-var
-  var CIStudent: Record<string, unknown> & { init?: () => void };
+  /** 学生端领域层（assets/js/student.js）—— 同样是 JS，边界先宽松 */
+  // eslint-disable-next-line no-var
+  var CIStudent: any;
 
   interface Window {
     CI: DomainApi;
-    CIStudent: typeof CIStudent;
+    CIStudent: any;
   }
 }
 

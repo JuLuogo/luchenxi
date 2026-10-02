@@ -221,6 +221,25 @@ const ciLocalP3 = read('scripts/ci-local.mjs');
 ok(/前端类型检查（vue-tsc）/.test(ciLocalP3), 'CI 有「前端类型检查」步骤');
 ok(/export-bindings/.test(ciLocalP3) && /--check/.test(ciLocalP3), 'CI 有「类型绑定一致性」步骤');
 
+
+/* 组件 TS 化棘轮：已转的不能退回 JS（迁移只能前进） */
+function walkVue(dir) {
+  let out = [];
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const q = path.join(dir, e.name);
+    if (e.isDirectory()) out = out.concat(walkVue(q));
+    else if (e.name.endsWith('.vue')) out.push(q);
+  }
+  return out;
+}
+const vueFiles = walkVue(path.join(ROOT, 'web', 'src'));
+const vueTs = vueFiles.filter((f) => /lang\s*=\s*["']ts["']/.test(fs.readFileSync(f, 'utf8')));
+const VUE_TS_FLOOR = 3;
+ok(vueTs.length >= VUE_TS_FLOOR,
+  '组件 TS 化棘轮：至少 ' + VUE_TS_FLOOR + ' 个 <script setup lang="ts">（当前 ' + vueTs.length + '/' + vueFiles.length + '）');
+ok(fs.existsSync(path.join(ROOT, 'web', 'src', 'shared', 'class-store.ts')), 'Pinia store 已是 TS');
+ok(!fs.existsSync(path.join(ROOT, 'web', 'src', 'shared', 'class-store.js')), '旧的 class-store.js 已删除（不留双份）');
+
 console.log('\n' + '-'.repeat(44));
 if (failures.length) {
   console.log('❌ 失败 ' + failures.length + ' 项 / 通过 ' + passed + ' 项');

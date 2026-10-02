@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 大屏能力雷达（浅色主题）：全班 + 各队叠加对比，一眼看出哪队"基础薄弱 / 拔高强"。
  * 参考 ClassDojo 的"技能矩阵"与希沃的多维度评价：不只给分数，而是给出维度画像与文案评价。
@@ -8,13 +8,13 @@ import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 
 const props = defineProps({ ability: { type: Object, required: true } });
 
-const box = ref(null);
-const chart = shallowRef(null);
-let echarts = null;
+const box = ref<any>(null);
+const chart = shallowRef<any>(null);
+let echarts: any = null;
 
 function option() {
   const axes = props.ability.axes || [];
-  const series = [];
+  const series: any[] = [];
   (props.ability.teams || []).forEach((t) => {
     series.push({
       name: t.name,

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 学生端（移动优先，Vant）
  *
@@ -14,7 +14,7 @@ import { CIStudent } from './bridge-student';
 
 const ready = ref(false);
 const boardMode = ref(false);
-const st = ref({});
+const st = ref<Record<string, any>>({});
 const hostInput = ref('');
 const textDraft = ref('');
 const tab = ref('qa');          // qa | score
@@ -24,7 +24,7 @@ function refresh() {
   ready.value = true;
 }
 
-let off = null;
+let off: (() => void) | null = null;
 onMounted(() => {
   boardMode.value = CIStudent.boardMode();
   hostInput.value = CIStudent.state().host || '';
@@ -51,14 +51,12 @@ const meStudent = computed(() => {
 const selected = computed(() => st.value.selected || []);
 const submitted = computed(() => st.value.submitted);
 const buzzed = computed(() => st.value.buzzed);
-const phase = computed(() => meta.value.phase || 'idle');
 const phaseLabel = computed(() => meta.value.phaseLabel || '待机');
 
 /** 其他队答对多少（教师端在快照 meta 里算好，学生端直接用） */
 const otherTeams = computed(() => ((meta.value.teamStats) || [])
   .filter((t) => t.teamId !== 'all' && t.teamId !== st.value.teamId)
   .sort((a, b) => b.correct - a.correct));
-const myTeamStat = computed(() => ((meta.value.teamStats) || []).find((t) => t.teamId === st.value.teamId) || null);
 const classStat = computed(() => ((meta.value.teamStats) || []).find((t) => t.teamId === 'all') || null);
 
 /** 我答对了几道（本轮课堂） */

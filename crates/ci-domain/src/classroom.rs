@@ -69,6 +69,7 @@ impl Phase {
 /// 环节相关的运行态（对应 state.runtime 里与课堂有关的部分）
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Runtime {
     #[serde(default)]
     pub phase: String,
@@ -166,6 +167,7 @@ fn apply_phase(rt: &mut Runtime, phase: Phase, quiz_first_qid: Option<&str>, ban
 
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ClassStudent {
     pub id: String,
     pub name: String,
@@ -181,6 +183,7 @@ fn default_true() -> bool {
 
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ClassTeam {
     pub id: String,
     pub name: String,
@@ -244,6 +247,7 @@ fn team_name(teams: &[ClassTeam], tid: Option<&str>) -> String {
 /// 实时流条目（教师端右上角滚动显示）
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FeedItem {
     pub kind: String,
     #[serde(default)]
@@ -275,6 +279,7 @@ pub fn push_feed(feed: &mut Vec<FeedItem>, item: FeedItem) {
 
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Buzz {
     pub team_id: String,
     #[serde(default)]
@@ -290,6 +295,7 @@ pub const BUZZ_CAP: usize = 40;
 /// 抢答结果
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BuzzOutcome {
     /// 同一队同一题重复抢答被忽略
     pub dup: bool,
@@ -337,6 +343,7 @@ pub fn add_buzz(
 /// 待确认提交（主观题由老师判定）
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Pending {
     pub sid: String,
     #[serde(default)]
@@ -367,6 +374,7 @@ pub fn add_pending(pending: &mut Vec<Pending>, item: Pending) {
 /// 学生命令（对应 cmd.kind = hello | buzz | answer）
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StudentCmd {
     pub kind: String,
     #[serde(default)]
@@ -388,6 +396,7 @@ pub struct StudentCmd {
 /// 记分请求（由存储层执行：写流水 + 落库）
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ScoreRequest {
     pub sid: String,
     pub qid: Option<String>,
@@ -674,6 +683,7 @@ pub fn finalize_feed(feed: &mut FeedItem, snapshot: &ScoreSnapshot, students: &[
 
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TeamStat {
     #[serde(rename = "teamId")]
     pub team_id: String,
@@ -742,6 +752,7 @@ pub fn team_stats(
 /// 大屏/学生端的"能力画像"打包
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AbilityPack {
     pub id: String,
     pub name: String,
@@ -762,6 +773,7 @@ pub struct AbilityPack {
 
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GradePack {
     pub key: String,
     pub short: String,
@@ -771,6 +783,7 @@ pub struct GradePack {
 
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AxisPack {
     pub key: String,
     pub label: String,
@@ -782,6 +795,7 @@ pub struct AxisPack {
 
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AxisBrief {
     pub label: String,
     #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]

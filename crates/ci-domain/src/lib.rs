@@ -16,6 +16,7 @@ pub mod classroom;
 pub mod grade;
 pub mod rollcall;
 pub mod scoring;
+pub mod state;
 
 pub use ability::{
     ability_comment, ability_of_tiers, grade_by_key, pct, Ability, Axis, Bucket, Grade, TierStat,
@@ -34,6 +35,10 @@ pub use classroom::{
     set_phase, set_phase_named, team_stats, tier_key_default, AbilityPack, Buzz, BuzzOutcome,
     ClassStudent, ClassTeam, CmdOutcome, CmdResult, FeedItem, Pending, Phase, Runtime, ScoreRequest,
     StudentCmd, TeamStat, PHASES,
+};
+pub use state::{
+    BankQuestion, ClassroomBox, ClassroomState, LogItem, Quiz, RollcallState, RollHistoryEntry,
+    ScoreRecord, Settings, Student as StateStudent, Team,
 };
 pub use grade::{
     answer_key, auto, describe_submission, normalize_text, parse_choice, validate_question,

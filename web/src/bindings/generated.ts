@@ -69,8 +69,24 @@ export type AxisPack = {
 	attempts: number,
 };
 
+/**  题库里的完整题目 */
+export type BankQuestion = {
+	id: string,
+	tier: string,
+	/**  自定义分值；None 表示取题型权重 */
+	points: number | null,
+	stem: string,
+	answer: string,
+	options: string[],
+	tags: string[],
+	source: string,
+	note: string,
+	archived: boolean,
+	createdAt: number,
+};
+
 export type Buzz = {
-	team_id: string,
+	teamId: string,
 	qid?: string | null,
 	sid?: string | null,
 	at: number,
@@ -80,13 +96,13 @@ export type Buzz = {
 export type BuzzOutcome = {
 	/**  同一队同一题重复抢答被忽略 */
 	dup: boolean,
-	team_name: string,
+	teamName: string,
 };
 
 export type ClassStudent = {
 	id: string,
 	name: string,
-	team_id?: string | null,
+	teamId?: string | null,
 	active?: boolean,
 };
 
@@ -96,7 +112,34 @@ export type ClassTeam = {
 	color?: string,
 	icon?: string,
 	/**  全员 id（用于"队伍里没有成员"判断与取第一个成员） */
-	member_ids?: string[],
+	memberIds?: string[],
+};
+
+/**  课堂协同的即时状态（`state.classroom`，由 classroom.js 懒创建） */
+export type ClassroomBox = {
+	buzz: Buzz[],
+	pending: Pending[],
+	feed: FeedItem[],
+};
+
+/**  整份课堂状态（`CI.store.get()` 的返回形状） */
+export type ClassroomState = {
+	version: number,
+	rev: number,
+	updatedAt: number,
+	settings: Settings,
+	tiers: Tier[],
+	tags: string[],
+	teams: Team[],
+	students: Student[],
+	bank: BankQuestion[],
+	quizzes: Quiz[],
+	currentQuizId: string | null,
+	rollcall: RollcallState,
+	logs: LogItem[],
+	/**  运行时上下文（本地记忆，不参与同步） */
+	runtime: Runtime,
+	classroom: ClassroomBox,
 };
 
 /**  命令处理结果（对应 JS handleCmd 的返回值，外加要落库的副作用） */
@@ -132,7 +175,7 @@ export type CmdResult = {
 /**  实时流条目（教师端右上角滚动显示） */
 export type FeedItem = {
 	kind: string,
-	team_id?: string | null,
+	teamId?: string | null,
 	sid?: string | null,
 	qid?: string | null,
 	result?: string | null,
@@ -159,12 +202,21 @@ export type GradePack = {
 	color: string,
 };
 
+/**  审计日志 */
+export type LogItem = {
+	id: string,
+	/**  日志类型（"添加学生"/"课堂环节"/"抢答"…） */
+	type?: string,
+	detail: string,
+	at: number,
+};
+
 /**  待确认提交（主观题由老师判定） */
 export type Pending = {
 	sid: string,
-	team_id?: string | null,
+	teamId?: string | null,
 	qid?: string | null,
-	quiz_id?: string | null,
+	quizId?: string | null,
 	/**  提交内容可读化后的文本 */
 	answer: string,
 	backlog?: boolean,
@@ -183,15 +235,72 @@ export type Question = {
 	points?: number | null,
 };
 
+/**  试卷 */
+export type Quiz = {
+	id: string,
+	name: string,
+	note: string,
+	createdAt: number,
+	/**  0 表示未关闭 */
+	closedAt: number,
+	questionIds: string[],
+	/**  本套题的流水（与全局 records 是同一批数据的两处索引） */
+	records: ScoreRecord[],
+};
+
+/**  一次点名记录 */
+export type RollHistoryEntry = {
+	id: string,
+	sid: string,
+	at: number,
+	quizId: string | null,
+	qid: string | null,
+};
+
+/**  点名设置与轮次池（`state.rollcall`） */
+export type RollcallState = {
+	/**  even=轮次池均匀 / random=纯随机 / least=最少被点优先 */
+	mode: string,
+	/**  'all' 或队伍 id */
+	scope: string,
+	excludeAnswered: boolean,
+	recentExclude: number,
+	history: RollHistoryEntry[],
+	/**  本轮尚未被点到的学生 id */
+	roundPool: string[],
+	round: number,
+};
+
 /**  环节相关的运行态（对应 state.runtime 里与课堂有关的部分） */
 export type Runtime = {
 	phase?: string,
-	quiz_id?: string | null,
+	quizId?: string | null,
 	qid?: string | null,
 	accepting?: boolean,
 	reveal?: boolean,
 	/**  当前被点到的学生（点名环节大屏用） */
 	sid?: string | null,
+};
+
+/**  一条积分流水（与 `store.js` 的 `normalizeRecord` 字段一致） */
+export type ScoreRecord = {
+	id: string,
+	sid: string | null,
+	qid: string | null,
+	/**  计分时的题型快照（题干/权重改动不影响历史） */
+	tier: string,
+	quizId: string | null,
+	result: string,
+	/**  该题基准分 */
+	base: number | null,
+	ratio: number | null,
+	/**  实际记入积分（可为负） */
+	points: number | null,
+	source: string,
+	note: string,
+	at: number,
+	/**  操作来源页签，便于排查 */
+	by: string,
 };
 
 /**  记分请求（由存储层执行：写流水 + 落库） */
@@ -223,16 +332,56 @@ export type ScoringSettings = {
 	wrong_penalty?: number | null,
 };
 
+/**  课堂设置（`state.settings` 全集） */
+export type Settings = {
+	courseName: string,
+	/**  部分正确计分系数 */
+	halfRatio: number | null,
+	/**  答错扣分（正数表示扣多少分） */
+	wrongPenalty: number | null,
+	/**  抢答额外加分（仅"答对"时生效） */
+	fastBonus: number | null,
+	/**  正确率低于该值 → 薄弱 */
+	weakThreshold: number | null,
+	/**  正确率高于该值 → 优势 */
+	strongThreshold: number | null,
+	/**  判定薄弱/优势所需最少作答次数 */
+	minSample: number,
+};
+
+/**
+ *  学生（持久化实体）
+ * 
+ *  `called` 是"被点名次数"，与 `rollcall::Student` 的对应字段一致；
+ *  之所以这里也要带上，是因为教师端名单页会直接读它。
+ */
+export type Student = {
+	id: string,
+	name: string,
+	teamId: string | null,
+	active: boolean,
+	joinedAt: number,
+	called: number,
+};
+
 /**  学生命令（对应 cmd.kind = hello | buzz | answer） */
 export type StudentCmd = {
 	kind: string,
-	team_id?: string | null,
+	teamId?: string | null,
 	sid?: string | null,
 	qid?: string | null,
 	choice?: string[],
 	text?: string | null,
 	skip?: boolean,
 	backlog?: boolean,
+};
+
+export type Team = {
+	id: string,
+	name: string,
+	icon: string,
+	color: string,
+	order: number,
 };
 
 export type TeamStat = {

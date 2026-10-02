@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 教室大屏（只读）· 浅色主题
  *
@@ -12,12 +12,13 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import StageRadar from './StageRadar.vue';
 
-const state = ref(null);
+const state = ref<any>(null);
 const status = ref('连接中…');
 const connected = ref(false);
 const tick = ref(0);
-let timer = null;
-let ws = null;
+/** 定时器与连接：显式标注可空，避免 TS 把 null 推断成 never */
+let timer: ReturnType<typeof setInterval> | null = null;
+let ws: WebSocket | null = null;
 let retry = 0;
 
 const ROOM = (() => {
@@ -37,19 +38,22 @@ const HOST = (() => {
 })();
 
 function connect() {
-  try { ws = new WebSocket('ws://' + HOST + '/?room=' + encodeURIComponent(ROOM) + '&role=stage'); }
-  catch (e) { status.value = '地址无效：' + e.message; return; }
-  ws.onopen = () => { connected.value = true; status.value = '已连接 ' + HOST; retry = 0; };
-  ws.onclose = () => {
+  let sock: WebSocket;
+  try { sock = new WebSocket('ws://' + HOST + '/?room=' + encodeURIComponent(ROOM) + '&role=stage'); }
+  catch (e) { status.value = '地址无效：' + (e as Error).message; return; }
+  ws = sock;
+  sock.onopen = () => { connected.value = true; status.value = '已连接 ' + HOST; retry = 0; };
+  sock.onclose = () => {
     connected.value = false;
     retry += 1;
     status.value = '已断开，' + Math.min(5, retry) + ' 秒后重连…';
     setTimeout(connect, Math.min(5000, 800 * retry));
   };
-  ws.onerror = () => { status.value = '连接异常'; };
-  ws.onmessage = (ev) => {
-    let msg = null;
-    try { msg = JSON.parse(ev.data); } catch (e) { return; }
+  sock.onerror = () => { status.value = '连接异常'; };
+  sock.onmessage = (ev) => {
+    let msg: any = null;
+    try { msg = JSON.parse(String(ev.data)); } catch (e) { return; }
+    if (!msg) return;
     if (msg.type === 'welcome') status.value = '已连接 · 房间 ' + (msg.room || ROOM);
     if (msg.type === 'state' && msg.payload) state.value = msg.payload;
   };
@@ -62,11 +66,11 @@ const phase = computed(() => meta.value.phase || 'idle');
  * 之前读 state.question 导致"出题作答"环节一直显示"还没有选择题目"——留顶层兜底以防旧数据。
  */
 const question = computed(() => meta.value.question || (state.value && state.value.question) || null);
-const teams = computed(() => ((state.value && state.value.teams) || []).slice().sort((a, b) => b.score - a.score));
-const students = computed(() => ((state.value && state.value.students) || []).slice().sort((a, b) => b.score - a.score));
-const teamStats = computed(() => (meta.value.teamStats || []).filter((t) => t.teamId !== 'all'));
+const teams = computed<any[]>(() => ((state.value && state.value.teams) || []).slice().sort((a, b) => b.score - a.score));
+const students = computed<any[]>(() => ((state.value && state.value.students) || []).slice().sort((a, b) => b.score - a.score));
+const teamStats = computed<any[]>(() => (meta.value.teamStats || []).filter((t) => t.teamId !== 'all'));
 const ability = computed(() => meta.value.ability || null);
-const buzz = computed(() => (meta.value.buzz || []).slice(0, 5));
+const buzz = computed<any[]>(() => (meta.value.buzz || []).slice(0, 5));
 const courseName = computed(() => (state.value && state.value.courseName) || '课堂积分');
 const revealed = computed(() => !!meta.value.reveal);
 const joinUrl = computed(() => 'http://' + HOST + '/join?room=' + encodeURIComponent(ROOM));
