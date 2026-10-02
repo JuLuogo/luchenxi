@@ -211,7 +211,11 @@ jobs:
         run: |
           if [ -f android-build.log ]; then
             grep -A 5 "What went wrong" android-build.log \
-              | head -10 | while IFS= read -r l; do echo "::error::$l"; done || true
+              | head -6 | while IFS= read -r l; do echo "::error::$l"; done || true
+            # 真因在 npm 的 stderr 里：Gradle 的 rust 任务跑
+            # "npm run -- tauri android android-studio-script …"，退出前 CLI 打的那几行
+            grep -B 4 "non-zero exit value" android-build.log \
+              | head -4 | while IFS= read -r l; do echo "::error::【npm 输出】$l"; done || true
           else
             echo "::error::没有 android-build.log（失败发生在更早的步骤）"
           fi
@@ -279,11 +283,17 @@ jobs:
         run: |
           set -o pipefail
           ls -R dist | head -30
+          # 只上传真正的安装包文件（dist/** 会把 download-artifact 的**目录**也传进去，
+          # gh 会报 "read dist/student: is a directory" —— v4.1.2 就是这么失败的）
+          find dist -type f \( -name '*.msi' -o -name '*.exe' -o -name '*.dmg' \
+            -o -name '*.appimage' -o -name '*.deb' -o -name '*.apk' \) -print > assets.txt
+          sort assets.txt
+          test -s assets.txt || { echo "::error::没有找到任何安装包文件"; exit 1; }
           gh release create "${{ github.ref_name }}" \
             --title "课堂积分 ${{ github.ref_name }}" \
             --notes "v5 迁移版：Rust 核心（ci-protocol/ci-domain/ci-store/ci-hub/ci-core）+ Vue3 全量 TS 展示层。详见仓库 docs/14。" \
             --draft \
-            dist/** 2>&1 | tee release.log
+            $(cat assets.txt) 2>&1 | tee release.log
 
       - name: 失败时把 Release 的错误写成注解
         if: failure()
