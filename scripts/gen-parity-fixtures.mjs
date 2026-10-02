@@ -698,6 +698,177 @@ qsCase('默认 halfRatio（0.5）');
 qsCase('halfRatio 改为 0.4（掌握度跟着变）', 0.4);
 
 
+
+/* ---------- 用例集：错题本（analysis.js::studentMistakes）---------- */
+const mistakeCases = [];
+
+function mkMistakeCase(name, halfRatio) {
+  globalThis.localStorage.clear();
+  S.replaceState(S.defaultState());
+  const teams = S.get().teams;
+  const a = S.addStudent('甲', teams[0].id);
+  const b = S.addStudent('乙', teams[0].id);
+  const c = S.addStudent('丙', teams[1].id);
+  const sid = (x) => (typeof x === 'string' ? x : x.id);
+  if (halfRatio !== undefined) S.updateSettings({ halfRatio });
+
+  const q1 = S.addQuestion({ stem: '第一题：1+1=?', tier: 'basic', options: ['甲', '乙'], answer: 'A' });
+  const q2 = S.addQuestion({ stem: '第二题：求导', tier: 'advanced', answer: '2x' });
+  const qz = S.createQuiz('随堂测', [q1.id, q2.id]);
+
+  // 甲：q1 错两次（最后一次 B）、q2 跳过；乙：q1 错一次；丙：q1 对、q2 半对
+  S.recordResult({ sid: sid(a), qid: q1.id, tier: 'basic', result: 'wrong', quizId: qz.id, note: 'A. 甲' });
+  S.recordResult({ sid: sid(a), qid: q1.id, tier: 'basic', result: 'wrong', quizId: qz.id, note: 'B. 乙' });
+  S.recordResult({ sid: sid(a), qid: q2.id, tier: 'advanced', result: 'skip', quizId: qz.id, note: '跳过' });
+  S.recordResult({ sid: sid(b), qid: q1.id, tier: 'basic', result: 'wrong', quizId: qz.id, note: 'B. 乙' });
+  S.recordResult({ sid: sid(c), qid: q1.id, tier: 'basic', result: 'correct', quizId: qz.id, note: 'A. 甲' });
+  S.recordResult({ sid: sid(c), qid: q2.id, tier: 'advanced', result: 'half', quizId: qz.id, note: 'x' });
+
+  // 时间戳归一化：同一毫秒内的多条流水 at 相同，会让"最后一次"与映射都失真 ——
+  // 直接改状态里的 at 为序号（输入与输出就都用这套稳定值了）
+  CI.store.tx('normalize-at', function (s) {
+    let k = 0;
+    (s.quizzes || []).forEach((qz2) => (qz2.records || []).forEach((r) => { k += 1; r.at = k; }));
+  }, {});
+
+  const students = S.get().students;
+  const idx = (idv) => students.findIndex((x) => x.id === idv);
+  const qIdx = (idv) => [q1, q2].findIndex((x) => x.id === idv);
+
+  // 只取"甲"的错题本（单人也测，全班榜也测）
+  const one = CI.analysis.studentMistakes(S.get(), sid(a));
+  const board = CI.analysis.mistakeBoard(S.get());
+  const norm = (m) => ({
+    sid: 's' + (idx(m.sid) + 1),
+    name: m.name,
+    teamName: m.teamName,
+    tiers: m.tiers,
+    items: m.items.map((it) => ({
+      qid: 'q' + (qIdx(it.qid) + 1),
+      stem: it.stem,
+      tier: it.tier,
+      tierLabel: it.tierLabel,
+      result: it.result,
+      answer: it.answer,
+      expected: it.expected,
+      at: it.at,
+      count: it.count
+    }))
+  });
+
+  mistakeCases.push({
+    name,
+    halfRatio: Number(S.get().settings.halfRatio),
+    tiers: S.get().tiers.map((x) => ({ key: x.key, label: x.label })),
+    students: students.map((s, i) => ({ id: 's' + (i + 1), name: s.name, teamId: 'tm' + (teams.findIndex((x) => x.id === s.teamId) + 1) })),
+    teams: teams.map((x, i) => ({ id: 'tm' + (i + 1), name: x.name })),
+    bank: [q1, q2].map((q, i) => ({ id: 'q' + (i + 1), tier: q.tier, stem: q.stem, answer: q.answer, options: q.options || [] })),
+    records: S.get().quizzes
+      .reduce((acc, q2x) => acc.concat(q2x.records || []), [])
+      .map((r, i) => ({
+        id: 'r' + (i + 1),
+        sid: idx(r.sid) >= 0 ? 's' + (idx(r.sid) + 1) : null,
+        qid: r.qid ? 'q' + (qIdx(r.qid) + 1) : null,
+        tier: r.tier || '',
+        result: r.result,
+        points: Number(r.points),
+        note: r.note || '',
+        // 已在状态里归一化成序号（保持先后顺序，且互不相同）
+        at: Number(r.at)
+      })),
+    who: 's1',
+    expectOne: norm(one),
+    expectBoard: board.map(norm)
+  });
+}
+
+mkMistakeCase('错题本：甲（错两次 + 跳过）');
+mkMistakeCase('错题本：halfRatio 0.4 时同样成立', 0.4);
+
+/* ---------- 用例集：课后课堂报告（buildReport + toMarkdown）---------- *
+ * 纯数据进 → Markdown 出，逐行比对（排版漂移也逃不掉） */
+const reportCases = [];
+
+function mkReportCase(name, opts) {
+  opts = opts || {};
+  globalThis.localStorage.clear();
+  S.replaceState(S.defaultState());
+  const teams = S.get().teams;
+  const a = S.addStudent('甲', teams[0].id);
+  const b = S.addStudent('乙', teams[0].id);
+  const c = S.addStudent('丙', teams[1].id);
+  const sid = (x) => (typeof x === 'string' ? x : x.id);
+  S.updateSettings({ courseName: opts.courseName === undefined ? '24机械高考公开课' : opts.courseName });
+
+  const q1 = S.addQuestion({ stem: '第一题：1+1=?', tier: 'basic', answer: 'A' });
+  const q2 = S.addQuestion({ stem: '第二题：求导', tier: 'advanced', answer: '2x' });
+  const qz = S.createQuiz('随堂测', [q1.id, q2.id]);
+  S.recordResult({ sid: sid(a), qid: q1.id, tier: 'basic', result: 'correct', quizId: qz.id });
+  S.recordResult({ sid: sid(a), qid: q2.id, tier: 'advanced', result: 'correct', quizId: qz.id });
+  S.recordResult({ sid: sid(b), qid: q1.id, tier: 'basic', result: 'half', quizId: qz.id });
+  S.recordResult({ sid: sid(c), qid: q2.id, tier: 'advanced', result: 'wrong', quizId: qz.id });
+
+  const students = S.get().students;
+  const idx = (idv) => students.findIndex((x) => x.id === idv);
+  const qIdx = (idv) => [q1, q2].findIndex((x) => x.id === idv);
+  const records = S.get().quizzes.reduce((acc, x) => acc.concat(x.records || []), []).map((r, i) => ({
+    id: 'r' + (i + 1),
+    sid: idx(r.sid) >= 0 ? 's' + (idx(r.sid) + 1) : null,
+    qid: r.qid ? 'q' + (qIdx(r.qid) + 1) : null,
+    tier: r.tier || '',
+    result: r.result,
+    points: Number(r.points)
+  }));
+
+  // 用 JS 的纯函数算（Rust 侧用同样入参重放）
+  const cs = CI.analysis.classStats(S.get(), null);
+  const questions = CI.analysis.questionStats(S.get(), null);
+  const input = {
+    courseName: opts.courseName === undefined ? '24机械高考公开课' : opts.courseName,
+    room: 'default',
+    generatedAt: 1700000000000,
+    checkin: { seated: opts.seated === undefined ? 2 : opts.seated, total: 2, rate: opts.rate === undefined ? 100 : opts.rate },
+    records: records.map((r) => ({ sid: r.sid, qid: r.qid, result: r.result, points: r.points })),
+    students: students.map((s, i) => ({ id: 's' + (i + 1), name: s.name, teamId: 'tm' + (teams.findIndex((x) => x.id === s.teamId) + 1) })),
+    teams: teams.map((x, i) => ({ id: 'tm' + (i + 1), name: x.name })),
+    tiers: cs.tiers.map((x) => ({ key: x.key, label: x.label, attempts: x.attempts, correct: x.correct, creditRate: x.creditRate, correctRate: x.correctRate })),
+    teamStats: (CI.classroom.teamStats(S.get()) || []).map((x) => ({
+      // teamId 归一化（all 保持原样），否则基准不可复现
+      teamId: x.teamId === 'all' ? 'all' : 'tm' + (teams.findIndex((tt) => tt.id === x.teamId) + 1),
+      name: x.name, correct: x.correct, attempts: x.attempts,
+      creditRate: x.creditRate, score: x.score === undefined ? null : x.score, memberCount: x.memberCount
+    })),
+    // 归一化后重排：questionStats 的最终 tie-break 用的是原始 uid（每次不同），
+    // 这里按归一化 qid 排，保证基准可复现（Rust 侧按入参顺序用，不再重排）
+    questions: questions.map((x) => ({
+      qid: 'q' + (qIdx(x.qid) + 1), stem: x.stem, tier: x.tier, tierLabel: x.tierLabel,
+      attempts: x.attempts, correct: x.correct, half: x.half, wrong: x.wrong, skip: x.skip,
+      correctRate: x.correctRate, creditRate: x.creditRate, avgPoints: x.avgPoints, missers: x.missers
+    })).sort((p1, p2) => (p1.correctRate - p2.correctRate) || (p2.attempts - p1.attempts) || (p1.qid < p2.qid ? -1 : 1)),
+    comment: opts.comment === undefined ? '全班表现不错，继续保持' : opts.comment,
+    reviewLine: CI.analysis.questionReviewLine(questions) || '',
+    halfRatio: Number(S.get().settings.halfRatio)
+  };
+
+  const data = CI.analysis.buildReport(input);
+  reportCases.push({
+    name,
+    input,
+    expect: {
+      attempts: data.attempts, correct: data.correct, half: data.half, wrong: data.wrong, skip: data.skip,
+      creditRate: data.creditRate, earned: data.earned,
+      students: data.students.map((s) => ({ sid: s.sid, name: s.name, teamName: s.teamName, score: s.score, attempts: s.attempts, correct: s.correct, creditRate: s.creditRate })),
+      markdown: CI.analysis.toMarkdown(data)
+    }
+  });
+}
+
+mkReportCase('报告：有作答、有队伍、有评语');
+mkReportCase('报告：没有课程名（用默认标题）', { courseName: '' });
+mkReportCase('报告：没有评语', { comment: '' });
+mkReportCase('报告：签到不满（1/2）', { seated: 1, rate: 50 });
+
+
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
@@ -708,7 +879,9 @@ const payload = {
   scoring,
   classroom,
   draw: drawCases,
-  questionStats
+  questionStats,
+  mistakes: mistakeCases,
+  report: reportCases
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
@@ -716,7 +889,8 @@ const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
 if (CHECK) {
   if (current === text) {
     console.log('[ok] parity.json 与 JS 参考实现一致（能力 ' + cases.length + ' + 判分 ' + grading.length +
-    ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' + 课堂 ' + classroom.length + ' + 抽题 ' + drawCases.length + ' + 题目统计 ' + questionStats.length + ' 组）');
+    ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' + 课堂 ' + classroom.length + ' + 抽题 ' + drawCases.length + ' + 题目统计 ' + questionStats.length +
+    ' + 错题本 ' + mistakeCases.length + ' + 报告 ' + reportCases.length + ' 组）');
     process.exit(0);
   }
   console.error('[stale] parity.json 与 JS 参考实现不一致 —— 运行 node scripts/gen-parity-fixtures.mjs 重新生成');
@@ -734,3 +908,5 @@ scoring.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.steps.length
 classroom.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.steps.length + ' 步'));
 drawCases.forEach((c) => console.log('   · ' + c.name.padEnd(34) + '抽 ' + c.expect.ids.length + ' 道'));
 questionStats.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.expect.length + ' 道题'));
+mistakeCases.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.expectOne.items.length + ' 道错题 / 榜上 ' + c.expectBoard.length + ' 人'));
+reportCases.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.expect.markdown.split('\n').length + ' 行 Markdown'));

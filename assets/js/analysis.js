@@ -499,8 +499,14 @@
         missers: e.missers
       };
     });
+    // 正确率升序 → 作答多的在前 → **题库顺序**（稳定且有意义；用 qid 会依赖随机 uid，基准不可复现）
+    var bankIdx = function (qid) {
+      var k = (s.bank || []).findIndex(function (q) { return q.id === qid; });
+      return k < 0 ? 1e9 : k;
+    };
     out.sort(function (a, b) {
-      return (a.correctRate - b.correctRate) || (b.attempts - a.attempts) || (a.qid < b.qid ? -1 : (a.qid > b.qid ? 1 : 0));
+      return (a.correctRate - b.correctRate) || (b.attempts - a.attempts) ||
+        (bankIdx(a.qid) - bankIdx(b.qid)) || (a.qid < b.qid ? -1 : (a.qid > b.qid ? 1 : 0));
     });
     return out;
   }
@@ -520,6 +526,302 @@
     if (zero.length) line += '另有 ' + zero.length + ' 道题无人答对，建议课堂重讲。';
     return line;
   }
+
+  /* ------------------------------------------------------------------ *
+   * 错题本：按学生汇总答错/跳过的题（课后订正的依据）
+   *   口径与 Rust mistakes.rs 逐字段一致：
+   *     · 只收 wrong / skip（半对不算错题 —— 它是"部分会"）
+   *     · 同一题错多次只占一条，count 记次数、at 取最后一次、answer 取最后一次提交
+   *     · expected 从题库取标准答案；题被删了显示"（题目已删除）"
+   *     · 排序：次数多的在前 → 时间新的在前 → qid
+   * ------------------------------------------------------------------ */
+
+  /** 单个学生的错题本（没有错题返回空 items，不返回 null —— 界面更好用） */
+  function studentMistakes(state, sid) {
+    var s = state || CI.store.get();
+    var stu = CI.store.student(s, sid);
+    var team = stu && stu.teamId ? CI.store.team(s, stu.teamId) : null;
+    var records = allRecords(s);
+    var order = [];
+    var map = {};
+    records.forEach(function (r) {
+      if (r.sid !== sid) return;
+      if (r.result !== 'wrong' && r.result !== 'skip') return;
+      if (!r.qid) return;
+      var q = CI.store.question(s, r.qid);
+      if (!map[r.qid]) {
+        order.push(r.qid);
+        map[r.qid] = {
+          qid: r.qid,
+          stem: q ? U.shortStem(q.stem) : '（题目已删除）',
+          tier: q ? q.tier : '',
+          tierLabel: q ? CI.store.tierOf(s, q.tier).label : '',
+          result: r.result,
+          answer: r.note || '',
+          expected: q ? expectedOf(q) : '—',
+          at: U.num(r.at, 0),
+          count: 1
+        };
+        return;
+      }
+      var item = map[r.qid];
+      item.count += 1;
+      if (U.num(r.at, 0) >= item.at) {
+        item.at = U.num(r.at, 0);
+        item.result = r.result;
+        item.answer = r.note || '';
+      }
+    });
+    var items = order.map(function (q) { return map[q]; });
+    items.sort(function (a, b) {
+      return (b.count - a.count) || (b.at - a.at) || (a.qid < b.qid ? -1 : (a.qid > b.qid ? 1 : 0));
+    });
+    var tiers = [];
+    items.forEach(function (it) {
+      if (it.tierLabel && tiers.indexOf(it.tierLabel) < 0) tiers.push(it.tierLabel);
+    });
+    return {
+      sid: sid,
+      name: stu ? stu.name : '（未知学生）',
+      teamName: team ? team.name : '',
+      items: items,
+      tiers: tiers
+    };
+  }
+
+  /** 全班错题本：只保留有错题的学生，按错题次数降序 */
+  function mistakeBoard(state) {
+    var s = state || CI.store.get();
+    var out = (s.students || []).map(function (stu) { return studentMistakes(s, stu.id); })
+      .filter(function (m) { return m.items.length > 0; });
+    out.sort(function (a, b) {
+      var ta = a.items.reduce(function (n, x) { return n + x.count; }, 0);
+      var tb = b.items.reduce(function (n, x) { return n + x.count; }, 0);
+      return (tb - ta) || (b.items.length - a.items.length) || (a.name < b.name ? -1 : (a.name > b.name ? 1 : 0));
+    });
+    return out;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 课后课堂报告：把一节课汇总成一份可导出的 Markdown
+   *   buildReport 只做数据汇总（纯函数），toMarkdown 负责排版 ——
+   *   与 Rust report.rs 的 build_report / to_markdown 逐行 parity 比对。
+   * ------------------------------------------------------------------ */
+
+  /** 该题的标准答案（可读文本，如「A. 甲 / B. 乙」） */
+  function expectedOf(q) {
+    try { return CI.grade.answerKey(q) || '—'; } catch (e) { return q.answer || '—'; }
+  }
+
+  /** 全部试卷的流水 */
+  function allRecords(s) {
+    var out = [];
+    (s.quizzes || []).forEach(function (q) { out = out.concat(q.records || []); });
+    return out;
+  }
+
+  /** 时间显示：YYYY-MM-DD HH:MM（东八区，与 Rust 的 fmt_time 同口径） */
+  function reportTime(ms) {
+    ms = U.num(ms, 0);
+    if (ms <= 0) return '—';
+    var d = new Date(ms + 8 * 3600 * 1000);
+    function p2(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate()) +
+      ' ' + p2(d.getUTCHours()) + ':' + p2(d.getUTCMinutes());
+  }
+
+  /**
+   * 汇总报告数据（纯函数：入参齐全 → 报告对象）
+   * @param {Object} input {courseName, room, generatedAt, checkin, records, students, teams,
+   *                        tiers, teamStats, questions, comment, reviewLine, halfRatio}
+   */
+  function buildReport(input) {
+    var i = input || {};
+    var half = U.num(i.halfRatio, 0.5);
+    var records = i.records || [];
+    var students = i.students || [];
+    var teams = i.teams || [];
+
+    var attempts = 0, correct = 0, halfN = 0, wrong = 0, skip = 0, earned = 0;
+    records.forEach(function (r) {
+      earned += U.num(r.points, 0);
+      if (r.result === 'correct') { attempts++; correct++; }
+      else if (r.result === 'half') { attempts++; halfN++; }
+      else if (r.result === 'wrong') { attempts++; wrong++; }
+      else if (r.result === 'skip') { attempts++; skip++; }
+    });
+    var creditRate = attempts > 0 ? Math.round(((correct + halfN * half) / attempts) * 100) : 0;
+
+    var rows = students.map(function (stu) {
+      var att = 0, cor = 0, hf = 0, score = 0;
+      records.forEach(function (r) {
+        if (r.sid !== stu.id) return;
+        score += U.num(r.points, 0);
+        if (r.result === 'correct') { att++; cor++; }
+        else if (r.result === 'half') { att++; hf++; }
+        else if (r.result === 'wrong' || r.result === 'skip') att++;
+      });
+      var team = stu.teamId ? teams.filter(function (x) { return x.id === stu.teamId; })[0] : null;
+      return {
+        sid: stu.id,
+        name: stu.name,
+        teamName: team ? team.name : '',
+        score: Math.round(score * 100) / 100,
+        attempts: att,
+        correct: cor,
+        creditRate: att > 0 ? Math.round(((cor + hf * half) / att) * 100) : 0
+      };
+    });
+    rows.sort(function (a, b) {
+      return (b.score - a.score) || (b.creditRate - a.creditRate) || (a.name < b.name ? -1 : (a.name > b.name ? 1 : 0));
+    });
+
+    return {
+      courseName: i.courseName || '',
+      generatedAt: U.num(i.generatedAt, 0),
+      room: i.room || '',
+      checkin: i.checkin || { seated: 0, total: 0, rate: 0 },
+      attempts: attempts, correct: correct, half: halfN, wrong: wrong, skip: skip,
+      creditRate: creditRate,
+      earned: Math.round(earned * 100) / 100,
+      teams: i.teamStats || [],
+      tiers: i.tiers || [],
+      questions: i.questions || [],
+      students: rows,
+      comment: i.comment || '',
+      reviewLine: i.reviewLine || ''
+    };
+  }
+
+  /** 排版成 Markdown（与 Rust to_markdown 逐行一致） */
+  function toMarkdown(r) {
+    var out = [];
+    out.push('# 课堂报告 · ' + (r.courseName || '课堂积分'));
+    out.push('');
+    out.push('> 房间 ' + r.room + ' ｜ 生成于 ' + reportTime(r.generatedAt));
+    out.push('');
+
+    out.push('## 一、出勤');
+    out.push('');
+    if (U.num(r.checkin.total, 0) > 0) {
+      out.push('- 签到 **' + r.checkin.seated + ' / ' + r.checkin.total + ' 队**（' + r.checkin.rate + '%）');
+    } else {
+      out.push('- 还没有队伍数据');
+    }
+    out.push('');
+
+    out.push('## 二、整体');
+    out.push('');
+    if (!r.attempts) {
+      out.push('- 本节课没有作答数据');
+    } else {
+      out.push('- 作答 **' + r.attempts + ' 题次**：答对 ' + r.correct + '、部分正确 ' + r.half +
+        '、答错 ' + r.wrong + '、跳过 ' + r.skip);
+      out.push('- 整体掌握度 **' + r.creditRate + '%**，累计得分 **' + r.earned + ' 分**');
+    }
+    out.push('');
+    if (r.comment) { out.push('> ' + r.comment); out.push(''); }
+
+    if (r.teams.length > 1) {
+      out.push('## 三、各队对比');
+      out.push('');
+      out.push('| 队伍 | 答对 | 作答 | 掌握度 | 得分 | 人数 |');
+      out.push('| --- | --- | --- | --- | --- | --- |');
+      r.teams.forEach(function (t) {
+        var score = (t.score === null || t.score === undefined) ? '—' : String(t.score);
+        out.push('| ' + t.name + ' | ' + t.correct + ' | ' + t.attempts + ' | ' +
+          Math.round(U.num(t.creditRate, 0)) + '% | ' + score + ' | ' + t.memberCount + ' |');
+      });
+      out.push('');
+    }
+
+    var filled = r.tiers.filter(function (t) { return U.num(t.attempts, 0) > 0; });
+    if (filled.length) {
+      out.push('## 四、题型掌握');
+      out.push('');
+      out.push('| 题型 | 作答 | 答对 | 掌握度 | 正确率 |');
+      out.push('| --- | --- | --- | --- | --- |');
+      filled.forEach(function (t) {
+        out.push('| ' + t.label + ' | ' + t.attempts + ' | ' + t.correct + ' | ' +
+          Math.round(U.num(t.creditRate, 0)) + '% | ' + Math.round(U.num(t.correctRate, 0)) + '% |');
+      });
+      out.push('');
+    }
+
+    var answered = r.questions.filter(function (q) { return U.num(q.attempts, 0) > 0; });
+    if (answered.length) {
+      out.push('## 五、题目正确率（讲评顺序）');
+      out.push('');
+      out.push('| # | 题目 | 题型 | 作答 | 答对 | 正确率 | 未答对 |');
+      out.push('| --- | --- | --- | --- | --- | --- | --- |');
+      answered.forEach(function (q, i) {
+        out.push('| ' + (i + 1) + ' | ' + q.stem + ' | ' + q.tierLabel + ' | ' + q.attempts + ' | ' +
+          q.correct + ' | ' + q.correctRate + '% | ' + (q.wrong + q.skip) + ' |');
+      });
+      out.push('');
+      if (r.reviewLine) { out.push('> ' + r.reviewLine); out.push(''); }
+    }
+
+    var active = r.students.filter(function (s) { return U.num(s.attempts, 0) > 0; });
+    if (active.length) {
+      out.push('## 六、学生表现');
+      out.push('');
+      out.push('| 名次 | 学生 | 队伍 | 积分 | 作答 | 答对 | 掌握度 |');
+      out.push('| --- | --- | --- | --- | --- | --- | --- |');
+      active.forEach(function (s, i) {
+        out.push('| ' + (i + 1) + ' | ' + s.name + ' | ' + (s.teamName || '—') + ' | ' + s.score + ' | ' +
+          s.attempts + ' | ' + s.correct + ' | ' + s.creditRate + '% |');
+      });
+      out.push('');
+      out.push('- **表现突出**：' + active.slice(0, 3).map(function (s) {
+        return s.name + '（' + s.score + ' 分，掌握度 ' + s.creditRate + '%）';
+      }).join('、'));
+      var weak = active.filter(function (s) { return s.creditRate < 60; })
+        .sort(function (a, b) { return a.creditRate - b.creditRate; });
+      if (!weak.length) {
+        out.push('- **需要关注**：无（掌握度均不低于 60%）');
+        out.push('');
+      } else {
+        out.push('- **需要关注**：' + weak.slice(0, 3).map(function (s) {
+          return s.name + '（掌握度 ' + s.creditRate + '%）';
+        }).join('、'));
+        out.push('');
+      }
+    }
+
+    out.push('---');
+    out.push('');
+    out.push('*由课堂积分系统生成（Rust 核心 ci-domain::report）*');
+    return out.join('\n') + '\n';
+  }
+
+  /** 便捷封装：从当前状态取齐入参 → { data, markdown } */
+  function classReport(state, opts) {
+    opts = opts || {};
+    var s = state || CI.store.get();
+    var cs = classStats(s, null);
+    var ab = ability(s, {});
+    var questions = questionStats(s, null);
+    var checkin = opts.checkin || (CI.classroom && CI.classroom.checkinStats
+      ? CI.classroom.checkinStats(s) : { seated: 0, total: 0, rate: 0 });
+    var data = buildReport({
+      courseName: U.str(s.settings && s.settings.courseName) || '',
+      room: opts.room || (s.runtime && s.runtime.room) || 'default',
+      generatedAt: U.num(opts.generatedAt, Date.now()),
+      checkin: checkin,
+      records: allRecords(s),
+      students: s.students || [],
+      teams: s.teams || [],
+      tiers: cs.tiers,
+      teamStats: CI.classroom ? CI.classroom.teamStats(s) : [],
+      questions: questions,
+      comment: (ab && ab.comment) || '',
+      reviewLine: questionReviewLine(questions) || '',
+      halfRatio: U.num(s.settings && s.settings.halfRatio, 0.5)
+    });
+    return { data: data, markdown: toMarkdown(data) };
+  }
+
 
   /* ------------------------------------------------------------------ *
    * 能力评价：按题型画雷达（"六边形战士"式），给出综合能力与文字评价
@@ -678,6 +980,8 @@
     questionCSV: questionCSV,
     questionStats: questionStats,
     questionReviewLine: questionReviewLine,
+    studentMistakes: studentMistakes, mistakeBoard: mistakeBoard,
+    buildReport: buildReport, toMarkdown: toMarkdown, classReport: classReport,
     counts: counts,
     ability: ability,
     abilityOfTiers: abilityOfTiers,

@@ -37,6 +37,7 @@
       '<button class="btn btn-plus" onclick="CI.analysisUI.generate()">生成学情总结</button>' +
       '<button class="btn" onclick="CI.analysisUI.copySummary()">复制总结</button>' +
       '<button class="btn" onclick="CI.analysisUI.downloadSummary()">下载总结 (txt)</button>' +
+      '<button class="btn btn-plus" onclick="CI.analysisUI.downloadReport()">导出课堂报告 (md)</button>' +
       '<button class="btn" onclick="CI.analysisUI.exportCSV()">导出明细 (csv)</button>';
   }
 
@@ -137,6 +138,45 @@
       }).join('') + '</tbody></table></div>';
   }
 
+  /**
+   * 错题本：按学生汇总答错/跳过的题（课后订正的依据）
+   *   数据早就在流水里，这里只是按"人"聚合出来 —— 讲评后可以直接照着订正。
+   */
+  function renderMistakes() {
+    var s = CI.store.get();
+    var box = el('analysisMistakes');
+    if (!box) return;
+    var board = CI.analysis.mistakeBoard(s);
+    if (!board.length) {
+      box.innerHTML = '<div class="panel-title">错题本</div>' +
+        '<div class="empty">还没有错题（学生答错或跳过之后，这里会按人列出，含标准答案）</div>';
+      return;
+    }
+    box.innerHTML =
+      '<div class="panel-title">错题本 <span class="panel-sub">（按错题数排序；同一题错多次只列一条并标次数）</span></div>' +
+      board.map(function (m) {
+        return '<div class="mistake-student">' +
+          '<div class="mistake-head"><b>' + U.escapeHTML(m.name) + '</b>' +
+          (m.teamName ? '<span class="tag tag-plain">' + U.escapeHTML(m.teamName) + '</span>' : '') +
+          '<span class="panel-sub">' + m.items.length + ' 道题 / 共错 ' +
+          m.items.reduce(function (n, x) { return n + x.count; }, 0) + ' 次' +
+          (m.tiers.length ? ' ｜ ' + U.escapeHTML(m.tiers.join('、')) : '') + '</span></div>' +
+          '<table class="data-table"><thead><tr>' +
+            '<th>题目</th><th>题型</th><th>次数</th><th>最近判定</th><th>学生答案</th><th>正确答案</th>' +
+          '</tr></thead><tbody>' +
+          m.items.map(function (it) {
+            return '<tr>' +
+              '<td>' + U.escapeHTML(it.stem) + '</td>' +
+              '<td>' + U.escapeHTML(it.tierLabel || '—') + '</td>' +
+              '<td>' + it.count + '</td>' +
+              '<td>' + (CI.store.RESULT_LABEL[it.result] || it.result) + '</td>' +
+              '<td>' + U.escapeHTML(it.answer || '—') + '</td>' +
+              '<td>' + U.escapeHTML(it.expected || '—') + '</td>' +
+            '</tr>';
+          }).join('') + '</tbody></table></div>';
+      }).join('');
+  }
+
   function renderStudents() {
     var s = CI.store.get();
     var box = el('analysisStudents');
@@ -188,6 +228,7 @@
     renderScope();
     renderOverview();
     renderMatrix();
+    renderMistakes();
     renderStudents();
     renderSummary();
   }
@@ -274,6 +315,14 @@
     U.download('学情总结_' + stamp + '.txt', currentText(), 'text/plain');
   }
 
+  /** 导出课后课堂报告（Markdown，可直接发班级群 / 存档） */
+  function downloadReport() {
+    var rep = CI.analysis.classReport(CI.store.get(), {});
+    var stamp = new Date().toISOString().slice(0, 10);
+    var name = (rep.data.courseName || '课堂') + '_课堂报告_' + stamp + '.md';
+    U.download(name, rep.markdown, 'text/markdown');
+  }
+
   function exportCSV() {
     var s = CI.store.get();
     var rows = CI.analysis.classCSV(s, scope === 'all' ? null : scope);
@@ -283,7 +332,7 @@
   CI.analysisUI = {
     render: render, setScope: setScope, generate: generate,
     showStudentReport: showStudentReport, closeReport: closeReport, copyStudent: copyStudent,
-    copySummary: copySummary, downloadSummary: downloadSummary, exportCSV: exportCSV,
+    copySummary: copySummary, downloadSummary: downloadSummary, downloadReport: downloadReport, exportCSV: exportCSV,
     getScope: function () { return scope; },
     getSummary: function () { return lastSummary; }
   };

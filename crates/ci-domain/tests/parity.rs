@@ -12,11 +12,12 @@
 //! CI 校验基准是否过期：`node scripts/gen-parity-fixtures.mjs --check`
 
 use ci_domain::{
-    ability_of_tiers, answer_key, apply_pick, auto, default_tiers, describe_submission,
-    draw_questions, finalize_feed, handle_cmd, question_stats, rollcall_pick, score_of_input,
-    set_phase_named, validate_question, BankQuestion, ClassStudent, ClassTeam, CmdOutcome, DrawOpts,
-    PickOpts, Question, RollcallSettings, Runtime, ScoreInput, ScoreRecord, ScoringSettings,
-    StateStudent, Student, StudentCmd, Submission, TierStat,
+    ability_of_tiers, answer_key, apply_pick, auto, build_report, default_tiers, describe_submission,
+    draw_questions, finalize_feed, handle_cmd, mistake_board, question_stats, report_markdown,
+    rollcall_pick, score_of_input, set_phase_named, student_mistakes, validate_question, BankQuestion,
+    Checkin, ClassStudent, ClassTeam, CmdOutcome, DrawOpts, PickOpts, Question, RollcallSettings,
+    Runtime, ScoreInput, ScoreRecord, ScoringSettings, StateStudent, Student, StudentCmd, Submission,
+    Team, TeamStat, TierStat,
 };
 use serde_json::json;
 use serde::Deserialize;
@@ -33,6 +34,8 @@ struct Fixture {
     draw: Vec<DrawCase>,
     #[serde(rename = "questionStats")]
     question_stats: Vec<QsCase>,
+    mistakes: Vec<MistakeCase>,
+    report: Vec<ReportCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -306,6 +309,213 @@ struct StatRow {
     #[serde(rename = "avgPoints")]
     avg_points: f64,
     missers: Vec<String>,
+}
+
+
+#[derive(Debug, Deserialize)]
+struct MistakeCase {
+    name: String,
+    #[serde(rename = "halfRatio")]
+    half_ratio: f64,
+    tiers: Vec<TierRow>,
+    students: Vec<MistakeStudentRow>,
+    teams: Vec<TeamRow>,
+    bank: Vec<MistakeBankRow>,
+    records: Vec<MistakeRecordRow>,
+    who: String,
+    #[serde(rename = "expectOne")]
+    expect_one: MistakeExpect,
+    #[serde(rename = "expectBoard")]
+    expect_board: Vec<MistakeExpect>,
+}
+
+#[derive(Debug, Deserialize)]
+struct MistakeStudentRow {
+    id: String,
+    name: String,
+    #[serde(rename = "teamId")]
+    team_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TeamRow {
+    id: String,
+    name: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct MistakeBankRow {
+    id: String,
+    #[serde(default)]
+    tier: String,
+    #[serde(default)]
+    stem: String,
+    #[serde(default)]
+    answer: String,
+    #[serde(default)]
+    options: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct MistakeRecordRow {
+    #[serde(default)]
+    sid: Option<String>,
+    #[serde(default)]
+    qid: Option<String>,
+    #[serde(default)]
+    result: String,
+    #[serde(default)]
+    points: f64,
+    #[serde(default)]
+    note: String,
+    #[serde(default)]
+    at: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct MistakeExpect {
+    sid: String,
+    name: String,
+    #[serde(rename = "teamName")]
+    team_name: String,
+    tiers: Vec<String>,
+    items: Vec<MistakeItemRow>,
+}
+
+#[derive(Debug, Deserialize)]
+struct MistakeItemRow {
+    qid: String,
+    stem: String,
+    tier: String,
+    #[serde(rename = "tierLabel")]
+    tier_label: String,
+    result: String,
+    answer: String,
+    expected: String,
+    at: i64,
+    count: u32,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReportCase {
+    name: String,
+    input: ReportInput,
+    expect: ReportExpect,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReportInput {
+    #[serde(rename = "courseName")]
+    course_name: String,
+    room: String,
+    #[serde(rename = "generatedAt")]
+    generated_at: i64,
+    checkin: CheckinRow,
+    records: Vec<ReportRecordRow>,
+    students: Vec<MistakeStudentRow>,
+    teams: Vec<TeamRow>,
+    tiers: Vec<ReportTierRow>,
+    #[serde(rename = "teamStats")]
+    team_stats: Vec<ReportTeamRow>,
+    questions: Vec<ReportQuestionRow>,
+    comment: String,
+    #[serde(rename = "reviewLine")]
+    review_line: String,
+    #[serde(rename = "halfRatio")]
+    half_ratio: f64,
+}
+
+#[derive(Debug, Deserialize)]
+struct CheckinRow {
+    seated: u32,
+    total: u32,
+    rate: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReportRecordRow {
+    #[serde(default)]
+    sid: Option<String>,
+    #[serde(default)]
+    qid: Option<String>,
+    result: String,
+    #[serde(default)]
+    points: f64,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReportTierRow {
+    key: String,
+    label: String,
+    attempts: u32,
+    correct: u32,
+    #[serde(rename = "creditRate")]
+    credit_rate: f64,
+    #[serde(rename = "correctRate")]
+    correct_rate: f64,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReportTeamRow {
+    #[serde(rename = "teamId")]
+    team_id: String,
+    name: String,
+    correct: u32,
+    attempts: u32,
+    #[serde(rename = "creditRate")]
+    credit_rate: f64,
+    #[serde(default)]
+    score: Option<f64>,
+    #[serde(rename = "memberCount")]
+    member_count: usize,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReportQuestionRow {
+    qid: String,
+    stem: String,
+    tier: String,
+    #[serde(rename = "tierLabel")]
+    tier_label: String,
+    attempts: u32,
+    correct: u32,
+    half: u32,
+    wrong: u32,
+    skip: u32,
+    #[serde(rename = "correctRate")]
+    correct_rate: i64,
+    #[serde(rename = "creditRate")]
+    credit_rate: i64,
+    #[serde(rename = "avgPoints")]
+    avg_points: f64,
+    missers: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReportExpect {
+    attempts: u32,
+    correct: u32,
+    half: u32,
+    wrong: u32,
+    skip: u32,
+    #[serde(rename = "creditRate")]
+    credit_rate: i64,
+    earned: f64,
+    students: Vec<ReportStudentRow>,
+    markdown: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReportStudentRow {
+    sid: String,
+    name: String,
+    #[serde(rename = "teamName")]
+    team_name: String,
+    score: f64,
+    attempts: u32,
+    correct: u32,
+    #[serde(rename = "creditRate")]
+    credit_rate: i64,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -806,4 +1016,257 @@ fn question_stats_matches_js_reference() {
     }
 
     println!("\n✅ 题目统计：{} 组用例与 JS 参考实现逐字段一致", fx.question_stats.len());
+}
+
+/// 错题本：逐字段比对（次数/最后一次提交/标准答案/题型/排序）
+#[test]
+fn mistakes_match_js_reference() {
+    let fx = load();
+    assert!(!fx.mistakes.is_empty(), "基准里没有错题本用例");
+
+    for case in &fx.mistakes {
+        let bank: Vec<BankQuestion> = case
+            .bank
+            .iter()
+            .map(|r| BankQuestion {
+                id: r.id.clone(),
+                tier: r.tier.clone(),
+                stem: r.stem.clone(),
+                answer: r.answer.clone(),
+                options: r.options.clone(),
+                ..Default::default()
+            })
+            .collect();
+        let students: Vec<StateStudent> = case
+            .students
+            .iter()
+            .map(|s| StateStudent {
+                id: s.id.clone(),
+                name: s.name.clone(),
+                team_id: s.team_id.clone(),
+                active: true,
+                joined_at: 0,
+                called: 0,
+            })
+            .collect();
+        let teams: Vec<Team> = case
+            .teams
+            .iter()
+            .map(|t| Team {
+                id: t.id.clone(),
+                name: t.name.clone(),
+                icon: String::new(),
+                color: String::new(),
+                order: 0,
+            })
+            .collect();
+        let records: Vec<ScoreRecord> = case
+            .records
+            .iter()
+            .enumerate()
+            .map(|(i, r)| ScoreRecord {
+                id: format!("r{}", i + 1),
+                sid: r.sid.clone(),
+                qid: r.qid.clone(),
+                tier: String::new(),
+                quiz_id: None,
+                result: r.result.clone(),
+                base: 0.0,
+                ratio: 0.0,
+                points: r.points,
+                source: "student".to_string(),
+                note: r.note.clone(),
+                at: r.at,
+                by: String::new(),
+            })
+            .collect();
+        let labels: Vec<(String, String)> = case
+            .tiers
+            .iter()
+            .map(|t| (t.key.clone(), t.label.clone()))
+            .collect();
+
+        // 单人
+        let one = student_mistakes(&records, &bank, &students, &teams, &labels, &case.who);
+        assert_eq!(one.sid, case.expect_one.sid, "[{}] sid", case.name);
+        assert_eq!(one.name, case.expect_one.name, "[{}] 姓名", case.name);
+        assert_eq!(one.team_name, case.expect_one.team_name, "[{}] 队伍", case.name);
+        assert_eq!(one.tiers, case.expect_one.tiers, "[{}] 涉及题型", case.name);
+        assert_eq!(one.items.len(), case.expect_one.items.len(), "[{}] 错题道数", case.name);
+        for (i, want) in case.expect_one.items.iter().enumerate() {
+            let g = &one.items[i];
+            let n = format!("{} #{}", case.name, i + 1);
+            assert_eq!(g.qid, want.qid, "[{}] qid", n);
+            assert_eq!(g.stem, want.stem, "[{}] 题干", n);
+            assert_eq!(g.tier, want.tier, "[{}] 题型", n);
+            assert_eq!(g.tier_label, want.tier_label, "[{}] 题型中文名", n);
+            assert_eq!(g.result, want.result, "[{}] 最后一次判定", n);
+            assert_eq!(g.answer, want.answer, "[{}] 最后一次提交", n);
+            assert_eq!(g.expected, want.expected, "[{}] 标准答案", n);
+            assert_eq!(g.at, want.at, "[{}] 最后一次时间", n);
+            assert_eq!(g.count, want.count, "[{}] 错误次数", n);
+        }
+
+        // 全班榜
+        let board = mistake_board(&records, &bank, &students, &teams, &labels);
+        assert_eq!(board.len(), case.expect_board.len(), "[{}] 榜上人数", case.name);
+        for (i, want) in case.expect_board.iter().enumerate() {
+            assert_eq!(board[i].sid, want.sid, "[{}] 榜 #{} sid", case.name, i + 1);
+            assert_eq!(board[i].name, want.name, "[{}] 榜 #{} 姓名", case.name, i + 1);
+            assert_eq!(board[i].items.len(), want.items.len(), "[{}] 榜 #{} 错题数", case.name, i + 1);
+        }
+        println!("  ✔ {} → {} 道错题，榜上 {} 人", case.name, one.items.len(), board.len());
+    }
+
+    println!("\n✅ 错题本：{} 组用例与 JS 参考实现逐字段一致", fx.mistakes.len());
+}
+
+/// 课后课堂报告：汇总字段 + **Markdown 逐行**比对
+#[test]
+fn report_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.report.is_empty(), "基准里没有报告用例");
+
+    for case in &fx.report {
+        let i = &case.input;
+        let records: Vec<ScoreRecord> = i
+            .records
+            .iter()
+            .enumerate()
+            .map(|(k, r)| ScoreRecord {
+                id: format!("r{}", k + 1),
+                sid: r.sid.clone(),
+                qid: r.qid.clone(),
+                tier: String::new(),
+                quiz_id: None,
+                result: r.result.clone(),
+                base: 0.0,
+                ratio: 0.0,
+                points: r.points,
+                source: "student".to_string(),
+                note: String::new(),
+                at: k as i64,
+                by: String::new(),
+            })
+            .collect();
+        let students: Vec<StateStudent> = i
+            .students
+            .iter()
+            .map(|s| StateStudent {
+                id: s.id.clone(),
+                name: s.name.clone(),
+                team_id: s.team_id.clone(),
+                active: true,
+                joined_at: 0,
+                called: 0,
+            })
+            .collect();
+        let teams: Vec<Team> = i
+            .teams
+            .iter()
+            .map(|t| Team {
+                id: t.id.clone(),
+                name: t.name.clone(),
+                icon: String::new(),
+                color: String::new(),
+                order: 0,
+            })
+            .collect();
+        let tiers: Vec<TierStat> = i
+            .tiers
+            .iter()
+            .map(|t| TierStat {
+                key: t.key.clone(),
+                label: t.label.clone(),
+                color: String::new(),
+                weight: 0.0,
+                attempts: t.attempts,
+                correct: t.correct,
+                credit_rate: t.credit_rate,
+                correct_rate: t.correct_rate,
+            })
+            .collect();
+        let team_stats: Vec<TeamStat> = i
+            .team_stats
+            .iter()
+            .map(|t| TeamStat {
+                team_id: t.team_id.clone(),
+                name: t.name.clone(),
+                color: String::new(),
+                icon: String::new(),
+                correct: t.correct,
+                attempts: t.attempts,
+                credit_rate: t.credit_rate,
+                score: t.score,
+                member_count: t.member_count,
+            })
+            .collect();
+        let questions: Vec<ci_domain::QuestionStat> = i
+            .questions
+            .iter()
+            .map(|q| ci_domain::QuestionStat {
+                qid: q.qid.clone(),
+                stem: q.stem.clone(),
+                tier: q.tier.clone(),
+                tier_label: q.tier_label.clone(),
+                attempts: q.attempts,
+                correct: q.correct,
+                half: q.half,
+                wrong: q.wrong,
+                skip: q.skip,
+                correct_rate: q.correct_rate,
+                credit_rate: q.credit_rate,
+                avg_points: q.avg_points,
+                missers: q.missers.clone(),
+            })
+            .collect();
+
+        let r = build_report(
+            &i.course_name,
+            &i.room,
+            i.generated_at,
+            Checkin { seated: i.checkin.seated, total: i.checkin.total, rate: i.checkin.rate },
+            &records,
+            &students,
+            &teams,
+            tiers,
+            team_stats,
+            questions,
+            &i.comment,
+            &i.review_line,
+            i.half_ratio,
+        );
+
+        let n = &case.name;
+        assert_eq!(r.attempts, case.expect.attempts, "[{}] 作答数", n);
+        assert_eq!(r.correct, case.expect.correct, "[{}] 答对", n);
+        assert_eq!(r.half, case.expect.half, "[{}] 半对", n);
+        assert_eq!(r.wrong, case.expect.wrong, "[{}] 答错", n);
+        assert_eq!(r.skip, case.expect.skip, "[{}] 跳过", n);
+        assert_eq!(r.credit_rate, case.expect.credit_rate, "[{}] 掌握度", n);
+        assert!((r.earned - case.expect.earned).abs() < 1e-9, "[{}] 累计得分", n);
+        assert_eq!(r.students.len(), case.expect.students.len(), "[{}] 学生数", n);
+        for (k, want) in case.expect.students.iter().enumerate() {
+            let g = &r.students[k];
+            assert_eq!(g.sid, want.sid, "[{}] 学生 #{} sid", n, k + 1);
+            assert_eq!(g.name, want.name, "[{}] 学生 #{} 姓名", n, k + 1);
+            assert_eq!(g.team_name, want.team_name, "[{}] 学生 #{} 队伍", n, k + 1);
+            assert!((g.score - want.score).abs() < 1e-9, "[{}] 学生 #{} 积分", n, k + 1);
+            assert_eq!(g.attempts, want.attempts, "[{}] 学生 #{} 作答", n, k + 1);
+            assert_eq!(g.correct, want.correct, "[{}] 学生 #{} 答对", n, k + 1);
+            assert_eq!(g.credit_rate, want.credit_rate, "[{}] 学生 #{} 掌握度", n, k + 1);
+        }
+
+        // Markdown 逐行比对
+        let md = report_markdown(&r);
+        let got: Vec<&str> = md.lines().collect();
+        let want: Vec<&str> = case.expect.markdown.lines().collect();
+        assert_eq!(got.len(), want.len(), "[{}] Markdown 行数", n);
+        for (k, (a, b)) in got.iter().zip(want.iter()).enumerate() {
+            assert_eq!(a, b, "[{}] Markdown 第 {} 行不一致", n, k + 1);
+        }
+        println!("  ✔ {} → {} 行 Markdown 逐行一致", n, got.len());
+    }
+
+    println!("\n✅ 课后课堂报告：{} 组用例与 JS 参考实现逐行一致", fx.report.len());
 }

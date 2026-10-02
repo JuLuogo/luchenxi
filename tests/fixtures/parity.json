@@ -4734,5 +4734,1269 @@
         }
       ]
     }
+  ],
+  "mistakes": [
+    {
+      "name": "错题本：甲（错两次 + 跳过）",
+      "halfRatio": 0.5,
+      "tiers": [
+        {
+          "key": "basic",
+          "label": "基础题"
+        },
+        {
+          "key": "advanced",
+          "label": "拔高题"
+        },
+        {
+          "key": "extended",
+          "label": "扩展题"
+        },
+        {
+          "key": "improve",
+          "label": "提升题"
+        }
+      ],
+      "students": [
+        {
+          "id": "s1",
+          "name": "甲",
+          "teamId": "tm1"
+        },
+        {
+          "id": "s2",
+          "name": "乙",
+          "teamId": "tm1"
+        },
+        {
+          "id": "s3",
+          "name": "丙",
+          "teamId": "tm2"
+        }
+      ],
+      "teams": [
+        {
+          "id": "tm1",
+          "name": "红队"
+        },
+        {
+          "id": "tm2",
+          "name": "蓝队"
+        }
+      ],
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "stem": "第一题：1+1=?",
+          "answer": "A",
+          "options": [
+            "甲",
+            "乙"
+          ]
+        },
+        {
+          "id": "q2",
+          "tier": "advanced",
+          "stem": "第二题：求导",
+          "answer": "2x",
+          "options": []
+        }
+      ],
+      "records": [
+        {
+          "id": "r1",
+          "sid": "s1",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "wrong",
+          "points": 0,
+          "note": "A. 甲",
+          "at": 1
+        },
+        {
+          "id": "r2",
+          "sid": "s1",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "wrong",
+          "points": 0,
+          "note": "B. 乙",
+          "at": 2
+        },
+        {
+          "id": "r3",
+          "sid": "s1",
+          "qid": "q2",
+          "tier": "advanced",
+          "result": "skip",
+          "points": 0,
+          "note": "跳过",
+          "at": 3
+        },
+        {
+          "id": "r4",
+          "sid": "s2",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "wrong",
+          "points": 0,
+          "note": "B. 乙",
+          "at": 4
+        },
+        {
+          "id": "r5",
+          "sid": "s3",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "correct",
+          "points": 3,
+          "note": "A. 甲",
+          "at": 5
+        },
+        {
+          "id": "r6",
+          "sid": "s3",
+          "qid": "q2",
+          "tier": "advanced",
+          "result": "half",
+          "points": 2.5,
+          "note": "x",
+          "at": 6
+        }
+      ],
+      "who": "s1",
+      "expectOne": {
+        "sid": "s1",
+        "name": "甲",
+        "teamName": "红队",
+        "tiers": [
+          "基础题",
+          "拔高题"
+        ],
+        "items": [
+          {
+            "qid": "q1",
+            "stem": "第一题：1+1=?",
+            "tier": "basic",
+            "tierLabel": "基础题",
+            "result": "wrong",
+            "answer": "B. 乙",
+            "expected": "A. 甲",
+            "at": 2,
+            "count": 2
+          },
+          {
+            "qid": "q2",
+            "stem": "第二题：求导",
+            "tier": "advanced",
+            "tierLabel": "拔高题",
+            "result": "skip",
+            "answer": "跳过",
+            "expected": "2x",
+            "at": 3,
+            "count": 1
+          }
+        ]
+      },
+      "expectBoard": [
+        {
+          "sid": "s1",
+          "name": "甲",
+          "teamName": "红队",
+          "tiers": [
+            "基础题",
+            "拔高题"
+          ],
+          "items": [
+            {
+              "qid": "q1",
+              "stem": "第一题：1+1=?",
+              "tier": "basic",
+              "tierLabel": "基础题",
+              "result": "wrong",
+              "answer": "B. 乙",
+              "expected": "A. 甲",
+              "at": 2,
+              "count": 2
+            },
+            {
+              "qid": "q2",
+              "stem": "第二题：求导",
+              "tier": "advanced",
+              "tierLabel": "拔高题",
+              "result": "skip",
+              "answer": "跳过",
+              "expected": "2x",
+              "at": 3,
+              "count": 1
+            }
+          ]
+        },
+        {
+          "sid": "s2",
+          "name": "乙",
+          "teamName": "红队",
+          "tiers": [
+            "基础题"
+          ],
+          "items": [
+            {
+              "qid": "q1",
+              "stem": "第一题：1+1=?",
+              "tier": "basic",
+              "tierLabel": "基础题",
+              "result": "wrong",
+              "answer": "B. 乙",
+              "expected": "A. 甲",
+              "at": 4,
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "错题本：halfRatio 0.4 时同样成立",
+      "halfRatio": 0.4,
+      "tiers": [
+        {
+          "key": "basic",
+          "label": "基础题"
+        },
+        {
+          "key": "advanced",
+          "label": "拔高题"
+        },
+        {
+          "key": "extended",
+          "label": "扩展题"
+        },
+        {
+          "key": "improve",
+          "label": "提升题"
+        }
+      ],
+      "students": [
+        {
+          "id": "s1",
+          "name": "甲",
+          "teamId": "tm1"
+        },
+        {
+          "id": "s2",
+          "name": "乙",
+          "teamId": "tm1"
+        },
+        {
+          "id": "s3",
+          "name": "丙",
+          "teamId": "tm2"
+        }
+      ],
+      "teams": [
+        {
+          "id": "tm1",
+          "name": "红队"
+        },
+        {
+          "id": "tm2",
+          "name": "蓝队"
+        }
+      ],
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "stem": "第一题：1+1=?",
+          "answer": "A",
+          "options": [
+            "甲",
+            "乙"
+          ]
+        },
+        {
+          "id": "q2",
+          "tier": "advanced",
+          "stem": "第二题：求导",
+          "answer": "2x",
+          "options": []
+        }
+      ],
+      "records": [
+        {
+          "id": "r1",
+          "sid": "s1",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "wrong",
+          "points": 0,
+          "note": "A. 甲",
+          "at": 1
+        },
+        {
+          "id": "r2",
+          "sid": "s1",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "wrong",
+          "points": 0,
+          "note": "B. 乙",
+          "at": 2
+        },
+        {
+          "id": "r3",
+          "sid": "s1",
+          "qid": "q2",
+          "tier": "advanced",
+          "result": "skip",
+          "points": 0,
+          "note": "跳过",
+          "at": 3
+        },
+        {
+          "id": "r4",
+          "sid": "s2",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "wrong",
+          "points": 0,
+          "note": "B. 乙",
+          "at": 4
+        },
+        {
+          "id": "r5",
+          "sid": "s3",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "correct",
+          "points": 3,
+          "note": "A. 甲",
+          "at": 5
+        },
+        {
+          "id": "r6",
+          "sid": "s3",
+          "qid": "q2",
+          "tier": "advanced",
+          "result": "half",
+          "points": 2,
+          "note": "x",
+          "at": 6
+        }
+      ],
+      "who": "s1",
+      "expectOne": {
+        "sid": "s1",
+        "name": "甲",
+        "teamName": "红队",
+        "tiers": [
+          "基础题",
+          "拔高题"
+        ],
+        "items": [
+          {
+            "qid": "q1",
+            "stem": "第一题：1+1=?",
+            "tier": "basic",
+            "tierLabel": "基础题",
+            "result": "wrong",
+            "answer": "B. 乙",
+            "expected": "A. 甲",
+            "at": 2,
+            "count": 2
+          },
+          {
+            "qid": "q2",
+            "stem": "第二题：求导",
+            "tier": "advanced",
+            "tierLabel": "拔高题",
+            "result": "skip",
+            "answer": "跳过",
+            "expected": "2x",
+            "at": 3,
+            "count": 1
+          }
+        ]
+      },
+      "expectBoard": [
+        {
+          "sid": "s1",
+          "name": "甲",
+          "teamName": "红队",
+          "tiers": [
+            "基础题",
+            "拔高题"
+          ],
+          "items": [
+            {
+              "qid": "q1",
+              "stem": "第一题：1+1=?",
+              "tier": "basic",
+              "tierLabel": "基础题",
+              "result": "wrong",
+              "answer": "B. 乙",
+              "expected": "A. 甲",
+              "at": 2,
+              "count": 2
+            },
+            {
+              "qid": "q2",
+              "stem": "第二题：求导",
+              "tier": "advanced",
+              "tierLabel": "拔高题",
+              "result": "skip",
+              "answer": "跳过",
+              "expected": "2x",
+              "at": 3,
+              "count": 1
+            }
+          ]
+        },
+        {
+          "sid": "s2",
+          "name": "乙",
+          "teamName": "红队",
+          "tiers": [
+            "基础题"
+          ],
+          "items": [
+            {
+              "qid": "q1",
+              "stem": "第一题：1+1=?",
+              "tier": "basic",
+              "tierLabel": "基础题",
+              "result": "wrong",
+              "answer": "B. 乙",
+              "expected": "A. 甲",
+              "at": 4,
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "name": "报告：有作答、有队伍、有评语",
+      "input": {
+        "courseName": "24机械高考公开课",
+        "room": "default",
+        "generatedAt": 1700000000000,
+        "checkin": {
+          "seated": 2,
+          "total": 2,
+          "rate": 100
+        },
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "points": 3
+          },
+          {
+            "sid": "s1",
+            "qid": "q2",
+            "result": "correct",
+            "points": 5
+          },
+          {
+            "sid": "s2",
+            "qid": "q1",
+            "result": "half",
+            "points": 1.5
+          },
+          {
+            "sid": "s3",
+            "qid": "q2",
+            "result": "wrong",
+            "points": 0
+          }
+        ],
+        "students": [
+          {
+            "id": "s1",
+            "name": "甲",
+            "teamId": "tm1"
+          },
+          {
+            "id": "s2",
+            "name": "乙",
+            "teamId": "tm1"
+          },
+          {
+            "id": "s3",
+            "name": "丙",
+            "teamId": "tm2"
+          }
+        ],
+        "teams": [
+          {
+            "id": "tm1",
+            "name": "红队"
+          },
+          {
+            "id": "tm2",
+            "name": "蓝队"
+          }
+        ],
+        "tiers": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "attempts": 2,
+            "correct": 1,
+            "creditRate": 75,
+            "correctRate": 50
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "attempts": 2,
+            "correct": 1,
+            "creditRate": 50,
+            "correctRate": 50
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "correctRate": 0
+          }
+        ],
+        "teamStats": [
+          {
+            "teamId": "all",
+            "name": "全班",
+            "correct": 2,
+            "attempts": 4,
+            "creditRate": 62.5,
+            "score": null,
+            "memberCount": 3
+          },
+          {
+            "teamId": "tm1",
+            "name": "红队",
+            "correct": 2,
+            "attempts": 3,
+            "creditRate": 83.3,
+            "score": 9.5,
+            "memberCount": 2
+          },
+          {
+            "teamId": "tm2",
+            "name": "蓝队",
+            "correct": 0,
+            "attempts": 1,
+            "creditRate": 0,
+            "score": 0,
+            "memberCount": 1
+          }
+        ],
+        "questions": [
+          {
+            "qid": "q1",
+            "stem": "第一题：1+1=?",
+            "tier": "basic",
+            "tierLabel": "基础题",
+            "attempts": 2,
+            "correct": 1,
+            "half": 1,
+            "wrong": 0,
+            "skip": 0,
+            "correctRate": 50,
+            "creditRate": 75,
+            "avgPoints": 2.25,
+            "missers": []
+          },
+          {
+            "qid": "q2",
+            "stem": "第二题：求导",
+            "tier": "advanced",
+            "tierLabel": "拔高题",
+            "attempts": 2,
+            "correct": 1,
+            "half": 0,
+            "wrong": 1,
+            "skip": 0,
+            "correctRate": 50,
+            "creditRate": 50,
+            "avgPoints": 2.5,
+            "missers": [
+              "丙"
+            ]
+          }
+        ],
+        "comment": "全班表现不错，继续保持",
+        "reviewLine": "本套题共 2 道有作答，整体正确率 50%。最需要讲评的是「第一题：1+1=?」（正确率 50%，2 人作答，0 人答错或跳过）；掌握最好的是「第二题：求导」（正确率 50%）。",
+        "halfRatio": 0.5
+      },
+      "expect": {
+        "attempts": 4,
+        "correct": 2,
+        "half": 1,
+        "wrong": 1,
+        "skip": 0,
+        "creditRate": 63,
+        "earned": 9.5,
+        "students": [
+          {
+            "sid": "s1",
+            "name": "甲",
+            "teamName": "红队",
+            "score": 8,
+            "attempts": 2,
+            "correct": 2,
+            "creditRate": 100
+          },
+          {
+            "sid": "s2",
+            "name": "乙",
+            "teamName": "红队",
+            "score": 1.5,
+            "attempts": 1,
+            "correct": 0,
+            "creditRate": 50
+          },
+          {
+            "sid": "s3",
+            "name": "丙",
+            "teamName": "蓝队",
+            "score": 0,
+            "attempts": 1,
+            "correct": 0,
+            "creditRate": 0
+          }
+        ],
+        "markdown": "# 课堂报告 · 24机械高考公开课\n\n> 房间 default ｜ 生成于 2023-11-15 06:13\n\n## 一、出勤\n\n- 签到 **2 / 2 队**（100%）\n\n## 二、整体\n\n- 作答 **4 题次**：答对 2、部分正确 1、答错 1、跳过 0\n- 整体掌握度 **63%**，累计得分 **9.5 分**\n\n> 全班表现不错，继续保持\n\n## 三、各队对比\n\n| 队伍 | 答对 | 作答 | 掌握度 | 得分 | 人数 |\n| --- | --- | --- | --- | --- | --- |\n| 全班 | 2 | 4 | 63% | — | 3 |\n| 红队 | 2 | 3 | 83% | 9.5 | 2 |\n| 蓝队 | 0 | 1 | 0% | 0 | 1 |\n\n## 四、题型掌握\n\n| 题型 | 作答 | 答对 | 掌握度 | 正确率 |\n| --- | --- | --- | --- | --- |\n| 基础题 | 2 | 1 | 75% | 50% |\n| 拔高题 | 2 | 1 | 50% | 50% |\n\n## 五、题目正确率（讲评顺序）\n\n| # | 题目 | 题型 | 作答 | 答对 | 正确率 | 未答对 |\n| --- | --- | --- | --- | --- | --- | --- |\n| 1 | 第一题：1+1=? | 基础题 | 2 | 1 | 50% | 0 |\n| 2 | 第二题：求导 | 拔高题 | 2 | 1 | 50% | 1 |\n\n> 本套题共 2 道有作答，整体正确率 50%。最需要讲评的是「第一题：1+1=?」（正确率 50%，2 人作答，0 人答错或跳过）；掌握最好的是「第二题：求导」（正确率 50%）。\n\n## 六、学生表现\n\n| 名次 | 学生 | 队伍 | 积分 | 作答 | 答对 | 掌握度 |\n| --- | --- | --- | --- | --- | --- | --- |\n| 1 | 甲 | 红队 | 8 | 2 | 2 | 100% |\n| 2 | 乙 | 红队 | 1.5 | 1 | 0 | 50% |\n| 3 | 丙 | 蓝队 | 0 | 1 | 0 | 0% |\n\n- **表现突出**：甲（8 分，掌握度 100%）、乙（1.5 分，掌握度 50%）、丙（0 分，掌握度 0%）\n- **需要关注**：丙（掌握度 0%）、乙（掌握度 50%）\n\n---\n\n*由课堂积分系统生成（Rust 核心 ci-domain::report）*\n"
+      }
+    },
+    {
+      "name": "报告：没有课程名（用默认标题）",
+      "input": {
+        "courseName": "",
+        "room": "default",
+        "generatedAt": 1700000000000,
+        "checkin": {
+          "seated": 2,
+          "total": 2,
+          "rate": 100
+        },
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "points": 3
+          },
+          {
+            "sid": "s1",
+            "qid": "q2",
+            "result": "correct",
+            "points": 5
+          },
+          {
+            "sid": "s2",
+            "qid": "q1",
+            "result": "half",
+            "points": 1.5
+          },
+          {
+            "sid": "s3",
+            "qid": "q2",
+            "result": "wrong",
+            "points": 0
+          }
+        ],
+        "students": [
+          {
+            "id": "s1",
+            "name": "甲",
+            "teamId": "tm1"
+          },
+          {
+            "id": "s2",
+            "name": "乙",
+            "teamId": "tm1"
+          },
+          {
+            "id": "s3",
+            "name": "丙",
+            "teamId": "tm2"
+          }
+        ],
+        "teams": [
+          {
+            "id": "tm1",
+            "name": "红队"
+          },
+          {
+            "id": "tm2",
+            "name": "蓝队"
+          }
+        ],
+        "tiers": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "attempts": 2,
+            "correct": 1,
+            "creditRate": 75,
+            "correctRate": 50
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "attempts": 2,
+            "correct": 1,
+            "creditRate": 50,
+            "correctRate": 50
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "correctRate": 0
+          }
+        ],
+        "teamStats": [
+          {
+            "teamId": "all",
+            "name": "全班",
+            "correct": 2,
+            "attempts": 4,
+            "creditRate": 62.5,
+            "score": null,
+            "memberCount": 3
+          },
+          {
+            "teamId": "tm1",
+            "name": "红队",
+            "correct": 2,
+            "attempts": 3,
+            "creditRate": 83.3,
+            "score": 9.5,
+            "memberCount": 2
+          },
+          {
+            "teamId": "tm2",
+            "name": "蓝队",
+            "correct": 0,
+            "attempts": 1,
+            "creditRate": 0,
+            "score": 0,
+            "memberCount": 1
+          }
+        ],
+        "questions": [
+          {
+            "qid": "q1",
+            "stem": "第一题：1+1=?",
+            "tier": "basic",
+            "tierLabel": "基础题",
+            "attempts": 2,
+            "correct": 1,
+            "half": 1,
+            "wrong": 0,
+            "skip": 0,
+            "correctRate": 50,
+            "creditRate": 75,
+            "avgPoints": 2.25,
+            "missers": []
+          },
+          {
+            "qid": "q2",
+            "stem": "第二题：求导",
+            "tier": "advanced",
+            "tierLabel": "拔高题",
+            "attempts": 2,
+            "correct": 1,
+            "half": 0,
+            "wrong": 1,
+            "skip": 0,
+            "correctRate": 50,
+            "creditRate": 50,
+            "avgPoints": 2.5,
+            "missers": [
+              "丙"
+            ]
+          }
+        ],
+        "comment": "全班表现不错，继续保持",
+        "reviewLine": "本套题共 2 道有作答，整体正确率 50%。最需要讲评的是「第一题：1+1=?」（正确率 50%，2 人作答，0 人答错或跳过）；掌握最好的是「第二题：求导」（正确率 50%）。",
+        "halfRatio": 0.5
+      },
+      "expect": {
+        "attempts": 4,
+        "correct": 2,
+        "half": 1,
+        "wrong": 1,
+        "skip": 0,
+        "creditRate": 63,
+        "earned": 9.5,
+        "students": [
+          {
+            "sid": "s1",
+            "name": "甲",
+            "teamName": "红队",
+            "score": 8,
+            "attempts": 2,
+            "correct": 2,
+            "creditRate": 100
+          },
+          {
+            "sid": "s2",
+            "name": "乙",
+            "teamName": "红队",
+            "score": 1.5,
+            "attempts": 1,
+            "correct": 0,
+            "creditRate": 50
+          },
+          {
+            "sid": "s3",
+            "name": "丙",
+            "teamName": "蓝队",
+            "score": 0,
+            "attempts": 1,
+            "correct": 0,
+            "creditRate": 0
+          }
+        ],
+        "markdown": "# 课堂报告 · 课堂积分\n\n> 房间 default ｜ 生成于 2023-11-15 06:13\n\n## 一、出勤\n\n- 签到 **2 / 2 队**（100%）\n\n## 二、整体\n\n- 作答 **4 题次**：答对 2、部分正确 1、答错 1、跳过 0\n- 整体掌握度 **63%**，累计得分 **9.5 分**\n\n> 全班表现不错，继续保持\n\n## 三、各队对比\n\n| 队伍 | 答对 | 作答 | 掌握度 | 得分 | 人数 |\n| --- | --- | --- | --- | --- | --- |\n| 全班 | 2 | 4 | 63% | — | 3 |\n| 红队 | 2 | 3 | 83% | 9.5 | 2 |\n| 蓝队 | 0 | 1 | 0% | 0 | 1 |\n\n## 四、题型掌握\n\n| 题型 | 作答 | 答对 | 掌握度 | 正确率 |\n| --- | --- | --- | --- | --- |\n| 基础题 | 2 | 1 | 75% | 50% |\n| 拔高题 | 2 | 1 | 50% | 50% |\n\n## 五、题目正确率（讲评顺序）\n\n| # | 题目 | 题型 | 作答 | 答对 | 正确率 | 未答对 |\n| --- | --- | --- | --- | --- | --- | --- |\n| 1 | 第一题：1+1=? | 基础题 | 2 | 1 | 50% | 0 |\n| 2 | 第二题：求导 | 拔高题 | 2 | 1 | 50% | 1 |\n\n> 本套题共 2 道有作答，整体正确率 50%。最需要讲评的是「第一题：1+1=?」（正确率 50%，2 人作答，0 人答错或跳过）；掌握最好的是「第二题：求导」（正确率 50%）。\n\n## 六、学生表现\n\n| 名次 | 学生 | 队伍 | 积分 | 作答 | 答对 | 掌握度 |\n| --- | --- | --- | --- | --- | --- | --- |\n| 1 | 甲 | 红队 | 8 | 2 | 2 | 100% |\n| 2 | 乙 | 红队 | 1.5 | 1 | 0 | 50% |\n| 3 | 丙 | 蓝队 | 0 | 1 | 0 | 0% |\n\n- **表现突出**：甲（8 分，掌握度 100%）、乙（1.5 分，掌握度 50%）、丙（0 分，掌握度 0%）\n- **需要关注**：丙（掌握度 0%）、乙（掌握度 50%）\n\n---\n\n*由课堂积分系统生成（Rust 核心 ci-domain::report）*\n"
+      }
+    },
+    {
+      "name": "报告：没有评语",
+      "input": {
+        "courseName": "24机械高考公开课",
+        "room": "default",
+        "generatedAt": 1700000000000,
+        "checkin": {
+          "seated": 2,
+          "total": 2,
+          "rate": 100
+        },
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "points": 3
+          },
+          {
+            "sid": "s1",
+            "qid": "q2",
+            "result": "correct",
+            "points": 5
+          },
+          {
+            "sid": "s2",
+            "qid": "q1",
+            "result": "half",
+            "points": 1.5
+          },
+          {
+            "sid": "s3",
+            "qid": "q2",
+            "result": "wrong",
+            "points": 0
+          }
+        ],
+        "students": [
+          {
+            "id": "s1",
+            "name": "甲",
+            "teamId": "tm1"
+          },
+          {
+            "id": "s2",
+            "name": "乙",
+            "teamId": "tm1"
+          },
+          {
+            "id": "s3",
+            "name": "丙",
+            "teamId": "tm2"
+          }
+        ],
+        "teams": [
+          {
+            "id": "tm1",
+            "name": "红队"
+          },
+          {
+            "id": "tm2",
+            "name": "蓝队"
+          }
+        ],
+        "tiers": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "attempts": 2,
+            "correct": 1,
+            "creditRate": 75,
+            "correctRate": 50
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "attempts": 2,
+            "correct": 1,
+            "creditRate": 50,
+            "correctRate": 50
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "correctRate": 0
+          }
+        ],
+        "teamStats": [
+          {
+            "teamId": "all",
+            "name": "全班",
+            "correct": 2,
+            "attempts": 4,
+            "creditRate": 62.5,
+            "score": null,
+            "memberCount": 3
+          },
+          {
+            "teamId": "tm1",
+            "name": "红队",
+            "correct": 2,
+            "attempts": 3,
+            "creditRate": 83.3,
+            "score": 9.5,
+            "memberCount": 2
+          },
+          {
+            "teamId": "tm2",
+            "name": "蓝队",
+            "correct": 0,
+            "attempts": 1,
+            "creditRate": 0,
+            "score": 0,
+            "memberCount": 1
+          }
+        ],
+        "questions": [
+          {
+            "qid": "q1",
+            "stem": "第一题：1+1=?",
+            "tier": "basic",
+            "tierLabel": "基础题",
+            "attempts": 2,
+            "correct": 1,
+            "half": 1,
+            "wrong": 0,
+            "skip": 0,
+            "correctRate": 50,
+            "creditRate": 75,
+            "avgPoints": 2.25,
+            "missers": []
+          },
+          {
+            "qid": "q2",
+            "stem": "第二题：求导",
+            "tier": "advanced",
+            "tierLabel": "拔高题",
+            "attempts": 2,
+            "correct": 1,
+            "half": 0,
+            "wrong": 1,
+            "skip": 0,
+            "correctRate": 50,
+            "creditRate": 50,
+            "avgPoints": 2.5,
+            "missers": [
+              "丙"
+            ]
+          }
+        ],
+        "comment": "",
+        "reviewLine": "本套题共 2 道有作答，整体正确率 50%。最需要讲评的是「第一题：1+1=?」（正确率 50%，2 人作答，0 人答错或跳过）；掌握最好的是「第二题：求导」（正确率 50%）。",
+        "halfRatio": 0.5
+      },
+      "expect": {
+        "attempts": 4,
+        "correct": 2,
+        "half": 1,
+        "wrong": 1,
+        "skip": 0,
+        "creditRate": 63,
+        "earned": 9.5,
+        "students": [
+          {
+            "sid": "s1",
+            "name": "甲",
+            "teamName": "红队",
+            "score": 8,
+            "attempts": 2,
+            "correct": 2,
+            "creditRate": 100
+          },
+          {
+            "sid": "s2",
+            "name": "乙",
+            "teamName": "红队",
+            "score": 1.5,
+            "attempts": 1,
+            "correct": 0,
+            "creditRate": 50
+          },
+          {
+            "sid": "s3",
+            "name": "丙",
+            "teamName": "蓝队",
+            "score": 0,
+            "attempts": 1,
+            "correct": 0,
+            "creditRate": 0
+          }
+        ],
+        "markdown": "# 课堂报告 · 24机械高考公开课\n\n> 房间 default ｜ 生成于 2023-11-15 06:13\n\n## 一、出勤\n\n- 签到 **2 / 2 队**（100%）\n\n## 二、整体\n\n- 作答 **4 题次**：答对 2、部分正确 1、答错 1、跳过 0\n- 整体掌握度 **63%**，累计得分 **9.5 分**\n\n## 三、各队对比\n\n| 队伍 | 答对 | 作答 | 掌握度 | 得分 | 人数 |\n| --- | --- | --- | --- | --- | --- |\n| 全班 | 2 | 4 | 63% | — | 3 |\n| 红队 | 2 | 3 | 83% | 9.5 | 2 |\n| 蓝队 | 0 | 1 | 0% | 0 | 1 |\n\n## 四、题型掌握\n\n| 题型 | 作答 | 答对 | 掌握度 | 正确率 |\n| --- | --- | --- | --- | --- |\n| 基础题 | 2 | 1 | 75% | 50% |\n| 拔高题 | 2 | 1 | 50% | 50% |\n\n## 五、题目正确率（讲评顺序）\n\n| # | 题目 | 题型 | 作答 | 答对 | 正确率 | 未答对 |\n| --- | --- | --- | --- | --- | --- | --- |\n| 1 | 第一题：1+1=? | 基础题 | 2 | 1 | 50% | 0 |\n| 2 | 第二题：求导 | 拔高题 | 2 | 1 | 50% | 1 |\n\n> 本套题共 2 道有作答，整体正确率 50%。最需要讲评的是「第一题：1+1=?」（正确率 50%，2 人作答，0 人答错或跳过）；掌握最好的是「第二题：求导」（正确率 50%）。\n\n## 六、学生表现\n\n| 名次 | 学生 | 队伍 | 积分 | 作答 | 答对 | 掌握度 |\n| --- | --- | --- | --- | --- | --- | --- |\n| 1 | 甲 | 红队 | 8 | 2 | 2 | 100% |\n| 2 | 乙 | 红队 | 1.5 | 1 | 0 | 50% |\n| 3 | 丙 | 蓝队 | 0 | 1 | 0 | 0% |\n\n- **表现突出**：甲（8 分，掌握度 100%）、乙（1.5 分，掌握度 50%）、丙（0 分，掌握度 0%）\n- **需要关注**：丙（掌握度 0%）、乙（掌握度 50%）\n\n---\n\n*由课堂积分系统生成（Rust 核心 ci-domain::report）*\n"
+      }
+    },
+    {
+      "name": "报告：签到不满（1/2）",
+      "input": {
+        "courseName": "24机械高考公开课",
+        "room": "default",
+        "generatedAt": 1700000000000,
+        "checkin": {
+          "seated": 1,
+          "total": 2,
+          "rate": 50
+        },
+        "records": [
+          {
+            "sid": "s1",
+            "qid": "q1",
+            "result": "correct",
+            "points": 3
+          },
+          {
+            "sid": "s1",
+            "qid": "q2",
+            "result": "correct",
+            "points": 5
+          },
+          {
+            "sid": "s2",
+            "qid": "q1",
+            "result": "half",
+            "points": 1.5
+          },
+          {
+            "sid": "s3",
+            "qid": "q2",
+            "result": "wrong",
+            "points": 0
+          }
+        ],
+        "students": [
+          {
+            "id": "s1",
+            "name": "甲",
+            "teamId": "tm1"
+          },
+          {
+            "id": "s2",
+            "name": "乙",
+            "teamId": "tm1"
+          },
+          {
+            "id": "s3",
+            "name": "丙",
+            "teamId": "tm2"
+          }
+        ],
+        "teams": [
+          {
+            "id": "tm1",
+            "name": "红队"
+          },
+          {
+            "id": "tm2",
+            "name": "蓝队"
+          }
+        ],
+        "tiers": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "attempts": 2,
+            "correct": 1,
+            "creditRate": 75,
+            "correctRate": 50
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "attempts": 2,
+            "correct": 1,
+            "creditRate": 50,
+            "correctRate": 50
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "correctRate": 0
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "correctRate": 0
+          }
+        ],
+        "teamStats": [
+          {
+            "teamId": "all",
+            "name": "全班",
+            "correct": 2,
+            "attempts": 4,
+            "creditRate": 62.5,
+            "score": null,
+            "memberCount": 3
+          },
+          {
+            "teamId": "tm1",
+            "name": "红队",
+            "correct": 2,
+            "attempts": 3,
+            "creditRate": 83.3,
+            "score": 9.5,
+            "memberCount": 2
+          },
+          {
+            "teamId": "tm2",
+            "name": "蓝队",
+            "correct": 0,
+            "attempts": 1,
+            "creditRate": 0,
+            "score": 0,
+            "memberCount": 1
+          }
+        ],
+        "questions": [
+          {
+            "qid": "q1",
+            "stem": "第一题：1+1=?",
+            "tier": "basic",
+            "tierLabel": "基础题",
+            "attempts": 2,
+            "correct": 1,
+            "half": 1,
+            "wrong": 0,
+            "skip": 0,
+            "correctRate": 50,
+            "creditRate": 75,
+            "avgPoints": 2.25,
+            "missers": []
+          },
+          {
+            "qid": "q2",
+            "stem": "第二题：求导",
+            "tier": "advanced",
+            "tierLabel": "拔高题",
+            "attempts": 2,
+            "correct": 1,
+            "half": 0,
+            "wrong": 1,
+            "skip": 0,
+            "correctRate": 50,
+            "creditRate": 50,
+            "avgPoints": 2.5,
+            "missers": [
+              "丙"
+            ]
+          }
+        ],
+        "comment": "全班表现不错，继续保持",
+        "reviewLine": "本套题共 2 道有作答，整体正确率 50%。最需要讲评的是「第一题：1+1=?」（正确率 50%，2 人作答，0 人答错或跳过）；掌握最好的是「第二题：求导」（正确率 50%）。",
+        "halfRatio": 0.5
+      },
+      "expect": {
+        "attempts": 4,
+        "correct": 2,
+        "half": 1,
+        "wrong": 1,
+        "skip": 0,
+        "creditRate": 63,
+        "earned": 9.5,
+        "students": [
+          {
+            "sid": "s1",
+            "name": "甲",
+            "teamName": "红队",
+            "score": 8,
+            "attempts": 2,
+            "correct": 2,
+            "creditRate": 100
+          },
+          {
+            "sid": "s2",
+            "name": "乙",
+            "teamName": "红队",
+            "score": 1.5,
+            "attempts": 1,
+            "correct": 0,
+            "creditRate": 50
+          },
+          {
+            "sid": "s3",
+            "name": "丙",
+            "teamName": "蓝队",
+            "score": 0,
+            "attempts": 1,
+            "correct": 0,
+            "creditRate": 0
+          }
+        ],
+        "markdown": "# 课堂报告 · 24机械高考公开课\n\n> 房间 default ｜ 生成于 2023-11-15 06:13\n\n## 一、出勤\n\n- 签到 **1 / 2 队**（50%）\n\n## 二、整体\n\n- 作答 **4 题次**：答对 2、部分正确 1、答错 1、跳过 0\n- 整体掌握度 **63%**，累计得分 **9.5 分**\n\n> 全班表现不错，继续保持\n\n## 三、各队对比\n\n| 队伍 | 答对 | 作答 | 掌握度 | 得分 | 人数 |\n| --- | --- | --- | --- | --- | --- |\n| 全班 | 2 | 4 | 63% | — | 3 |\n| 红队 | 2 | 3 | 83% | 9.5 | 2 |\n| 蓝队 | 0 | 1 | 0% | 0 | 1 |\n\n## 四、题型掌握\n\n| 题型 | 作答 | 答对 | 掌握度 | 正确率 |\n| --- | --- | --- | --- | --- |\n| 基础题 | 2 | 1 | 75% | 50% |\n| 拔高题 | 2 | 1 | 50% | 50% |\n\n## 五、题目正确率（讲评顺序）\n\n| # | 题目 | 题型 | 作答 | 答对 | 正确率 | 未答对 |\n| --- | --- | --- | --- | --- | --- | --- |\n| 1 | 第一题：1+1=? | 基础题 | 2 | 1 | 50% | 0 |\n| 2 | 第二题：求导 | 拔高题 | 2 | 1 | 50% | 1 |\n\n> 本套题共 2 道有作答，整体正确率 50%。最需要讲评的是「第一题：1+1=?」（正确率 50%，2 人作答，0 人答错或跳过）；掌握最好的是「第二题：求导」（正确率 50%）。\n\n## 六、学生表现\n\n| 名次 | 学生 | 队伍 | 积分 | 作答 | 答对 | 掌握度 |\n| --- | --- | --- | --- | --- | --- | --- |\n| 1 | 甲 | 红队 | 8 | 2 | 2 | 100% |\n| 2 | 乙 | 红队 | 1.5 | 1 | 0 | 50% |\n| 3 | 丙 | 蓝队 | 0 | 1 | 0 | 0% |\n\n- **表现突出**：甲（8 分，掌握度 100%）、乙（1.5 分，掌握度 50%）、丙（0 分，掌握度 0%）\n- **需要关注**：丙（掌握度 0%）、乙（掌握度 50%）\n\n---\n\n*由课堂积分系统生成（Rust 核心 ci-domain::report）*\n"
+      }
+    }
   ]
 }

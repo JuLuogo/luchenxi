@@ -15,7 +15,9 @@ pub mod ability;
 pub mod classroom;
 pub mod draw;
 pub mod grade;
+pub mod mistakes;
 pub mod question_stats;
+pub mod report;
 pub mod rollcall;
 pub mod scoring;
 pub mod state;
@@ -25,7 +27,9 @@ pub use ability::{
     GRADES,
 };
 pub use draw::{candidates as draw_candidates, draw as draw_questions, DrawOpts};
+pub use mistakes::{mistake_board, student_mistakes, MistakeItem, StudentMistakes};
 pub use question_stats::{question_stats, review_line, short_stem, QuestionStat};
+pub use report::{build_report, to_markdown as report_markdown, Checkin, ClassReport, ReportStudent};
 pub use rollcall::{
     apply_pick, called_count, candidates as rollcall_candidates, pick as rollcall_pick, recent_ids,
     Pick, PickOpts, RollEntry, RollcallSettings, Student, XorShift64,

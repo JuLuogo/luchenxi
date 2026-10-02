@@ -16,7 +16,6 @@
 use crate::scoring::round2;
 use crate::state::{BankQuestion, ScoreRecord, Student};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
 
 /// 一道题的统计
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -137,11 +136,14 @@ pub fn question_stats(
         })
         .collect();
 
-    // 正确率升序（最需要讲评的在前）；同率则作答多的在前
+    // 正确率升序（最需要讲评的在前）；同率则作答多的在前；
+    // 再同则按**题库顺序**（稳定且有意义 —— 用 qid 排会依赖随机 uid，基准不可复现）
+    let bank_idx = |qid: &str| bank.iter().position(|b| b.id == qid).unwrap_or(usize::MAX);
     out.sort_by(|a, b| {
         a.correct_rate
             .cmp(&b.correct_rate)
             .then(b.attempts.cmp(&a.attempts))
+            .then(bank_idx(&a.qid).cmp(&bank_idx(&b.qid)))
             .then(a.qid.cmp(&b.qid))
     });
     out

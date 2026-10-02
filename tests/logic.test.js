@@ -888,6 +888,124 @@ group('按题目正确率 / 课后评价');
   eq(allStats.length, 2, '不限定试卷时统计全部流水里的题');
 })();
 
+/* ================= 16. 错题本 ================= */
+group('错题本（按学生汇总答错/跳过）');
+
+(function () {
+  const A = CI.analysis;
+  S.replaceState(S.defaultState());
+  const teams = S.get().teams;
+  const a = S.addStudent('甲', teams[0].id);
+  const b = S.addStudent('乙', teams[0].id);
+  const c = S.addStudent('丙', teams[1].id);
+  const id = (x) => (typeof x === 'string' ? x : x.id);
+
+  const q1 = S.addQuestion({ stem: '第一题', tier: 'basic', options: ['甲', '乙'], answer: 'A' });
+  const q2 = S.addQuestion({ stem: '第二题', tier: 'advanced', answer: '2x' });
+  const qz = S.createQuiz('随堂测', [q1.id, q2.id]);
+
+  // 甲：q1 错两次（最后一次选了 B）、q2 跳过；乙：q1 错一次；丙：全对
+  S.recordResult({ sid: id(a), qid: q1.id, tier: 'basic', result: 'wrong', quizId: qz.id, note: 'A. 甲' });
+  S.recordResult({ sid: id(a), qid: q1.id, tier: 'basic', result: 'wrong', quizId: qz.id, note: 'B. 乙' });
+  S.recordResult({ sid: id(a), qid: q2.id, tier: 'advanced', result: 'skip', quizId: qz.id, note: '跳过' });
+  S.recordResult({ sid: id(b), qid: q1.id, tier: 'basic', result: 'wrong', quizId: qz.id, note: 'B. 乙' });
+  S.recordResult({ sid: id(c), qid: q1.id, tier: 'basic', result: 'correct', quizId: qz.id, note: 'A. 甲' });
+  S.recordResult({ sid: id(c), qid: q2.id, tier: 'advanced', result: 'half', quizId: qz.id, note: 'x' });
+
+  const mine = A.studentMistakes(S.get(), id(a));
+  eq(mine.name, '甲', '错题本带姓名');
+  eq(mine.teamName, teams[0].name, '错题本带队伍');
+  eq(mine.items.length, 2, '甲有两道错题（q1 错两次只占一条）');
+  eq(mine.items[0].qid, q1.id, '错两次的排前面');
+  eq(mine.items[0].count, 2, 'q1 错了两次');
+  eq(mine.items[0].answer, 'B. 乙', '取最后一次提交的内容');
+  eq(mine.items[0].tierLabel, '基础题', '带题型中文名');
+  eq(mine.items[0].expected.length > 0, true, '带标准答案：' + mine.items[0].expected);
+  eq(mine.items[1].qid, q2.id, '跳过的那题也在错题本里');
+  eq(mine.items[1].result, 'skip', '记下是跳过');
+  eq(mine.tiers.length, 2, '错题涉及两个题型');
+
+  // 全对的学生没有错题
+  const cMine = A.studentMistakes(S.get(), id(c));
+  eq(cMine.items.length, 0, '半对不算错题，丙没有错题');
+
+  // 全班错题榜：错题多的在前
+  const board = A.mistakeBoard(S.get());
+  eq(board.length, 2, '只有甲、乙有错题');
+  eq(board[0].name, '甲', '甲错 3 次排第一');
+  eq(board[1].name, '乙', '乙错 1 次排第二');
+
+  // 题被删了也要能列（流水还在）
+  S.removeQuestion(q2.id);
+  const afterDelete = A.studentMistakes(S.get(), id(a));
+  const gone = afterDelete.items.find((x) => x.qid === q2.id);
+  ok(gone && gone.stem.indexOf('题目已删除') >= 0, '题删了仍列出并标注：' + (gone && gone.stem));
+})();
+
+/* ================= 17. 课后课堂报告 ================= */
+group('课后课堂报告（Markdown 汇总）');
+
+(function () {
+  const A = CI.analysis;
+  S.replaceState(S.defaultState());
+  const teams = S.get().teams;
+  const a = S.addStudent('甲', teams[0].id);
+  const b = S.addStudent('乙', teams[0].id);
+  const id = (x) => (typeof x === 'string' ? x : x.id);
+  S.updateSettings({ courseName: '24机械高考公开课' });
+
+  const q1 = S.addQuestion({ stem: '第一题：1+1=?', tier: 'basic', answer: 'A' });
+  const qz = S.createQuiz('随堂测', [q1.id]);
+  S.recordResult({ sid: id(a), qid: q1.id, tier: 'basic', result: 'correct', quizId: qz.id });
+  S.recordResult({ sid: id(b), qid: q1.id, tier: 'basic', result: 'half', quizId: qz.id });
+
+  const rep = A.classReport(S.get(), {
+    generatedAt: 1700000000000,
+    room: 'default',
+    checkin: { seated: 1, total: 2, rate: 50 }
+  });
+  const d = rep.data;
+  eq(d.courseName, '24机械高考公开课', '报告带课程名');
+  eq(d.attempts, 2, '两次作答');
+  eq(d.correct, 1, '一次答对');
+  eq(d.half, 1, '一次半对');
+  eq(d.creditRate, 75, '(1 + 0.5) / 2 = 75%');
+  eq(d.checkin.rate, 50, '签到率来自入参');
+  eq(d.students.length, 2, '两个学生');
+  eq(d.students[0].name, '甲', '按积分降序');
+
+  const md = rep.markdown;
+  ok(md.startsWith('# 课堂报告 · 24机械高考公开课'), '标题带课程名');
+  ok(md.indexOf('## 一、出勤') >= 0, '有出勤节');
+  ok(md.indexOf('签到 **1 / 2 队**（50%）') >= 0, '出勤行：' + md.split('\n').slice(5, 8).join(' / '));
+  ok(md.indexOf('## 二、整体') >= 0, '有整体节');
+  ok(md.indexOf('作答 **2 题次**') >= 0, '整体行含作答数');
+  ok(md.indexOf('整体掌握度 **75%**') >= 0, '整体行含掌握度');
+  ok(md.indexOf('## 四、题型掌握') >= 0, '有题型节');
+  ok(md.indexOf('## 五、题目正确率（讲评顺序）') >= 0, '有题目节');
+  ok(md.indexOf('## 六、学生表现') >= 0, '有学生节');
+  ok(md.indexOf('| 1 | 甲 |') >= 0, '学生表格有甲');
+  ok(md.indexOf('生成于 2023-11-15 06:13') >= 0, '时间按东八区格式化：' + (md.match(/生成于 [^\n]*/) || [])[0]);
+  ok(md.endsWith('由课堂积分系统生成（Rust 核心 ci-domain::report）*\n'), '结尾署名');
+
+  // 空课堂也要能出报告（不能崩）
+  const empty = A.classReport(S.defaultState(), { generatedAt: 0 });
+  ok(empty.markdown.indexOf('本节课没有作答数据') >= 0, '没有数据时给出说明');
+  ok(empty.markdown.indexOf('## 五、题目正确率') < 0, '没有题目数据就不出该节');
+  // 连队伍都没有时（签到总数 0）走另一条分支
+  const noTeams = S.defaultState();
+  noTeams.teams = [];
+  noTeams.students = [];
+  const bare = A.classReport(noTeams, { generatedAt: 0 });
+  ok(bare.markdown.indexOf('还没有队伍数据') >= 0, '没有队伍时给出说明');
+  eq(bare.data.checkin.total, 0, '没有队伍时签到总数为 0');
+
+  // 各队对比：有两个队时才出这一节
+  S.recordResult({ sid: id(a), qid: q1.id, tier: 'basic', result: 'correct', quizId: qz.id });
+  const withTeams = A.classReport(S.get(), { generatedAt: 1 });
+  ok(withTeams.markdown.indexOf('## 三、各队对比') >= 0, '有队伍数据时出对比节');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

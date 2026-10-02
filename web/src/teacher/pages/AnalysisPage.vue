@@ -121,8 +121,13 @@ async function copySummary() {
   try { await navigator.clipboard.writeText(summaryText.value); ElMessage.success('已复制'); }
   catch (e) { ElMessage.warning('复制失败，请手动选中'); }
 }
-function download(name, text) {
-  const blob = new Blob(['\ufeff' + text], { type: 'text/csv;charset=utf-8' });
+/**
+ * 触发下载
+ * CSV 要加 BOM（Excel 中文不乱码），Markdown 不能加（会多出看不见的字符）
+ */
+function download(name: string, text: string, mime = 'text/csv;charset=utf-8') {
+  const body = mime.indexOf('csv') >= 0 ? '\ufeff' + text : text;
+  const blob = new Blob([body], { type: mime });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = name;
@@ -139,6 +144,24 @@ function exportCSV(kind) {
   } else {
     download('题目分析.csv', CI.analysis.questionCSV(store.state, store.runtime.quizId));
   }
+}
+
+/** 导出课后课堂报告（Markdown：出勤 / 整体 / 各队对比 / 题型 / 题目正确率 / 学生表现） */
+function downloadReport() {
+  const rep = CI.analysis.classReport(store.state, {});
+  const stamp = new Date().toISOString().slice(0, 10);
+  const name = (rep.data.courseName || '课堂') + '_课堂报告_' + stamp + '.md';
+  download(name, rep.markdown, 'text/markdown');
+  ElMessage.success('已导出课堂报告');
+}
+
+/** 错题本：按学生汇总答错/跳过的题（数据早就在流水里，这里按"人"聚合） */
+const mistakes = computed<any[]>(() => {
+  void store.rev;
+  return CI.analysis.mistakeBoard(store.state) as any[];
+});
+function mistakeTotal(m: any): number {
+  return m.items.reduce((n: number, x: any) => n + x.count, 0);
 }
 
 /** 某个学生在某个题型上的正确率（CI.analysis.studentStats.tiers） */
@@ -166,6 +189,7 @@ function personalRate(tierKey) {
         </el-select>
         <el-button @click="genClassSummary">生成班级小结</el-button>
         <el-button @click="genStudentSummary">生成个人小结</el-button>
+        <el-button type="primary" plain @click="downloadReport">导出课堂报告 (md)</el-button>
         <el-dropdown>
           <el-button>导出 CSV<el-icon><ArrowDown /></el-icon></el-button>
           <template #dropdown>
@@ -286,6 +310,42 @@ function personalRate(tierKey) {
         </el-table-column>
       </el-table>
       <div v-if="!questionRows.length" class="empty-hint">还没有按题目的作答数据（需要学生通过试卷作答，快捷记分不计入）</div>
+    </div>
+
+    <!-- 错题本：按学生汇总答错/跳过的题（课后订正的依据） -->
+    <div class="panel">
+      <h3 class="panel-title">
+        错题本
+        <span class="sub">按错题数排序；同一题错多次只列一条并标次数 —— 讲评后照着订正</span>
+      </h3>
+      <el-empty v-if="!mistakes.length" description="还没有错题（学生答错或跳过之后，这里会按人列出，含标准答案）" />
+      <el-collapse v-else>
+        <el-collapse-item v-for="m in mistakes" :key="m.sid" :name="m.sid">
+          <template #title>
+            <span class="mistake-title">
+              <b>{{ m.name }}</b>
+              <el-tag v-if="m.teamName" size="small" effect="plain">{{ m.teamName }}</el-tag>
+              <span class="sub">{{ m.items.length }} 道题 / 共错 {{ mistakeTotal(m) }} 次<template v-if="m.tiers.length"> ｜ {{ m.tiers.join('、') }}</template></span>
+            </span>
+          </template>
+          <el-table :data="m.items" size="small">
+            <el-table-column prop="stem" label="题目" min-width="180" show-overflow-tooltip />
+            <el-table-column prop="tierLabel" label="题型" width="90" />
+            <el-table-column label="次数" width="70" align="right">
+              <template #default="{ row }">{{ row.count }}</template>
+            </el-table-column>
+            <el-table-column label="最近判定" width="90">
+              <template #default="{ row }">
+                <el-tag size="small" :type="row.result === 'skip' ? 'info' : 'danger'" effect="plain">
+                  {{ row.result === 'skip' ? '跳过' : '答错' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="answer" label="学生答案" min-width="120" show-overflow-tooltip />
+            <el-table-column prop="expected" label="正确答案" min-width="120" show-overflow-tooltip />
+          </el-table>
+        </el-collapse-item>
+      </el-collapse>
     </div>
 
     <el-row :gutter="14">
