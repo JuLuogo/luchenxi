@@ -321,6 +321,11 @@ export type ScoreRequest = {
 	note: string,
 	points: number | null,
 	/**
+	 *  部分得分系数（0~1）：多答案题按命中比例算出的值；
+	 *  为空时存储层回退到 halfRatio（教师手工判定「部分正确」的情形）。
+	 */
+	ratio?: number | null,
+	/**
 	 *  抢答名次（1 起）：本队此前是否对该题抢过答、排第几。
 	 *  答对且有名次 → 存储层按名次加分（第 1 个 +2 / 第 2 个 +1，见 ScoringSettings）。
 	 */

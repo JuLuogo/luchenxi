@@ -100,19 +100,29 @@
     if (type === 'subjective') return null;
 
     if (submission.skip) {
-      return { result: 'skip', auto: true, expected: answerKey(q), got: '跳过' };
+      return { result: 'skip', auto: true, ratio: 0, expected: answerKey(q), got: '跳过' };
     }
 
     if (type === 'choice') {
       var expected = parseChoice(q.answer);
       var got = parseChoice(Array.isArray(submission.choice) ? submission.choice.join('') : submission.choice);
+      // 部分得分：按命中比例、扣减误选（保守式）
+      //   ratio = max(0, (命中 − 误选) / 正确选项总数)
+      //   漏选按比例给分、错选要扣；这样「只选 1 个（漏 3 个）」与「漏 1 个」不再都是 50%，
+      //   「多选 1 个（含全部正确项）」也不再直接 0 分。
+      //   与 Rust 侧 grade.rs::auto 同一口径（parity 基准逐字段比对）。
+      var hit = got.filter(function (k) { return expected.indexOf(k) >= 0; }).length;
+      var miss = got.filter(function (k) { return expected.indexOf(k) < 0; }).length;
+      var total = expected.length;
+      var ratio = total > 0 ? Math.max(0, (hit - miss) / total) : 0;
       var result;
       if (!got.length) result = 'skip';
-      else if (sameSet(got, expected)) result = 'correct';
-      else if (isSubset(got, expected)) result = 'half';
+      else if (miss === 0 && total > 0 && hit === total) result = 'correct';
+      else if (ratio > 0) result = 'half';
       else result = 'wrong';
       return {
         result: result, auto: true,
+        ratio: result === 'correct' ? 1 : (result === 'skip' ? 0 : ratio),
         expected: expected.join(''),
         got: got.join('') || '（空）'
       };
@@ -121,11 +131,12 @@
     // fill
     var answers = acceptedAnswers(q).map(normalizeText);
     var mine = normalizeText(submission.text);
-    if (!mine) return { result: 'skip', auto: true, expected: answerKey(q), got: '（空）' };
+    if (!mine) return { result: 'skip', auto: true, ratio: 0, expected: answerKey(q), got: '（空）' };
     var ok = answers.some(function (a) { return a === mine; });
     return {
       result: ok ? 'correct' : 'wrong',
       auto: true,
+      ratio: ok ? 1 : 0,
       expected: answerKey(q),
       got: U.str(submission.text)
     };

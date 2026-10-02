@@ -257,6 +257,10 @@ pub struct ScoreInput {
     /// 抢答名次（1 起）：答对且给了名次 → 用名次加分
     #[serde(default)]
     pub rank: Option<usize>,
+    /// 显式部分得分系数（多答案题按命中比例算出的值，见 grade::auto 的 ratio）。
+    /// 为空时：half 用 `st.half_ratio`（教师手工判定「部分正确」的情形），其余按判定取整。
+    #[serde(default)]
+    pub ratio: Option<f64>,
     #[serde(default)]
     pub source: Option<String>,
 }
@@ -280,12 +284,19 @@ pub fn score_of_input(tiers: &[Tier], st: &ScoringSettings, input: &ScoreInput) 
             }
         }
     };
-    let ratio = if result == "half" {
-        st.half_ratio
-    } else {
-        base_ratio(&result).unwrap_or(0.0)
+    // 显式 ratio 优先（多答案题按命中比例算出来的部分分）；
+    // 没有显式值时：半对回退到 half_ratio（教师手工判定），其余按判定取整
+    let ratio = match input.ratio {
+        Some(r) => r,
+        None => {
+            if result == "half" {
+                st.half_ratio
+            } else {
+                base_ratio(&result).unwrap_or(0.0)
+            }
+        }
     };
-    let points = compute_points(&result, base, None, input.fast, input.rank, st);
+    let points = compute_points(&result, base, Some(ratio), input.fast, input.rank, st);
 
     ScoreSnapshot {
         sid: input.sid.clone(),

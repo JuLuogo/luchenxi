@@ -689,8 +689,10 @@
       quizId: opt.quizId || null,
       result: result,
       base: base,
-      ratio: result === 'half' ? num(s.settings.halfRatio, 0.5) : RESULT_RATIO[result],
-      points: computePoints({ result: result, base: base, fast: opt.fast, rank: opt.rank }),
+      ratio: (opt.ratio !== undefined && opt.ratio !== null)
+        ? num(opt.ratio, 0)
+        : (result === 'half' ? num(s.settings.halfRatio, 0.5) : RESULT_RATIO[result]),
+      points: computePoints({ result: result, base: base, ratio: opt.ratio, fast: opt.fast, rank: opt.rank }),
       source: opt.source || 'quiz',
       note: opt.note || '',
       at: Date.now(),

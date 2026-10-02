@@ -58,6 +58,8 @@ struct GradeCase {
 #[derive(Debug, Deserialize)]
 struct GradeExpect {
     result: String,
+    #[serde(default)]
+    ratio: f64,
     expected: String,
     got: String,
 }
@@ -135,6 +137,8 @@ struct ScoreStep {
     fast: bool,
     #[serde(default)]
     rank: Option<usize>,
+    #[serde(default)]
+    ratio: Option<f64>,
     source: String,
     expect: ScoreExpect,
 }
@@ -636,6 +640,14 @@ fn grading_matches_js_reference() {
             (None, None) => {}
             (Some(got), Some(want)) => {
                 assert_eq!(got.result.as_str(), want.result, "[{}] 判定结果不一致", n);
+                // 部分得分系数：多答案题按命中比例算，漏 1 个与漏 3 个必须不同分
+                assert!(
+                    (got.ratio - want.ratio).abs() < 1e-9,
+                    "[{}] 部分得分系数不一致：Rust {} vs JS {}",
+                    n,
+                    got.ratio,
+                    want.ratio
+                );
                 assert_eq!(got.expected, want.expected, "[{}] expected 不一致", n);
                 assert_eq!(got.got, want.got, "[{}] got 不一致", n);
             }
@@ -731,6 +743,7 @@ fn scoring_matches_js_reference() {
                 result: step.result.clone(),
                 fast: step.fast,
                 rank: step.rank,
+                ratio: step.ratio,
                 source: Some(step.source.clone()),
             };
             let got = score_of_input(&tiers, &step.settings, &input);

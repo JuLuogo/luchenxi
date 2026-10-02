@@ -987,6 +987,7 @@
       },
       "expect": {
         "result": "correct",
+        "ratio": 1,
         "expected": "B",
         "got": "B"
       },
@@ -1016,6 +1017,7 @@
       },
       "expect": {
         "result": "wrong",
+        "ratio": 0,
         "expected": "B",
         "got": "A"
       },
@@ -1043,6 +1045,7 @@
       },
       "expect": {
         "result": "skip",
+        "ratio": 0,
         "expected": "B",
         "got": "（空）"
       },
@@ -1073,6 +1076,7 @@
       },
       "expect": {
         "result": "correct",
+        "ratio": 1,
         "expected": "AC",
         "got": "AC"
       },
@@ -1102,6 +1106,7 @@
       },
       "expect": {
         "result": "half",
+        "ratio": 0.5,
         "expected": "AC",
         "got": "A"
       },
@@ -1132,6 +1137,7 @@
       },
       "expect": {
         "result": "wrong",
+        "ratio": 0,
         "expected": "AC",
         "got": "AB"
       },
@@ -1161,6 +1167,7 @@
       },
       "expect": {
         "result": "skip",
+        "ratio": 0,
         "expected": "A. 甲；C. 丙",
         "got": "跳过"
       },
@@ -1183,6 +1190,7 @@
       },
       "expect": {
         "result": "correct",
+        "ratio": 1,
         "expected": "x=1|x = 1|1",
         "got": " X = 1 "
       },
@@ -1205,6 +1213,7 @@
       },
       "expect": {
         "result": "correct",
+        "ratio": 1,
         "expected": "x=1|x = 1|1",
         "got": "１"
       },
@@ -1227,6 +1236,7 @@
       },
       "expect": {
         "result": "wrong",
+        "ratio": 0,
         "expected": "x=1|x = 1|1",
         "got": "x=2"
       },
@@ -1249,6 +1259,7 @@
       },
       "expect": {
         "result": "skip",
+        "ratio": 0,
         "expected": "x=1|x = 1|1",
         "got": "（空）"
       },
@@ -1294,6 +1305,7 @@
       },
       "expect": {
         "result": "correct",
+        "ratio": 1,
         "expected": "D",
         "got": "D"
       },
@@ -1324,6 +1336,7 @@
       },
       "expect": {
         "result": "wrong",
+        "ratio": 0,
         "expected": "",
         "got": "B"
       },
@@ -1348,6 +1361,7 @@
       },
       "expect": {
         "result": "wrong",
+        "ratio": 0,
         "expected": "8,八",
         "got": "八"
       },
@@ -1358,6 +1372,272 @@
       ],
       "type": "fill",
       "typeLabel": "填空题"
+    },
+    {
+      "name": "部分得分：全对",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "ABCD"
+      },
+      "submission": {
+        "choice": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "correct",
+        "ratio": 1,
+        "expected": "ABCD",
+        "got": "ABCD"
+      },
+      "answerKey": "A. 甲；B. 乙；C. 丙；D. 丁",
+      "describe": "A. 甲 / B. 乙 / C. 丙 / D. 丁",
+      "validate": [
+        "答案包含了全部选项，确认这是多选题吗？"
+      ],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "部分得分：漏 1 个（3/4）",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "ABCD"
+      },
+      "submission": {
+        "choice": [
+          "A",
+          "B",
+          "C"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "half",
+        "ratio": 0.75,
+        "expected": "ABCD",
+        "got": "ABC"
+      },
+      "answerKey": "A. 甲；B. 乙；C. 丙；D. 丁",
+      "describe": "A. 甲 / B. 乙 / C. 丙",
+      "validate": [
+        "答案包含了全部选项，确认这是多选题吗？"
+      ],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "部分得分：漏 2 个（2/4）",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "ABCD"
+      },
+      "submission": {
+        "choice": [
+          "A",
+          "B"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "half",
+        "ratio": 0.5,
+        "expected": "ABCD",
+        "got": "AB"
+      },
+      "answerKey": "A. 甲；B. 乙；C. 丙；D. 丁",
+      "describe": "A. 甲 / B. 乙",
+      "validate": [
+        "答案包含了全部选项，确认这是多选题吗？"
+      ],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "部分得分：漏 3 个（1/4）",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "ABCD"
+      },
+      "submission": {
+        "choice": [
+          "A"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "half",
+        "ratio": 0.25,
+        "expected": "ABCD",
+        "got": "A"
+      },
+      "answerKey": "A. 甲；B. 乙；C. 丙；D. 丁",
+      "describe": "A. 甲",
+      "validate": [
+        "答案包含了全部选项，确认这是多选题吗？"
+      ],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "部分得分：多选 1 个（4 对 1 错 → 3/4）",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "ABCD"
+      },
+      "submission": {
+        "choice": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "half",
+        "ratio": 0.75,
+        "expected": "ABCD",
+        "got": "ABCDE"
+      },
+      "answerKey": "A. 甲；B. 乙；C. 丙；D. 丁",
+      "describe": "A. 甲 / B. 乙 / C. 丙 / D. 丁 / E. ",
+      "validate": [
+        "答案包含了全部选项，确认这是多选题吗？"
+      ],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "部分得分：对 2 错 1（1/4）",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "ABCD"
+      },
+      "submission": {
+        "choice": [
+          "A",
+          "B",
+          "E"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "half",
+        "ratio": 0.25,
+        "expected": "ABCD",
+        "got": "ABE"
+      },
+      "answerKey": "A. 甲；B. 乙；C. 丙；D. 丁",
+      "describe": "A. 甲 / B. 乙 / E. ",
+      "validate": [
+        "答案包含了全部选项，确认这是多选题吗？"
+      ],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "部分得分：全错",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "ABCD"
+      },
+      "submission": {
+        "choice": [
+          "E"
+        ],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "wrong",
+        "ratio": 0,
+        "expected": "ABCD",
+        "got": "E"
+      },
+      "answerKey": "A. 甲；B. 乙；C. 丙；D. 丁",
+      "describe": "E. ",
+      "validate": [
+        "答案包含了全部选项，确认这是多选题吗？"
+      ],
+      "type": "choice",
+      "typeLabel": "选择题"
+    },
+    {
+      "name": "部分得分：空答案算跳过",
+      "question": {
+        "options": [
+          "甲",
+          "乙",
+          "丙",
+          "丁"
+        ],
+        "answer": "ABCD"
+      },
+      "submission": {
+        "choice": [],
+        "text": "",
+        "skip": false
+      },
+      "expect": {
+        "result": "skip",
+        "ratio": 0,
+        "expected": "ABCD",
+        "got": "（空）"
+      },
+      "answerKey": "A. 甲；B. 乙；C. 丙；D. 丁",
+      "describe": "（空）",
+      "validate": [
+        "答案包含了全部选项，确认这是多选题吗？"
+      ],
+      "type": "choice",
+      "typeLabel": "选择题"
     }
   ],
   "rollcall": [
@@ -2654,6 +2934,7 @@
           "result": "correct",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 3,
@@ -2678,6 +2959,7 @@
           "result": "correct",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -2702,6 +2984,7 @@
           "result": "half",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -2726,6 +3009,7 @@
           "result": "wrong",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -2750,6 +3034,7 @@
           "result": "correct",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quick",
           "expect": {
             "base": 10,
@@ -2793,6 +3078,7 @@
           "result": "correct",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 3,
@@ -2817,6 +3103,7 @@
           "result": "correct",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -2841,6 +3128,7 @@
           "result": "half",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -2865,6 +3153,7 @@
           "result": "wrong",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -2889,6 +3178,7 @@
           "result": "correct",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quick",
           "expect": {
             "base": 10,
@@ -2913,6 +3203,7 @@
           "result": "wrong",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 3,
@@ -2937,6 +3228,7 @@
           "result": "correct",
           "fast": true,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 3,
@@ -2961,6 +3253,7 @@
           "result": "half",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 3,
@@ -2969,6 +3262,75 @@
             "result": "half",
             "tier": "basic",
             "scoreAfter": 23.7
+          }
+        }
+      ]
+    },
+    {
+      "name": "部分得分：显式 ratio（0.75 / 0.25）",
+      "questions": [
+        {
+          "tier": "basic",
+          "points": null
+        },
+        {
+          "tier": "advanced",
+          "points": null
+        },
+        {
+          "tier": "extended",
+          "points": 20
+        }
+      ],
+      "steps": [
+        {
+          "settings": {
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
+          },
+          "hasQuestion": true,
+          "questionTier": "basic",
+          "customPoints": null,
+          "tier": null,
+          "result": "half",
+          "fast": false,
+          "rank": null,
+          "ratio": 0.75,
+          "source": "quiz",
+          "expect": {
+            "base": 3,
+            "ratio": 0.75,
+            "points": 2.25,
+            "result": "half",
+            "tier": "basic",
+            "scoreAfter": 2.25
+          }
+        },
+        {
+          "settings": {
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
+          },
+          "hasQuestion": true,
+          "questionTier": "basic",
+          "customPoints": null,
+          "tier": null,
+          "result": "half",
+          "fast": false,
+          "rank": null,
+          "ratio": 0.25,
+          "source": "quiz",
+          "expect": {
+            "base": 3,
+            "ratio": 0.25,
+            "points": 0.75,
+            "result": "half",
+            "tier": "basic",
+            "scoreAfter": 3
           }
         }
       ]
@@ -3004,6 +3366,7 @@
           "result": "correct",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 20,
@@ -3028,6 +3391,7 @@
           "result": "half",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 20,
@@ -3052,6 +3416,7 @@
           "result": "不存在的类型",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 20,
@@ -3076,6 +3441,7 @@
           "result": "skip",
           "fast": false,
           "rank": null,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 3,
@@ -3122,6 +3488,7 @@
           "result": "correct",
           "fast": false,
           "rank": 1,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 3,
@@ -3149,6 +3516,7 @@
           "result": "correct",
           "fast": false,
           "rank": 2,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -3176,6 +3544,7 @@
           "result": "wrong",
           "fast": false,
           "rank": 1,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -3203,6 +3572,7 @@
           "result": "half",
           "fast": false,
           "rank": 1,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -3230,6 +3600,7 @@
           "result": "correct",
           "fast": false,
           "rank": 9,
+          "ratio": null,
           "source": "quiz",
           "expect": {
             "base": 3,

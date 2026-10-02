@@ -401,7 +401,29 @@ eq(G.auto(qChoice, { choice: ['A'] }).result, 'wrong', '单选答错');
 eq(G.auto(qChoice, { choice: [] }).result, 'skip', '空提交 → 跳过');
 eq(G.auto(qMulti, { choice: ['A', 'C'] }).result, 'correct', '多选全对');
 eq(G.auto(qMulti, { choice: ['A'] }).result, 'half', '多选漏选 → 部分正确');
-eq(G.auto(qMulti, { choice: ['A', 'B'] }).result, 'wrong', '多选错选 → 答错');
+eq(G.auto(qMulti, { choice: ['A', 'B'] }).result, 'wrong', '多选错选（扣到 0）→ 答错');
+
+/* ---- 部分得分按命中比例、扣减误选（2026-10 改）----
+ * 规则：ratio = max(0, (命中 − 误选) / 正确选项总数)
+ * 改前的问题：是子集就给 50%（漏 1 个与漏 3 个同分）、多选 1 个（含全部正确项）反而 0 分。 */
+const qMulti4 = { stem: '四选多', options: ['甲', '乙', '丙', '丁'], answer: 'ABCD' };
+eq(G.auto(qMulti4, { choice: ['A', 'B', 'C', 'D'] }).ratio, 1, '全对 → ratio 1');
+eq(G.auto(qMulti4, { choice: ['A', 'B', 'C'] }).ratio, 0.75, '漏 1 个 → 3/4');
+eq(G.auto(qMulti4, { choice: ['A', 'B'] }).ratio, 0.5, '漏 2 个 → 2/4');
+eq(G.auto(qMulti4, { choice: ['A'] }).ratio, 0.25, '漏 3 个 → 1/4（改前是 0.5，与漏 1 个同分）');
+eq(G.auto(qMulti4, { choice: ['A', 'B', 'C', 'D', 'E'] }).ratio, 0.75, '多选 1 个错的 → 4 对 1 错 = 3/4（改前直接 0 分）');
+eq(G.auto(qMulti4, { choice: ['A', 'B', 'E'] }).ratio, 0.25, '对 2 错 1 → 1/4');
+eq(G.auto(qMulti4, { choice: ['E'] }).ratio, 0, '全错 → 0（不会出现负分）');
+eq(G.auto(qMulti4, { choice: [] }).ratio, 0, '空提交 → 跳过，ratio 0');
+eq(G.auto(qChoice, { choice: ['B'] }).ratio, 1, '单选答对 ratio 1');
+eq(G.auto(qChoice, { choice: ['A'] }).ratio, 0, '单选答错 ratio 0');
+eq(G.auto(qFill, { text: 'x=1' }).ratio, 1, '填空答对 ratio 1');
+eq(G.auto(qFill, { text: 'x=9' }).ratio, 0, '填空答错 ratio 0');
+
+// 部分得分真的进了积分：漏 1 个拿 3/4、漏 3 个拿 1/4（不再都是 50%）
+eq(S.computePoints({ result: 'half', base: 8, ratio: 0.75 }), 6, '部分分 3/4 → 8×0.75 = 6');
+eq(S.computePoints({ result: 'half', base: 8, ratio: 0.25 }), 2, '部分分 1/4 → 8×0.25 = 2');
+eq(S.computePoints({ result: 'half', base: 8 }), 4, '没给 ratio 时仍回退 halfRatio(0.5) → 4');
 eq(G.auto(qFill, { text: ' X = 1 ' }).result, 'correct', '填空忽略空格与大小写、支持多解');
 eq(G.auto(qFill, { text: 'x=2' }).result, 'wrong', '填空答错');
 eq(G.auto(qFill, { text: '' }).result, 'skip', '填空空提交 → 跳过');

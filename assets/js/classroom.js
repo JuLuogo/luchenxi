@@ -324,7 +324,9 @@
         source: 'student',
         note: desc,
         by: 'student',
-        rank: rank
+        rank: rank,
+        // 多答案题的部分得分：按命中比例算出来的 ratio（见 grade.js::auto）
+        ratio: graded.ratio
       });
 
       CI.store.tx('class-answer-feed', function (st) {

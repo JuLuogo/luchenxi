@@ -44,8 +44,10 @@ for (const [label, choice] of [
   ['E 全错', ['E']]
 ]) {
   const r = G.auto(q, { choice });
-  const pts = S.computePoints({ result: r.result, base: 10 });
-  console.log('  ' + label.padEnd(24) + ' → ' + String(r.result).padEnd(8) + ' 得分 ' + pts);
+  // 真实计分路径会把 auto 返回的 ratio 传进 computePoints（见 store.recordResult / classroom 作答路径）
+  const pts = S.computePoints({ result: r.result, base: 10, ratio: r.ratio });
+  console.log('  ' + label.padEnd(24) + ' → ' + String(r.result).padEnd(8) +
+    ' ratio ' + String(r.ratio).padEnd(6) + ' 得分 ' + pts);
 }
 
 /* ================= 2. 填空题：有没有半对 ================= */

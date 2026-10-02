@@ -155,7 +155,8 @@ function gradeCase(name, q, submission) {
       skip: !!submission.skip
     },
     // auto 返回 null（主观题）时记 null，Rust 侧同样返回 None
-    expect: r ? { result: r.result, expected: r.expected, got: r.got } : null,
+    // ratio：部分得分系数（多答案题按命中比例算；Rust 侧必须逐字段一致）
+    expect: r ? { result: r.result, ratio: Number(r.ratio || 0), expected: r.expected, got: r.got } : null,
     answerKey: G.answerKey(q),
     describe: G.describeSubmission(q, submission),
     validate: G.validateQuestion(q).warnings,
@@ -166,6 +167,7 @@ function gradeCase(name, q, submission) {
 
 const Q_CHOICE = { stem: '选一选', options: ['甲', '乙', '丙', '丁'], answer: 'B' };
 const Q_MULTI = { stem: '多选', options: ['甲', '乙', '丙', '丁'], answer: 'AC' };
+const Q_MULTI4 = { stem: '四选多', options: ['甲', '乙', '丙', '丁'], answer: 'ABCD' };
 const Q_FILL = { stem: '填空', options: [], answer: 'x=1|x = 1|1' };
 const Q_SUBJ = { stem: '证明题', options: [], answer: '' };
 const Q_BADLETTER = { stem: '越界', options: ['甲', '乙'], answer: 'D' };
@@ -187,6 +189,18 @@ gradeCase('主观题（交老师判定）', Q_SUBJ, { text: '我的证明' });
 gradeCase('选择题答案字母越界', Q_BADLETTER, { choice: ['D'] });
 gradeCase('选择题答案写成选项原文', Q_NOLETTER, { choice: ['B'] });
 gradeCase('填空题用逗号分隔多解', Q_COMMA, { text: '八' });
+
+/* ---------- 部分得分（多答案题按命中比例、扣减误选）----------
+ * 规则：ratio = max(0, (命中 − 误选) / 正确选项总数)
+ * 2026-10 改的：原来"是子集就给 50%、多选一律 0 分"——漏 3 个与漏 1 个同分、多选 1 个反而 0 分。 */
+gradeCase('部分得分：全对', Q_MULTI4, { choice: ['A', 'B', 'C', 'D'] });
+gradeCase('部分得分：漏 1 个（3/4）', Q_MULTI4, { choice: ['A', 'B', 'C'] });
+gradeCase('部分得分：漏 2 个（2/4）', Q_MULTI4, { choice: ['A', 'B'] });
+gradeCase('部分得分：漏 3 个（1/4）', Q_MULTI4, { choice: ['A'] });
+gradeCase('部分得分：多选 1 个（4 对 1 错 → 3/4）', Q_MULTI4, { choice: ['A', 'B', 'C', 'D', 'E'] });
+gradeCase('部分得分：对 2 错 1（1/4）', Q_MULTI4, { choice: ['A', 'B', 'E'] });
+gradeCase('部分得分：全错', Q_MULTI4, { choice: ['E'] });
+gradeCase('部分得分：空答案算跳过', Q_MULTI4, { choice: [] });
 
 
 /* ---------- 用例集：随机点名（rollcall.js）---------- *
@@ -335,6 +349,7 @@ function scoringCase(name, steps, settingsPatch) {
       result: step.result,
       fast: !!step.fast,
       rank: step.rank || undefined,
+      ratio: step.ratio === undefined ? undefined : step.ratio,
       source: step.source || 'quiz'
     });
     rec.steps.push({
@@ -352,6 +367,7 @@ function scoringCase(name, steps, settingsPatch) {
       result: step.result,
       fast: !!step.fast,
       rank: step.rank || null,
+      ratio: step.ratio === undefined ? null : step.ratio,
       source: step.source || 'quiz',
       expect: {
         base: Number(r.base),
@@ -385,6 +401,11 @@ scoringCase('扣分与抢答奖励（wrongPenalty=2 / fastBonus=1 / halfRatio=0.
   { q: 'basic', result: 'wrong' },
   { q: 'basic', result: 'correct', fast: true },
   { q: 'basic', result: 'half' }
+]);
+// 部分得分：显式 ratio（多答案题算出来的），不再固定 halfRatio
+scoringCase('部分得分：显式 ratio（0.75 / 0.25）', [
+  { q: 'basic', result: 'half', ratio: 0.75 },
+  { q: 'basic', result: 'half', ratio: 0.25 }
 ]);
 scoringCase('自定义分值 + 未知结果归一化', [
   { q: 'custom', result: 'correct' },

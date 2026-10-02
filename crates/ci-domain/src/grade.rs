@@ -261,12 +261,16 @@ impl Submission {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AutoResult {
     pub result: Verdict,
     pub auto: bool,
     pub expected: String,
     pub got: String,
+    /// 部分得分系数（0~1）。全对为 1.0、全错为 0.0；
+    /// 多答案题按 `max(0, (命中 − 误选) / 正确选项总数)` 算 —— 与 JS 侧同一口径。
+    /// 判定为 `half` 时**用这个值计分**，不再固定用 halfRatio（教师手工判定没有它时才回退到 halfRatio）。
+    pub ratio: f64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -307,13 +311,9 @@ pub fn normalize_text(value: &str) -> String {
         .to_lowercase()
 }
 
-fn same_sorted(a: &[char], b: &[char]) -> bool {
-    a == b
-}
-
-fn is_subset(sub: &[char], full: &[char]) -> bool {
-    !sub.is_empty() && sub.iter().all(|c| full.contains(c))
-}
+// 说明：原来这里有两个辅助函数 same_sorted / is_subset，用于"全对/子集"两分法。
+// 2026-10 起选择题改为**按命中比例、扣减误选**算部分分（见 auto 里的注释），
+// 那两个判断被统一的 ratio 计算取代，故删除以免留下"看起来还在用"的死代码。
 
 /// 判分。主观题返回 None（交由老师判定）。
 pub fn auto(q: &Question, s: &Submission) -> Option<AutoResult> {
@@ -326,6 +326,7 @@ pub fn auto(q: &Question, s: &Submission) -> Option<AutoResult> {
         return Some(AutoResult {
             result: Verdict::Skip,
             auto: true,
+            ratio: 0.0,
             expected: answer_key(q),
             got: "跳过".to_string(),
         });
@@ -335,11 +336,18 @@ pub fn auto(q: &Question, s: &Submission) -> Option<AutoResult> {
         let expected = parse_choice(&q.answer);
         let joined = s.choice.join("");
         let got = parse_choice(&joined);
+        // 部分得分：按命中比例、扣减误选（保守式）
+        //   漏选按比例给分；错选要扣；扣到 0 以下就是 0 分。
+        //   这样"只选 1 个（漏 3 个）"与"漏 1 个"不再都是 50%。
+        let hit = got.iter().filter(|k| expected.contains(k)).count() as f64;
+        let miss = got.iter().filter(|k| !expected.contains(k)).count() as f64;
+        let total = expected.len() as f64;
+        let ratio = if total > 0.0 { ((hit - miss) / total).max(0.0) } else { 0.0 };
         let result = if got.is_empty() {
             Verdict::Skip
-        } else if same_sorted(&got, &expected) {
+        } else if miss == 0.0 && hit == total && total > 0.0 {
             Verdict::Correct
-        } else if is_subset(&got, &expected) {
+        } else if ratio > 0.0 {
             Verdict::Half
         } else {
             Verdict::Wrong
@@ -347,6 +355,7 @@ pub fn auto(q: &Question, s: &Submission) -> Option<AutoResult> {
         return Some(AutoResult {
             result,
             auto: true,
+            ratio: if result == Verdict::Correct { 1.0 } else { ratio },
             expected: expected.iter().collect(),
             got: if got.is_empty() {
                 "（空）".to_string()
@@ -363,6 +372,7 @@ pub fn auto(q: &Question, s: &Submission) -> Option<AutoResult> {
         return Some(AutoResult {
             result: Verdict::Skip,
             auto: true,
+            ratio: 0.0,
             expected: answer_key(q),
             got: "（空）".to_string(),
         });
@@ -371,6 +381,7 @@ pub fn auto(q: &Question, s: &Submission) -> Option<AutoResult> {
     Some(AutoResult {
         result: if ok { Verdict::Correct } else { Verdict::Wrong },
         auto: true,
+        ratio: if ok { 1.0 } else { 0.0 },
         expected: answer_key(q),
         got: s.text.clone(),
     })
@@ -507,6 +518,46 @@ mod tests {
         assert_eq!(q_fill().type_of(), QuestionType::Fill); // 有答案无选项 → 填空题
         assert_eq!(q_subj().type_of(), QuestionType::Subjective); // 无选项无答案 → 主观题
         assert!(!q_subj().can_auto_grade()); // 主观题不能自动判分
+    }
+
+    #[test]
+    fn partial_credit_is_proportional() {
+        // 2026-10 改：多答案题的部分得分 = max(0, (命中 − 误选) / 正确选项总数)
+        // 改前：是子集就给 50%（漏 1 个与漏 3 个同分）、多选 1 个（含全部正确项）反而 0 分。
+        let q = Question {
+            options: vec!["甲".into(), "乙".into(), "丙".into(), "丁".into()],
+            answer: "ABCD".into(),
+            ..Default::default()
+        };
+        let r = |choice: &str| auto(&q, &Submission { choice: choice.chars().map(|c| c.to_string()).collect(), text: String::new(), skip: false }).unwrap();
+
+        assert_eq!(r("ABCD").result, Verdict::Correct);
+        assert!((r("ABCD").ratio - 1.0).abs() < 1e-9);
+
+        assert_eq!(r("ABC").result, Verdict::Half);
+        assert!((r("ABC").ratio - 0.75).abs() < 1e-9, "漏 1 个 → 3/4");
+
+        assert_eq!(r("AB").result, Verdict::Half);
+        assert!((r("AB").ratio - 0.5).abs() < 1e-9, "漏 2 个 → 2/4");
+
+        assert_eq!(r("A").result, Verdict::Half);
+        assert!((r("A").ratio - 0.25).abs() < 1e-9, "漏 3 个 → 1/4（改前是 0.5）");
+
+        assert_eq!(r("ABCDE").result, Verdict::Half);
+        assert!((r("ABCDE").ratio - 0.75).abs() < 1e-9, "多选 1 个 → 4 对 1 错 = 3/4（改前是 0）");
+
+        assert_eq!(r("ABE").result, Verdict::Half);
+        assert!((r("ABE").ratio - 0.25).abs() < 1e-9, "对 2 错 1 → 1/4");
+
+        assert_eq!(r("E").result, Verdict::Wrong);
+        assert!((r("E").ratio - 0.0).abs() < 1e-9, "全错 → 0（不会负分）");
+
+        // 单选与填空没有部分分空间
+        let single = Question { options: vec!["甲".into(), "乙".into()], answer: "B".into(), ..Default::default() };
+        let s = auto(&single, &Submission { choice: vec!["B".into()], text: String::new(), skip: false }).unwrap();
+        assert!((s.ratio - 1.0).abs() < 1e-9);
+        let s2 = auto(&single, &Submission { choice: vec!["A".into()], text: String::new(), skip: false }).unwrap();
+        assert!((s2.ratio - 0.0).abs() < 1e-9);
     }
 
     #[test]
