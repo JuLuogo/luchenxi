@@ -847,7 +847,9 @@ function mkReportCase(name, opts) {
     })).sort((p1, p2) => (p1.correctRate - p2.correctRate) || (p2.attempts - p1.attempts) || (p1.qid < p2.qid ? -1 : 1)),
     comment: opts.comment === undefined ? '全班表现不错，继续保持' : opts.comment,
     reviewLine: CI.analysis.questionReviewLine(questions) || '',
-    halfRatio: Number(S.get().settings.halfRatio)
+    halfRatio: Number(S.get().settings.halfRatio),
+    // 「需要关注」的判定阈值：跟随设置（原来硬编码 60）
+    weakThreshold: Number(opts.weakThreshold === undefined ? S.get().settings.weakThreshold : opts.weakThreshold)
   };
 
   const data = CI.analysis.buildReport(input);
@@ -867,6 +869,8 @@ mkReportCase('报告：有作答、有队伍、有评语');
 mkReportCase('报告：没有课程名（用默认标题）', { courseName: '' });
 mkReportCase('报告：没有评语', { comment: '' });
 mkReportCase('报告：签到不满（1/2）', { seated: 1, rate: 50 });
+// 阈值非默认：掌握度 80% 的学生在 weakThreshold=0.9 时应进「需要关注」
+mkReportCase('报告：薄弱阈值 0.9（阈值必须跟随设置）', { weakThreshold: 0.9 });
 
 
 /* ---------- 落盘 / 校验 ---------- */

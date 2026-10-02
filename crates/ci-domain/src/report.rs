@@ -73,6 +73,31 @@ pub struct ClassReport {
     pub comment: String,
     /// 讲评建议（来自 question_stats::review_line）
     pub review_line: String,
+    /// 「需要关注」的判定阈值（跟随设置里的薄弱阈值）
+    pub weak_threshold: f64,
+}
+
+/// 报告入参（与 JS 的 `buildReport(input)` 一一对应）
+///
+/// 为什么要结构体：原来 13 个位置参数，加一项就要动所有调用点，而且容易传错顺序。
+/// 现在与 JS 的对象入参同形，parity 基准的 `input` 可以直接对照。
+#[derive(Debug, Clone)]
+pub struct ReportInput {
+    pub course_name: String,
+    pub room: String,
+    pub generated_at: i64,
+    pub checkin: Checkin,
+    pub records: Vec<ScoreRecord>,
+    pub students: Vec<Student>,
+    pub teams: Vec<Team>,
+    pub tiers: Vec<TierStat>,
+    pub team_stats: Vec<TeamStat>,
+    pub questions: Vec<QuestionStat>,
+    pub comment: String,
+    pub review_line: String,
+    pub half_ratio: f64,
+    /// 「需要关注」的判定阈值（跟随设置里的薄弱阈值，默认 0.6）
+    pub weak_threshold: f64,
 }
 
 /// 汇总出报告数据（纯函数）
@@ -81,22 +106,26 @@ pub struct ClassReport {
 /// * `teams` —— 各队统计（`classroom::TeamStat`，第一行应为"全班"）
 /// * `questions` —— 题目统计（`question_stats`，已排序）
 /// * `comment` / `review_line` —— 评语与讲评建议（调用方从 ability/question_stats 取）
-#[allow(clippy::too_many_arguments)]
-pub fn build_report(
-    course_name: &str,
-    room: &str,
-    generated_at: i64,
-    checkin: Checkin,
-    records: &[ScoreRecord],
-    students: &[Student],
-    teams: &[Team],
-    tiers: Vec<TierStat>,
-    team_stats: Vec<TeamStat>,
-    questions: Vec<QuestionStat>,
-    comment: &str,
-    review_line: &str,
-    half_ratio: f64,
-) -> ClassReport {
+pub fn build_report(input: ReportInput) -> ClassReport {
+    let ReportInput {
+        course_name,
+        room,
+        generated_at,
+        checkin,
+        records,
+        students,
+        teams,
+        tiers,
+        team_stats,
+        questions,
+        comment,
+        review_line,
+        half_ratio,
+        weak_threshold,
+    } = input;
+    let records: &[ScoreRecord] = &records;
+    let students: &[Student] = &students;
+    let teams: &[Team] = &teams;
     // 整体：只统计有判定意义的流水（manual 不算作答）
     let mut attempts = 0u32;
     let mut correct = 0u32;
@@ -186,9 +215,9 @@ pub fn build_report(
     });
 
     ClassReport {
-        course_name: course_name.to_string(),
+        course_name,
         generated_at,
-        room: room.to_string(),
+        room,
         checkin,
         attempts,
         correct,
@@ -201,8 +230,9 @@ pub fn build_report(
         tiers,
         questions,
         students: rows,
-        comment: comment.to_string(),
-        review_line: review_line.to_string(),
+        comment,
+        review_line,
+        weak_threshold,
     }
 }
 
@@ -327,10 +357,16 @@ pub fn to_markdown(r: &ClassReport) -> String {
                 .collect::<Vec<_>>()
                 .join("、")
         ));
-        let mut weak: Vec<&ReportStudent> = active.iter().filter(|s| s.credit_rate < 60).copied().collect();
+        // 「需要关注」的阈值跟随设置（原来是硬编码 60，改了设置却不生效）
+        let weak_at = r.weak_threshold * 100.0;
+        let mut weak: Vec<&ReportStudent> = active
+            .iter()
+            .filter(|s| (s.credit_rate as f64) < weak_at)
+            .copied()
+            .collect();
         weak.sort_by_key(|s| s.credit_rate);
         if weak.is_empty() {
-            out.push_str("- **需要关注**：无（掌握度均不低于 60%）\n\n");
+            out.push_str(&format!("- **需要关注**：无（掌握度均不低于 {}%）\n\n", weak_at.round() as i64));
         } else {
             out.push_str(&format!(
                 "- **需要关注**：{}\n\n",
@@ -449,25 +485,26 @@ mod tests {
             rec("s2", "half", 2.5, 3),
             rec("s3", "wrong", 0.0, 4),
         ];
-        build_report(
-            "24机械高考公开课",
-            "default",
-            1_700_000_000_000,
-            Checkin { seated: 2, total: 2, rate: 100 },
-            &records,
-            &students,
-            &teams,
-            vec![tier_stat("基础题", 4, 2, 10.5)],
-            vec![
+        build_report(ReportInput {
+            course_name: "24机械高考公开课".into(),
+            room: "default".into(),
+            generated_at: 1_700_000_000_000,
+            checkin: Checkin { seated: 2, total: 2, rate: 100 },
+            records,
+            students,
+            teams,
+            tiers: vec![tier_stat("基础题", 4, 2, 10.5)],
+            team_stats: vec![
                 team_row("all", "全班", 2, 4, 62.5, None, 3),
                 team_row("tm1", "红队", 2, 3, 83.3, Some(10.5), 2),
                 team_row("tm2", "蓝队", 0, 1, 0.0, Some(0.0), 1),
             ],
-            vec![],
-            "全班表现不错",
-            "最需要讲评的是「求导」",
-            0.5,
-        )
+            questions: vec![],
+            comment: "全班表现不错".into(),
+            review_line: "最需要讲评的是「求导」".into(),
+            half_ratio: 0.5,
+            weak_threshold: 0.6,
+        })
     }
 
     #[test]
@@ -519,9 +556,22 @@ mod tests {
 
     #[test]
     fn markdown_handles_empty_class() {
-        let r = build_report(
-            "", "default", 0, Checkin::default(), &[], &[], &[], vec![], vec![], vec![], "", "", 0.5,
-        );
+        let r = build_report(ReportInput {
+            course_name: String::new(),
+            room: "default".into(),
+            generated_at: 0,
+            checkin: Checkin::default(),
+            records: vec![],
+            students: vec![],
+            teams: vec![],
+            tiers: vec![],
+            team_stats: vec![],
+            questions: vec![],
+            comment: String::new(),
+            review_line: String::new(),
+            half_ratio: 0.5,
+            weak_threshold: 0.6,
+        });
         let md = to_markdown(&r);
         assert!(md.contains("# 课堂报告 · 课堂积分"), "没课程名时用默认标题");
         assert!(md.contains("还没有队伍数据"));

@@ -29,7 +29,7 @@ pub use ability::{
 pub use draw::{candidates as draw_candidates, draw as draw_questions, DrawOpts};
 pub use mistakes::{mistake_board, student_mistakes, MistakeItem, StudentMistakes};
 pub use question_stats::{question_stats, review_line, short_stem, QuestionStat};
-pub use report::{build_report, to_markdown as report_markdown, Checkin, ClassReport, ReportStudent};
+pub use report::{build_report, to_markdown as report_markdown, Checkin, ClassReport, ReportInput, ReportStudent};
 pub use rollcall::{
     apply_pick, called_count, candidates as rollcall_candidates, pick as rollcall_pick, recent_ids,
     Pick, PickOpts, RollEntry, RollcallSettings, Student, XorShift64,

@@ -16,8 +16,8 @@ use ci_domain::{
     draw_questions, finalize_feed, handle_cmd, mistake_board, question_stats, report_markdown,
     rollcall_pick, score_of_input, set_phase_named, student_mistakes, validate_question, BankQuestion,
     Checkin, ClassStudent, ClassTeam, CmdOutcome, DrawOpts, PickOpts, Question, RollcallSettings,
-    Runtime, ScoreInput, ScoreRecord, ScoringSettings, StateStudent, Student, StudentCmd, Submission,
-    Team, TeamStat, TierStat,
+    ReportInput, Runtime, ScoreInput, ScoreRecord, ScoringSettings, StateStudent, Student, StudentCmd,
+    Submission, Team, TeamStat, TierStat,
 };
 use serde_json::json;
 use serde::Deserialize;
@@ -399,12 +399,12 @@ struct MistakeItemRow {
 #[derive(Debug, Deserialize)]
 struct ReportCase {
     name: String,
-    input: ReportInput,
+    input: ReportInputRow,
     expect: ReportExpect,
 }
 
 #[derive(Debug, Deserialize)]
-struct ReportInput {
+struct ReportInputRow {
     #[serde(rename = "courseName")]
     course_name: String,
     room: String,
@@ -423,6 +423,12 @@ struct ReportInput {
     review_line: String,
     #[serde(rename = "halfRatio")]
     half_ratio: f64,
+    #[serde(rename = "weakThreshold", default = "default_weak")]
+    weak_threshold: f64,
+}
+
+fn default_weak() -> f64 {
+    0.6
 }
 
 #[derive(Debug, Deserialize)]
@@ -1221,21 +1227,22 @@ fn report_matches_js_reference() {
             })
             .collect();
 
-        let r = build_report(
-            &i.course_name,
-            &i.room,
-            i.generated_at,
-            Checkin { seated: i.checkin.seated, total: i.checkin.total, rate: i.checkin.rate },
-            &records,
-            &students,
-            &teams,
+        let r = build_report(ReportInput {
+            course_name: i.course_name.clone(),
+            room: i.room.clone(),
+            generated_at: i.generated_at,
+            checkin: Checkin { seated: i.checkin.seated, total: i.checkin.total, rate: i.checkin.rate },
+            records,
+            students,
+            teams,
             tiers,
             team_stats,
             questions,
-            &i.comment,
-            &i.review_line,
-            i.half_ratio,
-        );
+            comment: i.comment.clone(),
+            review_line: i.review_line.clone(),
+            half_ratio: i.half_ratio,
+            weak_threshold: i.weak_threshold,
+        });
 
         let n = &case.name;
         assert_eq!(r.attempts, case.expect.attempts, "[{}] 作答数", n);

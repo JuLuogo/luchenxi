@@ -536,6 +536,17 @@
     return s.students.filter(function (stu) { return !tid || tid === 'all' || stu.teamId === tid; });
   }
 
+  /**
+   * 在册学生（排除 active === false 的停用学生）
+   *
+   * 为什么统计要用它：停用 = 已转走/已退出，他不该再拉低班级平均、也不该出现在报告里。
+   * 点名早就排除了停用学生（rollcall.js），统计口径必须与之一致。
+   * 注意：**历史流水不会删**（那是账），只是不再计入"班级/个人"的统计口径。
+   */
+  function activeStudentsOf(s, tid) {
+    return studentsOf(s, tid).filter(function (stu) { return stu.active !== false; });
+  }
+
   function calledCount(s, sid) {
     s = s || get();
     return s.rollcall.history.filter(function (h) { return h.sid === sid; }).length;
@@ -1314,7 +1325,7 @@
     tierOf: tierOf, question: question, quiz: quiz, student: student, team: team,
     questionPoints: questionPoints, allRecords: allRecords, recordsOf: recordsOf,
     isCountable: isCountable, scoreOf: scoreOf, teamScore: teamScore, studentsOf: studentsOf,
-    calledCount: calledCount, lastRecord: lastRecord, answeredAlready: answeredAlready,
+    calledCount: calledCount, activeStudentsOf: activeStudentsOf, lastRecord: lastRecord, answeredAlready: answeredAlready,
     describeRecord: describeRecord, computePoints: computePoints, collectorQuiz: collectorQuiz,
     drawQuestions: drawQuestions,
     buzzRankBonus: buzzRankBonus,

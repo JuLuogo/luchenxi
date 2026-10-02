@@ -132,7 +132,7 @@
       lastAt: lastAt,
       weak: weak,
       strong: strong,
-      level: levelOf(finalizeBucket(s, total), weak, strong, minSample)
+      level: levelOf(finalizeBucket(s, total), weak, strong, minSample, st.strongThreshold)
     };
   }
 
@@ -146,8 +146,11 @@
     return hit ? hit.creditRate : 0;
   }
 
-  function levelOf(total, weak, strong, minSample) {    if (total.attempts < minSample) return { key: 'insufficient', label: '样本不足', color: '#90a4ae' };
-    if (weak.length === 0 && total.creditRate >= 85) return { key: 'excellent', label: '优秀', color: '#43a047' };
+  function levelOf(total, weak, strong, minSample, strongThreshold) {
+    // 「优秀」的阈值跟随设置里的优势阈值（原来硬编码 85，改了设置却不生效）
+    var excellentAt = U.num(strongThreshold, 0.85) * 100;
+    if (total.attempts < minSample) return { key: 'insufficient', label: '样本不足', color: '#90a4ae' };
+    if (weak.length === 0 && total.creditRate >= excellentAt) return { key: 'excellent', label: '优秀', color: '#43a047' };
     if (weak.length === 0) return { key: 'good', label: '良好', color: '#7cb342' };
     if (weak.length >= 2) return { key: 'warn', label: '需重点关注', color: '#ef6c00' };
     return { key: 'normal', label: '有待提升', color: '#fb8c00' };
@@ -156,7 +159,7 @@
   /** 全班（或某队伍）统计 */
   function classStats(state, teamId) {
     var s = state || CI.store.get();
-    var list = CI.store.studentsOf(s, teamId);
+    var list = CI.store.activeStudentsOf(s, teamId);
     var total = blankBucket();
     var tierMap = {};
 
@@ -207,7 +210,7 @@
   /** 排行榜：学生个人（可按队伍过滤） */
   function ranking(state, teamId) {
     var s = state || CI.store.get();
-    var list = CI.store.studentsOf(s, teamId).map(function (stu) {
+    var list = CI.store.activeStudentsOf(s, teamId).map(function (stu) {
       var stats = studentStats(s, stu.id);
       return {
         sid: stu.id,
@@ -238,7 +241,7 @@
   function teamRanking(state) {
     var s = state || CI.store.get();
     var list = (s.teams || []).map(function (t) {
-      var members = CI.store.studentsOf(s, t.id);
+      var members = CI.store.activeStudentsOf(s, t.id);
       var st = classStats(s, t.id);
       return {
         teamId: t.id,
@@ -592,7 +595,7 @@
   /** 全班错题本：只保留有错题的学生，按错题次数降序 */
   function mistakeBoard(state) {
     var s = state || CI.store.get();
-    var out = (s.students || []).map(function (stu) { return studentMistakes(s, stu.id); })
+    var out = CI.store.activeStudentsOf(s, 'all').map(function (stu) { return studentMistakes(s, stu.id); })
       .filter(function (m) { return m.items.length > 0; });
     out.sort(function (a, b) {
       var ta = a.items.reduce(function (n, x) { return n + x.count; }, 0);
@@ -689,7 +692,9 @@
       questions: i.questions || [],
       students: rows,
       comment: i.comment || '',
-      reviewLine: i.reviewLine || ''
+      reviewLine: i.reviewLine || '',
+      // 「需要关注」的阈值：跟随设置里的薄弱阈值（toMarkdown 要用）
+      weakThreshold: U.num(i.weakThreshold, 0.6)
     };
   }
 
@@ -776,10 +781,10 @@
       out.push('- **表现突出**：' + active.slice(0, 3).map(function (s) {
         return s.name + '（' + s.score + ' 分，掌握度 ' + s.creditRate + '%）';
       }).join('、'));
-      var weak = active.filter(function (s) { return s.creditRate < 60; })
+      var weak = active.filter(function (s) { return s.creditRate < U.num(r.weakThreshold, 0.6) * 100; })
         .sort(function (a, b) { return a.creditRate - b.creditRate; });
       if (!weak.length) {
-        out.push('- **需要关注**：无（掌握度均不低于 60%）');
+        out.push('- **需要关注**：无（掌握度均不低于 ' + Math.round(U.num(r.weakThreshold, 0.6) * 100) + '%）');
         out.push('');
       } else {
         out.push('- **需要关注**：' + weak.slice(0, 3).map(function (s) {
@@ -810,14 +815,15 @@
       generatedAt: U.num(opts.generatedAt, Date.now()),
       checkin: checkin,
       records: allRecords(s),
-      students: s.students || [],
+      students: CI.store.activeStudentsOf(s, 'all'),
       teams: s.teams || [],
       tiers: cs.tiers,
       teamStats: CI.classroom ? CI.classroom.teamStats(s) : [],
       questions: questions,
       comment: (ab && ab.comment) || '',
       reviewLine: questionReviewLine(questions) || '',
-      halfRatio: U.num(s.settings && s.settings.halfRatio, 0.5)
+      halfRatio: U.num(s.settings && s.settings.halfRatio, 0.5),
+      weakThreshold: U.num(s.settings && s.settings.weakThreshold, 0.6)
     });
     return { data: data, markdown: toMarkdown(data) };
   }
