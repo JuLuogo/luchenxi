@@ -8,6 +8,7 @@ import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useClassStore } from '../../../shared/class-store';
+import { CI } from '../../../shared/bridge';
 
 const store = useClassStore();
 const route = useRoute();
@@ -79,12 +80,14 @@ function doDraw() {
   store.tiers.forEach((t) => {
     const need = Number(drawCount.value[t.key] || 0);
     if (need <= 0) return;
-    const pool = store.bank.filter((q) => q.tier === t.key && !list.includes(q.id));
-    for (let i = pool.length - 1; i > 0; i--) {           // 洗牌，保证每次抽的略有不同
-      const j = Math.floor(Math.random() * (i + 1));
-      const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
-    }
-    pool.slice(0, need).forEach((q) => { list.push(q.id); added += 1; });
+    // 走领域层抽题（与 Rust 侧 draw.rs 同一算法、有 parity 基准）——
+    // 前端不再自带一份洗牌实现，否则规则会在两处分叉（docs/14 §2）
+    const got: string[] = CI.store.drawQuestions(store.state, {
+      count: need,
+      tiers: [t.key],
+      excludeIds: list
+    });
+    got.forEach((qid) => { list.push(qid); added += 1; });
   });
   store.setQuizQuestions(quizId.value, list);
   drawOpen.value = false;

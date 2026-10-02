@@ -760,6 +760,134 @@ group('课堂节奏（计时器 / 签到）');
   CLS3.clearTimer();
 })();
 
+/* ================= 14. 随机抽题（组卷） ================= */
+group('随机抽题');
+
+(function () {
+  S.replaceState(S.defaultState());
+  const team = S.get().teams[0].id;
+  S.addStudent('甲', team);
+
+  // 造 6 道题：3 基础 / 2 拔高 / 1 归档
+  const qs = [];
+  ['集合与逻辑', '函数与导数', '概率统计'].forEach((tag, i) => {
+    qs.push(S.addQuestion({ stem: '基础' + (i + 1), tier: 'basic', tags: [tag], answer: 'A' }));
+  });
+  qs.push(S.addQuestion({ stem: '拔高1', tier: 'advanced', tags: ['函数与导数'], answer: 'B' }));
+  qs.push(S.addQuestion({ stem: '拔高2', tier: 'advanced', tags: ['概率统计'], answer: 'C' }));
+  const archived = S.addQuestion({ stem: '归档题', tier: 'basic', tags: ['集合与逻辑'], answer: 'D' });
+  S.updateQuestion(archived.id, { archived: true });
+
+  // 固定随机序列（可复现）
+  const seq = [0.1, 0.7, 0.3, 0.9, 0.2, 0.5, 0.4, 0.8, 0.6, 0.15];
+  const fixed = () => { seq.push(seq.shift()); return seq[0]; };
+
+  const all = S.drawQuestions(S.get(), { count: 99 }, fixed);
+  eq(all.length, 5, '归档题默认不参与抽题（6 道里只有 5 道可选）');
+  ok(all.indexOf(archived.id) < 0, '归档题确实没被抽到');
+
+  const basics = S.drawQuestions(S.get(), { count: 99, tiers: ['basic'] }, fixed);
+  eq(basics.length, 3, '限定题型：基础题 3 道');
+
+  const tagged = S.drawQuestions(S.get(), { count: 99, tags: ['概率统计'] }, fixed);
+  eq(tagged.length, 2, '限定标签：概率统计 2 道（基础+拔高）');
+
+  const both = S.drawQuestions(S.get(), { count: 99, tiers: ['advanced'], tags: ['函数与导数'] }, fixed);
+  eq(both.length, 1, '题型 + 标签同时限定 → 1 道');
+
+  const excluded = S.drawQuestions(S.get(), { count: 99, excludeIds: [qs[0].id, qs[3].id] }, fixed);
+  eq(excluded.length, 3, '排除已在试卷里的题');
+  ok(excluded.indexOf(qs[0].id) < 0 && excluded.indexOf(qs[3].id) < 0, '被排除的题没出现');
+
+  // 数量与去重
+  const two = S.drawQuestions(S.get(), { count: 2 }, fixed);
+  eq(two.length, 2, '抽 2 道就返回 2 道');
+  eq(new Set(two).size, 2, '不会抽出重复题');
+  eq(S.drawQuestions(S.get(), { count: 0 }, fixed).length, 0, '抽 0 道 → 空');
+
+  // 可复现：同一固定序列 → 同一结果
+  const mk = () => { const s = [0.1, 0.7, 0.3, 0.9, 0.2]; return () => { s.push(s.shift()); return s[0]; }; };
+  const a = S.drawQuestions(S.get(), { count: 3 }, mk());
+  const b = S.drawQuestions(S.get(), { count: 3 }, mk());
+  eq(JSON.stringify(a), JSON.stringify(b), '同一随机序列 → 抽到同一批题（可复现）');
+
+  // 空题库 / 条件不匹配
+  const empty = S.defaultState();
+  empty.bank = [];
+  eq(S.drawQuestions(empty, { count: 3 }, fixed).length, 0, '空题库 → 空结果（不报错）');
+  eq(S.drawQuestions(S.get(), { count: 3, tiers: ['不存在'] }, fixed).length, 0, '条件不匹配 → 空结果');
+})();
+
+/* ================= 15. 按题目的正确率与课后评价 ================= */
+group('按题目正确率 / 课后评价');
+
+(function () {
+  const A = CI.analysis;
+  S.replaceState(S.defaultState());
+  const teams = S.get().teams;
+  const s1 = S.addStudent('甲', teams[0].id);
+  const s2 = S.addStudent('乙', teams[0].id);
+  const s3 = S.addStudent('丙', teams[1].id);
+  const id = (x) => (typeof x === 'string' ? x : x.id);
+
+  const q1 = S.addQuestion({ stem: '第一题：1+1=?', tier: 'basic', answer: 'A' });
+  const q2 = S.addQuestion({ stem: '第二题：全班都不会', tier: 'advanced', answer: 'B' });
+  const qz = S.createQuiz('随堂测', [q1.id, q2.id]);
+
+  // q1：2 对 1 错；q2：3 人全错
+  S.recordResult({ sid: id(s1), qid: q1.id, tier: 'basic', result: 'correct', quizId: qz.id });
+  S.recordResult({ sid: id(s2), qid: q1.id, tier: 'basic', result: 'correct', quizId: qz.id });
+  S.recordResult({ sid: id(s3), qid: q1.id, tier: 'basic', result: 'wrong', quizId: qz.id });
+  S.recordResult({ sid: id(s1), qid: q2.id, tier: 'advanced', result: 'wrong', quizId: qz.id });
+  S.recordResult({ sid: id(s2), qid: q2.id, tier: 'advanced', result: 'wrong', quizId: qz.id });
+  S.recordResult({ sid: id(s3), qid: q2.id, tier: 'advanced', result: 'skip', quizId: qz.id });
+  // 快捷记分（无题目归属）不该计入题目统计
+  S.recordResult({ sid: id(s1), tier: 'improve', result: 'correct', source: 'quick' });
+
+  const stats = A.questionStats(S.get(), qz.id);
+  eq(stats.length, 2, '只统计有题目归属的流水（快捷记分不算）');
+  // 排序：正确率升序 → q2（0%）在前
+  eq(stats[0].qid, q2.id, '最需要讲评的排最前');
+  eq(stats[0].correctRate, 0, 'q2 正确率 0%');
+  eq(stats[0].attempts, 3, 'q2 三人作答');
+  eq(stats[0].wrong, 2, 'q2 两人答错');
+  eq(stats[0].skip, 1, 'q2 一人跳过');
+  eq(stats[0].tierLabel, '拔高题', '带题型中文名');
+  eq(stats[0].stem.indexOf('全班都不会') >= 0, true, '带题干（截断后仍可辨识）');
+  eq(stats[0].missers.length, 3, '三人都在 missers 里（含跳过的）');
+  eq(stats[0].avgPoints, 0, 'q2 平均得分 0');
+
+  eq(stats[1].qid, q1.id, 'q1 正确率更高，排在后面');
+  eq(stats[1].correctRate, 67, 'q1 正确率 2/3 → 67%');
+  eq(stats[1].correct, 2, 'q1 答对 2 人');
+  eq(stats[1].missers.length, 1, 'q1 只有丙答错');
+
+  // 半对折算（掌握度）
+  S.recordResult({ sid: id(s1), qid: q2.id, tier: 'advanced', result: 'half', quizId: qz.id, by: 'teacher' });
+  const stats2 = A.questionStats(S.get(), qz.id);
+  const q2b = stats2.find((x) => x.qid === q2.id);
+  eq(q2b.attempts, 4, '补一条半对后 q2 作答 4 次');
+  eq(q2b.creditRate, 13, '半对按 0.5 折算：0.5/4 → 13%');
+
+  // 课后结论
+  const line = A.questionReviewLine(stats);
+  ok(line && line.indexOf('共 2 道有作答') >= 0, '结论含题目数：' + line);
+  ok(line.indexOf('全班都不会') >= 0, '结论点名最需要讲评的题');
+  ok(line.indexOf('无人答对') >= 0, '全班没人对的题单独点出');
+  eq(A.questionReviewLine([]), null, '没有作答 → 不给结论');
+
+  // 学情总结里要带上题目维度与讲评顺序
+  const sum = A.summarizeClass(S.get(), 'all');
+  const joined = sum.lines.join('\n');
+  ok(joined.indexOf('最需要讲评的是') >= 0, '学情总结含题目维度结论');
+  ok(joined.indexOf('讲评顺序建议') >= 0, '学情总结给出讲评顺序');
+  ok(Array.isArray(sum.questionStats), '总结里带回题目统计（供界面直接用）');
+
+  // 全部流水（不限定试卷）也要能统计
+  const allStats = A.questionStats(S.get(), null);
+  eq(allStats.length, 2, '不限定试卷时统计全部流水里的题');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

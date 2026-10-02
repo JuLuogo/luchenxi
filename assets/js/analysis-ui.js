@@ -73,7 +73,6 @@
     var box = el('analysisMatrix');
     if (!box) return;
     var cs = CI.analysis.classStats(s, scope === 'all' ? null : scope);
-
     box.innerHTML = '<div class="panel-title">题型掌握情况</div>' +
       '<table class="data-table"><thead><tr>' +
         '<th>题型</th><th>权重</th><th>作答题次</th><th>答对</th><th>部分正确</th><th>答错</th><th>加权得分率</th><th>均分/题</th><th>判定</th>' +
@@ -94,6 +93,48 @@
           '<td>' + judge + '</td>' +
         '</tr>';
       }).join('') + '</tbody></table>';
+    renderQuestions();
+  }
+
+  /**
+   * 按题目正确率（低 → 高）：课后讲评的直接依据
+   *
+   * 渲染到**独立容器** `#analysisQuestions`（不塞进题型矩阵那个 panel）——
+   * 塞进去会让"题型矩阵 4 行"这类既有断言失效，两种维度的表格也会混在一起。
+   */
+  function renderQuestions() {
+    var s = CI.store.get();
+    var box = el('analysisQuestions');
+    if (!box) return;
+    var stats = CI.analysis.questionStats(s, null).filter(function (x) { return x.attempts > 0; });
+    if (!stats.length) {
+      box.innerHTML = '<div class="panel-title">按题目正确率</div>' +
+        '<div class="empty">还没有按题目的作答数据（学生通过试卷作答后，这里会按正确率从低到高列出）</div>';
+      return;
+    }
+    var line = CI.analysis.questionReviewLine(stats);
+
+    box.innerHTML =
+      '<div class="panel-title">按题目正确率 <span class="panel-sub">（低 → 高；「未答对」含答错与跳过 —— 这是讲评顺序）</span></div>' +
+      (line ? '<div class="hint-inline">' + U.escapeHTML(line) + '</div>' : '') +
+      '<div class="table-scroll"><table class="data-table"><thead><tr>' +
+        '<th>#</th><th>题目</th><th>题型</th><th>作答</th><th>答对</th><th>部分正确</th><th>未答对</th>' +
+        '<th>正确率</th><th>掌握度</th><th>均分</th><th>需要关注的学生</th>' +
+      '</tr></thead><tbody>' +
+      stats.map(function (x, i) {
+        var rateCls = x.correctRate < 40 ? 'tag tag-bad' : (x.correctRate < 70 ? 'tag tag-warn' : 'tag tag-good');
+        return '<tr>' +
+          '<td>' + (i + 1) + '</td>' +
+          '<td>' + U.escapeHTML(x.stem) + '</td>' +
+          '<td>' + U.escapeHTML(x.tierLabel) + '</td>' +
+          '<td>' + x.attempts + '</td><td>' + x.correct + '</td><td>' + x.half + '</td>' +
+          '<td>' + (x.wrong + x.skip) + '</td>' +
+          '<td><span class="' + rateCls + '">' + x.correctRate + '%</span></td>' +
+          '<td>' + x.creditRate + '%</td>' +
+          '<td>' + x.avgPoints + '</td>' +
+          '<td>' + (x.missers.length ? U.escapeHTML(x.missers.slice(0, 6).join('、')) + (x.missers.length > 6 ? ' 等 ' + x.missers.length + ' 人' : '') : '—') + '</td>' +
+        '</tr>';
+      }).join('') + '</tbody></table></div>';
   }
 
   function renderStudents() {

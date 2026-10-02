@@ -13,9 +13,10 @@
 
 use ci_domain::{
     ability_of_tiers, answer_key, apply_pick, auto, default_tiers, describe_submission,
-    finalize_feed, handle_cmd, rollcall_pick, score_of_input, set_phase_named, validate_question,
-    ClassStudent, ClassTeam, CmdOutcome, PickOpts, Question, RollcallSettings, Runtime, ScoreInput,
-    ScoringSettings, Student, StudentCmd, Submission, TierStat,
+    draw_questions, finalize_feed, handle_cmd, question_stats, rollcall_pick, score_of_input,
+    set_phase_named, validate_question, BankQuestion, ClassStudent, ClassTeam, CmdOutcome, DrawOpts,
+    PickOpts, Question, RollcallSettings, Runtime, ScoreInput, ScoreRecord, ScoringSettings,
+    StateStudent, Student, StudentCmd, Submission, TierStat,
 };
 use serde_json::json;
 use serde::Deserialize;
@@ -29,6 +30,9 @@ struct Fixture {
     rollcall: Vec<RollCase>,
     scoring: Vec<ScoreCase>,
     classroom: Vec<ClassCase>,
+    draw: Vec<DrawCase>,
+    #[serde(rename = "questionStats")]
+    question_stats: Vec<QsCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -212,6 +216,96 @@ struct StepExpect {
     outcome: Option<Value>,
     #[serde(rename = "feedText", default)]
     feed_text: Option<String>,
+}
+
+
+#[derive(Debug, Deserialize)]
+struct DrawCase {
+    name: String,
+    bank: Vec<BankRow>,
+    opts: DrawOpts,
+    /// 固定随机序列（Rust 侧按同样顺序消耗）
+    seq: Vec<f64>,
+    expect: DrawExpect,
+}
+
+#[derive(Debug, Deserialize)]
+struct BankRow {
+    id: String,
+    #[serde(default)]
+    tier: String,
+    /// 题干（题目统计用例里有；抽题用例里没有）
+    #[serde(default)]
+    stem: String,
+    #[serde(default)]
+    tags: Vec<String>,
+    #[serde(default)]
+    archived: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct DrawExpect {
+    ids: Vec<String>,
+    #[serde(rename = "drawsUsed")]
+    draws_used: usize,
+}
+
+#[derive(Debug, Deserialize)]
+struct QsCase {
+    name: String,
+    #[serde(rename = "halfRatio")]
+    half_ratio: f64,
+    tiers: Vec<TierRow>,
+    students: Vec<StudentRow>,
+    bank: Vec<BankRow>,
+    records: Vec<RecordRow>,
+    expect: Vec<StatRow>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TierRow {
+    key: String,
+    label: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct StudentRow {
+    id: String,
+    name: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct RecordRow {
+    #[serde(default)]
+    sid: Option<String>,
+    #[serde(default)]
+    qid: Option<String>,
+    #[serde(default)]
+    tier: String,
+    result: String,
+    #[serde(default)]
+    points: f64,
+}
+
+#[derive(Debug, Deserialize)]
+struct StatRow {
+    qid: String,
+    stem: String,
+    tier: String,
+    #[serde(rename = "tierLabel")]
+    tier_label: String,
+    attempts: u32,
+    correct: u32,
+    half: u32,
+    wrong: u32,
+    skip: u32,
+    #[serde(rename = "correctRate")]
+    correct_rate: i64,
+    #[serde(rename = "creditRate")]
+    credit_rate: i64,
+    #[serde(rename = "avgPoints")]
+    avg_points: f64,
+    missers: Vec<String>,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -595,4 +689,121 @@ fn classroom_matches_js_reference() {
     }
 
     println!("\n✅ 课堂协同：{} 组用例与 JS 参考实现逐步一致", fx.classroom.len());
+}
+
+/// 随机抽题：同一份题库 + 同一串固定随机数 → 必须抽出同一批题，
+/// 且**消耗的随机数个数**也要一致（洗牌次数决定序列对齐，这是 parity 的命门）
+#[test]
+fn draw_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.draw.is_empty(), "基准里没有抽题用例");
+
+    for case in &fx.draw {
+        let bank: Vec<BankQuestion> = case
+            .bank
+            .iter()
+            .map(|r| BankQuestion {
+                id: r.id.clone(),
+                tier: r.tier.clone(),
+                tags: r.tags.clone(),
+                archived: r.archived,
+                ..Default::default()
+            })
+            .collect();
+
+        let seq = case.seq.clone();
+        let mut used = 0usize;
+        let got = draw_questions(&bank, &case.opts, || {
+            let v = seq[used % seq.len()];
+            used += 1;
+            v
+        });
+
+        assert_eq!(got, case.expect.ids, "[{}] 抽到的题不一致", case.name);
+        assert_eq!(used, case.expect.draws_used, "[{}] 消耗的随机数个数不一致", case.name);
+        println!("  ✔ {} → 抽 {} 道（消耗 {} 次随机）", case.name, got.len(), used);
+    }
+
+    println!("\n✅ 随机抽题：{} 组用例与 JS 参考实现一致", fx.draw.len());
+}
+
+/// 按题目的作答统计：逐字段比对（作答数/判定分布/正确率/掌握度/平均分/答错人名/排序）
+#[test]
+fn question_stats_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.question_stats.is_empty(), "基准里没有题目统计用例");
+
+    for case in &fx.question_stats {
+        let bank: Vec<BankQuestion> = case
+            .bank
+            .iter()
+            .map(|r| BankQuestion {
+                id: r.id.clone(),
+                tier: r.tier.clone(),
+                stem: r.stem.clone(),
+                ..Default::default()
+            })
+            .collect();
+        let students: Vec<StateStudent> = case
+            .students
+            .iter()
+            .map(|s| StateStudent {
+                id: s.id.clone(),
+                name: s.name.clone(),
+                team_id: None,
+                active: true,
+                joined_at: 0,
+                called: 0,
+            })
+            .collect();
+        let records: Vec<ScoreRecord> = case
+            .records
+            .iter()
+            .enumerate()
+            .map(|(i, r)| ScoreRecord {
+                id: format!("r{}", i + 1),
+                sid: r.sid.clone(),
+                qid: r.qid.clone(),
+                tier: r.tier.clone(),
+                quiz_id: None,
+                result: r.result.clone(),
+                base: 0.0,
+                ratio: 0.0,
+                points: r.points,
+                source: "student".to_string(),
+                note: String::new(),
+                at: i as i64,
+                by: String::new(),
+            })
+            .collect();
+        let labels: Vec<(String, String)> = case
+            .tiers
+            .iter()
+            .map(|t| (t.key.clone(), t.label.clone()))
+            .collect();
+
+        let got = question_stats(&records, &bank, &students, &labels, case.half_ratio);
+        assert_eq!(got.len(), case.expect.len(), "[{}] 题目数不一致", case.name);
+
+        for (i, want) in case.expect.iter().enumerate() {
+            let g = &got[i];
+            let n = format!("{} #{}", case.name, i + 1);
+            assert_eq!(g.qid, want.qid, "[{}] qid", n);
+            assert_eq!(g.stem, want.stem, "[{}] 题干", n);
+            assert_eq!(g.tier, want.tier, "[{}] 题型", n);
+            assert_eq!(g.tier_label, want.tier_label, "[{}] 题型中文名", n);
+            assert_eq!(g.attempts, want.attempts, "[{}] 作答次数", n);
+            assert_eq!(g.correct, want.correct, "[{}] 答对", n);
+            assert_eq!(g.half, want.half, "[{}] 半对", n);
+            assert_eq!(g.wrong, want.wrong, "[{}] 答错", n);
+            assert_eq!(g.skip, want.skip, "[{}] 跳过", n);
+            assert_eq!(g.correct_rate, want.correct_rate, "[{}] 正确率", n);
+            assert_eq!(g.credit_rate, want.credit_rate, "[{}] 掌握度", n);
+            assert!((g.avg_points - want.avg_points).abs() < 1e-9, "[{}] 平均分", n);
+            assert_eq!(g.missers, want.missers, "[{}] 答错/跳过人名", n);
+            println!("  ✔ {} → {} 人作答 / 正确率 {}%", n, g.attempts, g.correct_rate);
+        }
+    }
+
+    println!("\n✅ 题目统计：{} 组用例与 JS 参考实现逐字段一致", fx.question_stats.len());
 }

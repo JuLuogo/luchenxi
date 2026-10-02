@@ -757,6 +757,19 @@
       timerLabel: s.runtime.timerLabel || '',
       /* 签到统计：已入座的队伍 / 全部队伍（学习通的「签到」经验） */
       checkin: checkinStats(s),
+      /* 讲评建议：正确率最低的几道题（点评环节大屏直接显示，老师照着讲） */
+      hardestQuestions: (function () {
+        try {
+          var stats = CI.analysis.questionStats(s, s.runtime.quizId || null);
+          return stats.filter(function (x) { return x.attempts > 0; }).slice(0, 3).map(function (x) {
+            return {
+              qid: x.qid, stem: x.stem, tierLabel: x.tierLabel,
+              attempts: x.attempts, correctRate: x.correctRate,
+              missCount: x.wrong + x.skip, missers: x.missers.slice(0, 4)
+            };
+          });
+        } catch (e) { return []; }
+      })(),
       /* 当前被点到的学生（点名环节大屏放大显示） */
       sid: sid,
       sidName: stu ? stu.name : '',

@@ -46,6 +46,7 @@
       '<div class="quiz-toolbar-row">' +
         '<select id="quizSelect" onchange="CI.quizUI.selectQuiz(this.value)">' + opts + '</select>' +
         '<button class="btn btn-plus" onclick="CI.quizUI.newQuiz()">＋ 新建一套题</button>' +
+        (qz ? '<button class="btn" onclick="CI.quizUI.drawQuestions()">🎲 随机抽题</button>' : '') +
         (qz ? '<button class="btn" onclick="CI.quizUI.renameQuiz()">重命名</button>' : '') +
         (qz ? '<button class="btn" onclick="CI.quizUI.exportCSV()">导出本套流水</button>' : '') +
         (qz && !qz.closedAt ? '<button class="btn btn-minus" onclick="CI.quizUI.closeQuiz()">结束本套题</button>' : '') +
@@ -191,6 +192,48 @@
     var ids = s.bank.filter(function (q) { return q.tier === tierKey; }).map(function (q) { return q.id; });
     if (!ids.length) { alert('该题型下没有题目'); return; }
     CI.store.addQuestionsToQuiz(qz.id, ids);
+    render();
+  }
+
+  /**
+   * 随机抽题：按题型/标签/数量从题库抽题加入当前试卷
+   *
+   * 用 prompt 收集条件（旧版界面风格：轻量、不打断上课节奏），
+   * 抽题本身走 CI.store.drawQuestions（与 Rust 侧同一算法，见 docs/14 §2）。
+   */
+  function drawQuestions() {
+    var s = CI.store.get();
+    var qz = ensureQuiz();
+    if (!qz) return;
+
+    var tiers = s.tiers.map(function (t) { return t.key + '=' + t.label; }).join('、');
+    var tierInput = prompt('限定题型（留空=不限）\n可选：' + tiers + '\n多个用逗号分隔，如：basic,advanced', '');
+    if (tierInput === null) return; // 取消
+    var tierKeys = tierInput.split(/[,，\s]+/).filter(function (x) { return x; });
+
+    var tagInput = prompt('限定标签（留空=不限）\n题库里的标签：' + (s.tags || []).join('、'), '');
+    if (tagInput === null) return;
+    var tags = tagInput.split(/[,，\s]+/).filter(function (x) { return x; });
+
+    var countInput = prompt('抽几道题？', '5');
+    if (countInput === null) return;
+    var count = Number(countInput) || 0;
+    if (count <= 0) { alert('抽题数量要大于 0'); return; }
+
+    // 已在试卷里的题不重复抽（否则等于白抽）
+    var ids = CI.store.drawQuestions(s, {
+      count: count,
+      tiers: tierKeys,
+      tags: tags,
+      excludeIds: qz.questionIds.slice()
+    });
+    if (!ids.length) {
+      alert('按这些条件没有抽到题目（可能题库为空、都被排除、或条件太窄）');
+      return;
+    }
+    var added = CI.store.addQuestionsToQuiz(qz.id, ids);
+    if (!s.runtime.qid) CI.store.setRuntime({ qid: ids[0] });
+    alert('抽到 ' + ids.length + ' 道题，加入「' + qz.name + '」' + (added < ids.length ? '（' + (ids.length - added) + ' 道已在卷中）' : ''));
     render();
   }
 
@@ -477,6 +520,7 @@
     renderQuestions: renderQuestions, renderCurrent: renderCurrent, renderRecords: renderRecords,
     selectQuiz: selectQuiz, newQuiz: newQuiz, renameQuiz: renameQuiz, closeQuiz: closeQuiz, deleteQuiz: deleteQuiz,
     addSelected: addSelected, addAllTier: addAllTier, addToCurrent: addToCurrent,
+    drawQuestions: drawQuestions,
     setQuestion: setQuestion, moveQuestion: moveQuestion, removeQuestion: removeQuestion,
     setStudent: setStudent, judge: judge, batchQuick: batchQuick,
     removeRecord: removeRecord, exportCSV: exportCSV,

@@ -13,7 +13,9 @@
 
 pub mod ability;
 pub mod classroom;
+pub mod draw;
 pub mod grade;
+pub mod question_stats;
 pub mod rollcall;
 pub mod scoring;
 pub mod state;
@@ -22,6 +24,8 @@ pub use ability::{
     ability_comment, ability_of_tiers, grade_by_key, pct, Ability, Axis, Bucket, Grade, TierStat,
     GRADES,
 };
+pub use draw::{candidates as draw_candidates, draw as draw_questions, DrawOpts};
+pub use question_stats::{question_stats, review_line, short_stem, QuestionStat};
 pub use rollcall::{
     apply_pick, called_count, candidates as rollcall_candidates, pick as rollcall_pick, recent_ids,
     Pick, PickOpts, RollEntry, RollcallSettings, Student, XorShift64,

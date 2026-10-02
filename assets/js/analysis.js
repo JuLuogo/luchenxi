@@ -368,7 +368,21 @@
       }).join('、') + (cs.needHelp.length > 5 ? (' 等 ' + cs.needHelp.length + ' 人') : ''));
     }
 
-    return { title: scopeName, lines: lines, text: lines.join('\n'), stats: cs };
+    // 题目维度：哪几道题全班都不会 —— 这是下节课讲评的直接依据
+    var qStats = questionStats(s, null);
+    var qLine = questionReviewLine(qStats);
+    if (qLine) {
+      lines.push('· ' + qLine);
+      // 正确率最低的 3 道题单独列出来（带作答人数，便于判断是"都不会"还是"没人做"）
+      var hardest = qStats.filter(function (x) { return x.attempts > 0; }).slice(0, 3);
+      if (hardest.length > 1) {
+        lines.push('· 讲评顺序建议：' + hardest.map(function (x, i) {
+          return (i + 1) + '. ' + x.stem + '（' + x.correctRate + '%，' + x.attempts + ' 人作答）';
+        }).join('；'));
+      }
+    }
+
+    return { title: scopeName, lines: lines, text: lines.join('\n'), stats: cs, questionStats: qStats };
   }
 
   /** 单个学生的 CSV 明细行 */
@@ -415,6 +429,96 @@
       ]);
     });
     return rows;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 按题目的作答统计（课后讲评的依据：哪几道题全班都不会）
+   *   口径与 Rust 侧 question_stats.rs 逐字段一致：
+   *     · 只统计有题目归属的流水（快捷记分/手动加减没有 qid，不计入）
+   *     · correctRate = 答对 / 作答；creditRate = (答对 + 半对×halfRatio) / 作答
+   *     · avgPoints = 该题总分 / 作答次数（两位小数）
+   *     · missers = 答错/跳过的人名（去重、首次出现顺序）
+   *     · 排序：正确率升序（最需要讲评的在前），同率则作答多的在前
+   * ------------------------------------------------------------------ */
+
+  /**
+   * @param {Object} state 状态（可省略）
+   * @param {String} quizId 只看某套试卷；省略 = 全部流水
+   */
+  /** 百分比（四舍五入到整数；分母 0 → 0）—— 与 Rust question_stats.rs 的 pct 同口径 */
+  function localPct(a, b) {
+    if (!b) return 0;
+    return Math.round((a / b) * 100);
+  }
+
+  function questionStats(state, quizId) {
+    var s = state || CI.store.get();
+    var records = [];
+    if (quizId) {
+      var qz = CI.store.quiz(s, quizId);
+      records = (qz && qz.records) || [];
+    } else {
+      (s.quizzes || []).forEach(function (q) { records = records.concat(q.records || []); });
+    }
+    var half = U.num(settings(s).halfRatio, 0.5);
+    var order = [];
+    var map = {};
+    records.forEach(function (r) {
+      if (!r.qid) return;
+      if (!map[r.qid]) {
+        map[r.qid] = { qid: r.qid, attempts: 0, correct: 0, half: 0, wrong: 0, skip: 0, points: 0, missers: [] };
+        order.push(r.qid);
+      }
+      var e = map[r.qid];
+      e.attempts += 1;
+      if (e[r.result] !== undefined && r.result !== 'attempts' && r.result !== 'points') e[r.result] = (e[r.result] || 0) + 1;
+      e.points += U.num(r.points, 0);
+      if (r.result === 'wrong' || r.result === 'skip') {
+        var stu = r.sid ? CI.store.student(s, r.sid) : null;
+        if (stu && e.missers.indexOf(stu.name) < 0) e.missers.push(stu.name);
+      }
+    });
+    var out = order.map(function (qid) {
+      var e = map[qid];
+      var q = CI.store.question(s, qid);
+      var tier = q ? q.tier : '';
+      var t = tier ? CI.store.tierOf(s, tier) : null;
+      return {
+        qid: qid,
+        stem: q ? U.shortStem(q.stem) : '（题目已删除）',
+        tier: tier,
+        tierLabel: t ? t.label : (tier || '—'),
+        attempts: e.attempts,
+        correct: e.correct,
+        half: e.half,
+        wrong: e.wrong,
+        skip: e.skip,
+        correctRate: localPct(e.correct, e.attempts),
+        creditRate: localPct(e.correct + e.half * half, e.attempts),
+        avgPoints: Math.round((e.points / (e.attempts || 1)) * 100) / 100,
+        missers: e.missers
+      };
+    });
+    out.sort(function (a, b) {
+      return (a.correctRate - b.correctRate) || (b.attempts - a.attempts) || (a.qid < b.qid ? -1 : (a.qid > b.qid ? 1 : 0));
+    });
+    return out;
+  }
+
+  /** 题目维度的课后结论（一句话；没有作答返回 null） */
+  function questionReviewLine(stats) {
+    var answered = (stats || []).filter(function (x) { return x.attempts > 0; });
+    if (!answered.length) return null;
+    var worst = answered[0];
+    var best = answered[answered.length - 1];
+    var totalAttempts = answered.reduce(function (n, x) { return n + x.attempts; }, 0);
+    var totalCorrect = answered.reduce(function (n, x) { return n + x.correct; }, 0);
+    var line = '本套题共 ' + answered.length + ' 道有作答，整体正确率 ' + localPct(totalCorrect, totalAttempts) + '%。' +
+      '最需要讲评的是「' + worst.stem + '」（正确率 ' + worst.correctRate + '%，' + worst.attempts + ' 人作答，' +
+      (worst.wrong + worst.skip) + ' 人答错或跳过）；掌握最好的是「' + best.stem + '」（正确率 ' + best.correctRate + '%）。';
+    var zero = answered.filter(function (x) { return x.correct === 0; });
+    if (zero.length) line += '另有 ' + zero.length + ' 道题无人答对，建议课堂重讲。';
+    return line;
   }
 
   /* ------------------------------------------------------------------ *
@@ -572,6 +676,8 @@
     studentCSV: studentCSV,
     classCSV: classCSV,
     questionCSV: questionCSV,
+    questionStats: questionStats,
+    questionReviewLine: questionReviewLine,
     counts: counts,
     ability: ability,
     abilityOfTiers: abilityOfTiers,

@@ -3720,5 +3720,1019 @@
         }
       ]
     }
+  ],
+  "draw": [
+    {
+      "name": "不限条件抽 3 道（归档题不参与）",
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q2",
+          "tier": "basic",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q3",
+          "tier": "basic",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q4",
+          "tier": "advanced",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q5",
+          "tier": "advanced",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q6",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": true
+        }
+      ],
+      "opts": {
+        "count": 3,
+        "tiers": [],
+        "tags": [],
+        "excludeIds": [],
+        "includeArchived": false
+      },
+      "seq": [
+        0.1,
+        0.7,
+        0.3,
+        0.9,
+        0.2,
+        0.5,
+        0.4,
+        0.8,
+        0.6,
+        0.15,
+        0.35,
+        0.85
+      ],
+      "expect": {
+        "ids": [
+          "q4",
+          "q2",
+          "q5"
+        ],
+        "drawsUsed": 4
+      }
+    },
+    {
+      "name": "限定基础题抽 2 道",
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q2",
+          "tier": "basic",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q3",
+          "tier": "basic",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q4",
+          "tier": "advanced",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q5",
+          "tier": "advanced",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q6",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": true
+        }
+      ],
+      "opts": {
+        "count": 2,
+        "tiers": [
+          "basic"
+        ],
+        "tags": [],
+        "excludeIds": [],
+        "includeArchived": false
+      },
+      "seq": [
+        0.1,
+        0.7,
+        0.3,
+        0.9,
+        0.2,
+        0.5,
+        0.4,
+        0.8,
+        0.6,
+        0.15,
+        0.35,
+        0.85
+      ],
+      "expect": {
+        "ids": [
+          "q3",
+          "q2"
+        ],
+        "drawsUsed": 2
+      }
+    },
+    {
+      "name": "限定标签抽 2 道",
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q2",
+          "tier": "basic",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q3",
+          "tier": "basic",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q4",
+          "tier": "advanced",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q5",
+          "tier": "advanced",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q6",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": true
+        }
+      ],
+      "opts": {
+        "count": 2,
+        "tiers": [],
+        "tags": [
+          "概率统计"
+        ],
+        "excludeIds": [],
+        "includeArchived": false
+      },
+      "seq": [
+        0.1,
+        0.7,
+        0.3,
+        0.9,
+        0.2,
+        0.5,
+        0.4,
+        0.8,
+        0.6,
+        0.15,
+        0.35,
+        0.85
+      ],
+      "expect": {
+        "ids": [
+          "q5",
+          "q3"
+        ],
+        "drawsUsed": 1
+      }
+    },
+    {
+      "name": "题型 + 标签同时限定",
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q2",
+          "tier": "basic",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q3",
+          "tier": "basic",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q4",
+          "tier": "advanced",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q5",
+          "tier": "advanced",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q6",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": true
+        }
+      ],
+      "opts": {
+        "count": 3,
+        "tiers": [
+          "advanced"
+        ],
+        "tags": [
+          "函数与导数"
+        ],
+        "excludeIds": [],
+        "includeArchived": false
+      },
+      "seq": [
+        0.1,
+        0.7,
+        0.3,
+        0.9,
+        0.2,
+        0.5,
+        0.4,
+        0.8,
+        0.6,
+        0.15,
+        0.35,
+        0.85
+      ],
+      "expect": {
+        "ids": [
+          "q4"
+        ],
+        "drawsUsed": 0
+      }
+    },
+    {
+      "name": "排除已在试卷里的题",
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q2",
+          "tier": "basic",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q3",
+          "tier": "basic",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q4",
+          "tier": "advanced",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q5",
+          "tier": "advanced",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q6",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": true
+        }
+      ],
+      "opts": {
+        "count": 3,
+        "tiers": [],
+        "tags": [],
+        "excludeIds": [
+          "q1",
+          "q4"
+        ],
+        "includeArchived": false
+      },
+      "seq": [
+        0.1,
+        0.7,
+        0.3,
+        0.9,
+        0.2,
+        0.5,
+        0.4,
+        0.8,
+        0.6,
+        0.15,
+        0.35,
+        0.85
+      ],
+      "expect": {
+        "ids": [
+          "q5",
+          "q3",
+          "q2"
+        ],
+        "drawsUsed": 2
+      }
+    },
+    {
+      "name": "要的比候选多（全给）",
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q2",
+          "tier": "basic",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q3",
+          "tier": "basic",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q4",
+          "tier": "advanced",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q5",
+          "tier": "advanced",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q6",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": true
+        }
+      ],
+      "opts": {
+        "count": 99,
+        "tiers": [],
+        "tags": [],
+        "excludeIds": [],
+        "includeArchived": false
+      },
+      "seq": [
+        0.1,
+        0.7,
+        0.3,
+        0.9,
+        0.2,
+        0.5,
+        0.4,
+        0.8,
+        0.6,
+        0.15,
+        0.35,
+        0.85
+      ],
+      "expect": {
+        "ids": [
+          "q4",
+          "q2",
+          "q5",
+          "q3",
+          "q1"
+        ],
+        "drawsUsed": 4
+      }
+    },
+    {
+      "name": "显式包含归档题",
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q2",
+          "tier": "basic",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q3",
+          "tier": "basic",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q4",
+          "tier": "advanced",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q5",
+          "tier": "advanced",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q6",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": true
+        }
+      ],
+      "opts": {
+        "count": 99,
+        "tiers": [],
+        "tags": [],
+        "excludeIds": [],
+        "includeArchived": true
+      },
+      "seq": [
+        0.1,
+        0.7,
+        0.3,
+        0.9,
+        0.2,
+        0.5,
+        0.4,
+        0.8,
+        0.6,
+        0.15,
+        0.35,
+        0.85
+      ],
+      "expect": {
+        "ids": [
+          "q5",
+          "q6",
+          "q3",
+          "q2",
+          "q4",
+          "q1"
+        ],
+        "drawsUsed": 5
+      }
+    },
+    {
+      "name": "条件不匹配（空结果）",
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q2",
+          "tier": "basic",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q3",
+          "tier": "basic",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q4",
+          "tier": "advanced",
+          "tags": [
+            "函数与导数"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q5",
+          "tier": "advanced",
+          "tags": [
+            "概率统计"
+          ],
+          "archived": false
+        },
+        {
+          "id": "q6",
+          "tier": "basic",
+          "tags": [
+            "集合与逻辑"
+          ],
+          "archived": true
+        }
+      ],
+      "opts": {
+        "count": 3,
+        "tiers": [
+          "不存在"
+        ],
+        "tags": [],
+        "excludeIds": [],
+        "includeArchived": false
+      },
+      "seq": [
+        0.1,
+        0.7,
+        0.3,
+        0.9,
+        0.2,
+        0.5,
+        0.4,
+        0.8,
+        0.6,
+        0.15,
+        0.35,
+        0.85
+      ],
+      "expect": {
+        "ids": [],
+        "drawsUsed": 0
+      }
+    }
+  ],
+  "questionStats": [
+    {
+      "name": "默认 halfRatio（0.5）",
+      "halfRatio": 0.5,
+      "tiers": [
+        {
+          "key": "basic",
+          "label": "基础题"
+        },
+        {
+          "key": "advanced",
+          "label": "拔高题"
+        },
+        {
+          "key": "extended",
+          "label": "扩展题"
+        },
+        {
+          "key": "improve",
+          "label": "提升题"
+        }
+      ],
+      "students": [
+        {
+          "id": "s1",
+          "name": "甲"
+        },
+        {
+          "id": "s2",
+          "name": "乙"
+        },
+        {
+          "id": "s3",
+          "name": "丙"
+        }
+      ],
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "stem": "第一题：1+1=?"
+        },
+        {
+          "id": "q2",
+          "tier": "advanced",
+          "stem": "第二题：全班都不会"
+        },
+        {
+          "id": "q3",
+          "tier": "extended",
+          "stem": "第三题：只有一人半对"
+        }
+      ],
+      "records": [
+        {
+          "id": "r1",
+          "sid": "s1",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "correct",
+          "points": 3
+        },
+        {
+          "id": "r2",
+          "sid": "s2",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "correct",
+          "points": 3
+        },
+        {
+          "id": "r3",
+          "sid": "s3",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "wrong",
+          "points": 0
+        },
+        {
+          "id": "r4",
+          "sid": "s1",
+          "qid": "q2",
+          "tier": "advanced",
+          "result": "wrong",
+          "points": 0
+        },
+        {
+          "id": "r5",
+          "sid": "s2",
+          "qid": "q2",
+          "tier": "advanced",
+          "result": "wrong",
+          "points": 0
+        },
+        {
+          "id": "r6",
+          "sid": "s3",
+          "qid": "q2",
+          "tier": "advanced",
+          "result": "skip",
+          "points": 0
+        },
+        {
+          "id": "r7",
+          "sid": "s1",
+          "qid": "q3",
+          "tier": "extended",
+          "result": "half",
+          "points": 4
+        },
+        {
+          "id": "r8",
+          "sid": "s1",
+          "qid": null,
+          "tier": "improve",
+          "result": "correct",
+          "points": 10
+        }
+      ],
+      "expect": [
+        {
+          "qid": "q2",
+          "stem": "第二题：全班都不会",
+          "tier": "advanced",
+          "tierLabel": "拔高题",
+          "attempts": 3,
+          "correct": 0,
+          "half": 0,
+          "wrong": 2,
+          "skip": 1,
+          "correctRate": 0,
+          "creditRate": 0,
+          "avgPoints": 0,
+          "missers": [
+            "甲",
+            "乙",
+            "丙"
+          ]
+        },
+        {
+          "qid": "q3",
+          "stem": "第三题：只有一人半对",
+          "tier": "extended",
+          "tierLabel": "扩展题",
+          "attempts": 1,
+          "correct": 0,
+          "half": 1,
+          "wrong": 0,
+          "skip": 0,
+          "correctRate": 0,
+          "creditRate": 50,
+          "avgPoints": 4,
+          "missers": []
+        },
+        {
+          "qid": "q1",
+          "stem": "第一题：1+1=?",
+          "tier": "basic",
+          "tierLabel": "基础题",
+          "attempts": 3,
+          "correct": 2,
+          "half": 0,
+          "wrong": 1,
+          "skip": 0,
+          "correctRate": 67,
+          "creditRate": 67,
+          "avgPoints": 2,
+          "missers": [
+            "丙"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "halfRatio 改为 0.4（掌握度跟着变）",
+      "halfRatio": 0.4,
+      "tiers": [
+        {
+          "key": "basic",
+          "label": "基础题"
+        },
+        {
+          "key": "advanced",
+          "label": "拔高题"
+        },
+        {
+          "key": "extended",
+          "label": "扩展题"
+        },
+        {
+          "key": "improve",
+          "label": "提升题"
+        }
+      ],
+      "students": [
+        {
+          "id": "s1",
+          "name": "甲"
+        },
+        {
+          "id": "s2",
+          "name": "乙"
+        },
+        {
+          "id": "s3",
+          "name": "丙"
+        }
+      ],
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "stem": "第一题：1+1=?"
+        },
+        {
+          "id": "q2",
+          "tier": "advanced",
+          "stem": "第二题：全班都不会"
+        },
+        {
+          "id": "q3",
+          "tier": "extended",
+          "stem": "第三题：只有一人半对"
+        }
+      ],
+      "records": [
+        {
+          "id": "r1",
+          "sid": "s1",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "correct",
+          "points": 3
+        },
+        {
+          "id": "r2",
+          "sid": "s2",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "correct",
+          "points": 3
+        },
+        {
+          "id": "r3",
+          "sid": "s3",
+          "qid": "q1",
+          "tier": "basic",
+          "result": "wrong",
+          "points": 0
+        },
+        {
+          "id": "r4",
+          "sid": "s1",
+          "qid": "q2",
+          "tier": "advanced",
+          "result": "wrong",
+          "points": 0
+        },
+        {
+          "id": "r5",
+          "sid": "s2",
+          "qid": "q2",
+          "tier": "advanced",
+          "result": "wrong",
+          "points": 0
+        },
+        {
+          "id": "r6",
+          "sid": "s3",
+          "qid": "q2",
+          "tier": "advanced",
+          "result": "skip",
+          "points": 0
+        },
+        {
+          "id": "r7",
+          "sid": "s1",
+          "qid": "q3",
+          "tier": "extended",
+          "result": "half",
+          "points": 3.2
+        },
+        {
+          "id": "r8",
+          "sid": "s1",
+          "qid": null,
+          "tier": "improve",
+          "result": "correct",
+          "points": 10
+        }
+      ],
+      "expect": [
+        {
+          "qid": "q2",
+          "stem": "第二题：全班都不会",
+          "tier": "advanced",
+          "tierLabel": "拔高题",
+          "attempts": 3,
+          "correct": 0,
+          "half": 0,
+          "wrong": 2,
+          "skip": 1,
+          "correctRate": 0,
+          "creditRate": 0,
+          "avgPoints": 0,
+          "missers": [
+            "甲",
+            "乙",
+            "丙"
+          ]
+        },
+        {
+          "qid": "q3",
+          "stem": "第三题：只有一人半对",
+          "tier": "extended",
+          "tierLabel": "扩展题",
+          "attempts": 1,
+          "correct": 0,
+          "half": 1,
+          "wrong": 0,
+          "skip": 0,
+          "correctRate": 0,
+          "creditRate": 40,
+          "avgPoints": 3.2,
+          "missers": []
+        },
+        {
+          "qid": "q1",
+          "stem": "第一题：1+1=?",
+          "tier": "basic",
+          "tierLabel": "基础题",
+          "attempts": 3,
+          "correct": 2,
+          "half": 0,
+          "wrong": 1,
+          "skip": 0,
+          "correctRate": 67,
+          "creditRate": 67,
+          "avgPoints": 2,
+          "missers": [
+            "丙"
+          ]
+        }
+      ]
+    }
   ]
 }

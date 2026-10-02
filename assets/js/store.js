@@ -581,6 +581,43 @@
     return Math.round(pts * 100) / 100;
   }
 
+  /* ------------------------------------------------------------------ *
+   * 随机抽题（组卷用）
+   *   候选先过滤（题型 / 标签 / 排除 id / 归档），再 Fisher-Yates 洗牌取前 N。
+   *   洗牌每步**恰好消耗一次随机数**、下标 = floor(r × i)：与 Rust 侧 draw.rs 逐位一致，
+   *   这样传固定序列就能比对同一次抽题（parity 基准的命门）。
+   * ------------------------------------------------------------------ */
+
+  /**
+   * 从题库抽题
+   * @param {Object} s 状态（可省略）
+   * @param {Object} opts {count, tiers?, tags?, excludeIds?, includeArchived?}
+   * @param {Function} rand 返回 [0,1) 的函数（默认 Math.random；传固定序列即可复现）
+   * @returns {String[]} 抽中的题目 id
+   */
+  function drawQuestions(s, opts, rand) {
+    s = s || get();
+    opts = opts || {};
+    var count = num(opts.count, 0);
+    var tiers = opts.tiers || [];
+    var tags = opts.tags || [];
+    var exclude = opts.excludeIds || [];
+    var list = (s.bank || []).filter(function (q) {
+      if (!opts.includeArchived && q.archived) return false;
+      if (exclude.indexOf(q.id) >= 0) return false;
+      if (tiers.length && tiers.indexOf(q.tier) < 0) return false;
+      if (tags.length && !(q.tags || []).some(function (x) { return tags.indexOf(x) >= 0; })) return false;
+      return true;
+    });
+    if (!count || !list.length) return [];
+    var rnd = typeof rand === 'function' ? rand : Math.random;
+    for (var i = list.length; i > 1; i--) {
+      var j = Math.min(i - 1, Math.floor(rnd() * i));
+      var tmp = list[i - 1]; list[i - 1] = list[j]; list[j] = tmp;
+    }
+    return list.slice(0, count).map(function (q) { return q.id; });
+  }
+
   /** 第 n 个抢答应得的加分（1 起；名单外为 0） */
   function buzzRankBonus(rank) {
     var st = get().settings;
@@ -1274,6 +1311,7 @@
     isCountable: isCountable, scoreOf: scoreOf, teamScore: teamScore, studentsOf: studentsOf,
     calledCount: calledCount, lastRecord: lastRecord, answeredAlready: answeredAlready,
     describeRecord: describeRecord, computePoints: computePoints, collectorQuiz: collectorQuiz,
+    drawQuestions: drawQuestions,
     buzzRankBonus: buzzRankBonus,
 
     recordResult: recordResult, addManual: addManual, resetStudentScore: resetStudentScore,

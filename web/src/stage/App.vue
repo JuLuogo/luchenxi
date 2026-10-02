@@ -101,6 +101,9 @@ const timerText = computed(() => (timerLeft.value === null ? '' : formatLeft(tim
 /** 最后 10 秒变红，提醒学生收尾 */
 const timerUrgent = computed(() => timerLeft.value !== null && timerLeft.value <= 10000);
 
+/** 讲评建议：正确率最低的几道题（教师端在 meta 里算好，点评环节显示） */
+const hardest = computed<any[]>(() => meta.value.hardestQuestions || []);
+
 const phaseTitle = computed(() => ({
   idle: '等待上课', rollcall: '随机点名', question: '出题 · 作答', review: '点评总结'
 }[phase.value] || '等待上课'));
@@ -238,6 +241,21 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
         <StageRadar v-if="ability" :ability="ability" />
       </section>
     </main>
+
+    <!-- 点评环节的「讲评建议」：正确率最低的几道题（老师照着讲） -->
+    <aside v-if="phase === 'review' && hardest.length" class="review-tips">
+      <div class="tips-title">📌 讲评建议（按正确率从低到高）</div>
+      <div v-for="(q, i) in hardest" :key="q.qid" class="tip-row">
+        <span class="tip-rank">{{ i + 1 }}</span>
+        <span class="tip-stem">{{ q.stem }}</span>
+        <span class="tip-tier">{{ q.tierLabel }}</span>
+        <span class="tip-rate" :class="{ bad: q.correctRate < 40, warn: q.correctRate < 70 }">
+          {{ q.correctRate }}%
+        </span>
+        <span class="tip-detail">{{ q.attempts }} 人作答 · {{ q.missCount }} 人未答对</span>
+        <span v-if="q.missers.length" class="tip-who">{{ q.missers.join('、') }}</span>
+      </div>
+    </aside>
 
     <footer class="foot">
       <span>{{ status }}</span>
@@ -399,4 +417,23 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
   display: flex; justify-content: space-between; padding: 8px 32px;
   border-top: 1px solid var(--c-line); color: var(--c-text-3); font-size: 13px; background: #fff;
 }
+
+/* 点评环节的讲评建议（正确率最低的几道题） */
+.review-tips {
+  margin: 0 32px 14px; padding: 12px 16px; background: #fff;
+  border: 1px solid var(--c-line); border-left: 4px solid #f59e0b; border-radius: 12px;
+}
+.tips-title { font-size: 14px; font-weight: 700; color: var(--c-text-2); margin-bottom: 8px; }
+.tip-row { display: flex; align-items: center; gap: 12px; padding: 5px 0; font-size: 14px; }
+.tip-rank {
+  width: 20px; height: 20px; flex: none; border-radius: 50%; background: #f1f5f9;
+  color: var(--c-text-2); font-size: 12px; font-weight: 700; text-align: center; line-height: 20px;
+}
+.tip-stem { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tip-tier { flex: none; font-size: 12px; color: var(--c-text-3); }
+.tip-rate { flex: none; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--c-ok); }
+.tip-rate.warn { color: #d97706; }
+.tip-rate.bad { color: var(--c-bad); }
+.tip-detail { flex: none; font-size: 12px; color: var(--c-text-3); }
+.tip-who { flex: none; font-size: 12px; color: var(--c-text-3); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>

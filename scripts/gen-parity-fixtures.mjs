@@ -551,6 +551,153 @@ classCase('学生命令：没有成员的队伍（应写失败提示）', [
   { kind: 'cmd', cmd: { kind: 'answer', team: 't3', q: 'q1', choice: ['A'] } }
 ]);
 
+
+/* ---------- 用例集：随机抽题（store.js::drawQuestions）---------- *
+ * 与 rollcall 同一套路：把随机源换成**固定序列**，记录每一步抽到的题 id，
+ * Rust 侧用同一序列重放，必须抽出同一批题（洗牌消耗次数也要一致）。 */
+const drawCases = [];
+
+/** 造一批题目（id 稳定，便于比对） */
+function drawBank() {
+  globalThis.localStorage.clear();
+  S.replaceState(S.defaultState());
+  const specs = [
+    { stem: '基础题一', tier: 'basic', tags: ['集合与逻辑'] },
+    { stem: '基础题二', tier: 'basic', tags: ['函数与导数'] },
+    { stem: '基础题三', tier: 'basic', tags: ['概率统计'] },
+    { stem: '拔高题一', tier: 'advanced', tags: ['函数与导数'] },
+    { stem: '拔高题二', tier: 'advanced', tags: ['概率统计'] },
+    { stem: '归档题', tier: 'basic', tags: ['集合与逻辑'], archived: true }
+  ];
+  return specs.map((sp) => {
+    const q = S.addQuestion({ stem: sp.stem, tier: sp.tier, tags: sp.tags, answer: 'A' });
+    if (sp.archived) S.updateQuestion(q.id, { archived: true });
+    return q;
+  });
+}
+
+function drawCase(name, opts) {
+  const qs = drawBank();
+  // id 归一化：q1..q6（uid 每次都不同）
+  const idMap = new Map();
+  const rawById = new Map();
+  qs.forEach((q, i) => {
+    idMap.set(q.id, 'q' + (i + 1));
+    rawById.set('q' + (i + 1), q.id);
+  });
+  const N = (x) => (x === null || x === undefined ? null : (idMap.get(x) || x));
+  /** 归一化名 → 原始 id（调 JS 时必须用原始 id，它比对的是 uid） */
+  const R = (n) => rawById.get(n) || n;
+  // 固定随机序列（与 Rust 侧 replay 用的完全一致）
+  const seq = [0.1, 0.7, 0.3, 0.9, 0.2, 0.5, 0.4, 0.8, 0.6, 0.15, 0.35, 0.85];
+  const state = { i: 0 };
+  const rand = () => seq[state.i++ % seq.length];
+
+  const optsNorm = {
+    count: Number(opts.count || 0),
+    tiers: opts.tiers || [],
+    tags: opts.tags || [],
+    excludeIds: (opts.excludeIds || []).map(N),
+    includeArchived: !!opts.includeArchived
+  };
+  // 注意：调 JS 时 excludeIds 必须是**原始 id**（它比对的是题库里的 uid），
+  // 记录到基准里才用归一化名 —— 否则"排除"会静默失效（这正是本轮抓到的问题）
+  const optsForJs = Object.assign({}, optsNorm, {
+    excludeIds: (opts.excludeIds || []).map(R)
+  });
+  const got = S.drawQuestions(S.get(), optsForJs, rand).map(N);
+
+  drawCases.push({
+    name,
+    // 题库形状（Rust 侧据此建 BankQuestion）
+    bank: qs.map((q, i) => ({ id: 'q' + (i + 1), tier: q.tier, tags: q.tags || [], archived: !!q.archived })),
+    opts: optsNorm,
+    seq,
+    expect: { ids: got, drawsUsed: state.i }
+  });
+}
+
+drawCase('不限条件抽 3 道（归档题不参与）', { count: 3 });
+drawCase('限定基础题抽 2 道', { count: 2, tiers: ['basic'] });
+drawCase('限定标签抽 2 道', { count: 2, tags: ['概率统计'] });
+drawCase('题型 + 标签同时限定', { count: 3, tiers: ['advanced'], tags: ['函数与导数'] });
+drawCase('排除已在试卷里的题', { count: 3, excludeIds: ['q1', 'q4'] });
+drawCase('要的比候选多（全给）', { count: 99 });
+drawCase('显式包含归档题', { count: 99, includeArchived: true });
+drawCase('条件不匹配（空结果）', { count: 3, tiers: ['不存在'] });
+
+/* ---------- 用例集：按题目的作答统计（analysis.js::questionStats）---------- *
+ * 纯数据进、纯数据出：题库 + 学生 + 流水 → 每题的作答/正确率/掌握度/平均分/答错人名 */
+const questionStats = [];
+
+function qsCase(name, halfRatio) {
+  globalThis.localStorage.clear();
+  S.replaceState(S.defaultState());
+  const teams = S.get().teams;
+  const a = S.addStudent('甲', teams[0].id);
+  const b = S.addStudent('乙', teams[0].id);
+  const c = S.addStudent('丙', teams[1].id);
+  const sid = (x) => (typeof x === 'string' ? x : x.id);
+  if (halfRatio !== undefined) S.updateSettings({ halfRatio });
+
+  const q1 = S.addQuestion({ stem: '第一题：1+1=?', tier: 'basic', answer: 'A' });
+  const q2 = S.addQuestion({ stem: '第二题：全班都不会', tier: 'advanced', answer: 'B' });
+  const q3 = S.addQuestion({ stem: '第三题：只有一人半对', tier: 'extended', answer: 'C' });
+  const qz = S.createQuiz('随堂测', [q1.id, q2.id, q3.id]);
+
+  // q1：2 对 1 错；q2：2 错 1 跳过；q3：1 半对；另有一条快捷记分（无题目归属）
+  S.recordResult({ sid: sid(a), qid: q1.id, tier: 'basic', result: 'correct', quizId: qz.id, source: 'student' });
+  S.recordResult({ sid: sid(b), qid: q1.id, tier: 'basic', result: 'correct', quizId: qz.id, source: 'student' });
+  S.recordResult({ sid: sid(c), qid: q1.id, tier: 'basic', result: 'wrong', quizId: qz.id, source: 'student' });
+  S.recordResult({ sid: sid(a), qid: q2.id, tier: 'advanced', result: 'wrong', quizId: qz.id, source: 'student' });
+  S.recordResult({ sid: sid(b), qid: q2.id, tier: 'advanced', result: 'wrong', quizId: qz.id, source: 'student' });
+  S.recordResult({ sid: sid(c), qid: q2.id, tier: 'advanced', result: 'skip', quizId: qz.id, source: 'student' });
+  S.recordResult({ sid: sid(a), qid: q3.id, tier: 'extended', result: 'half', quizId: qz.id, source: 'student' });
+  S.recordResult({ sid: sid(a), tier: 'improve', result: 'correct', source: 'quick' });
+
+  const got = CI.analysis.questionStats(S.get(), null);
+  questionStats.push({
+    name,
+    halfRatio: Number(S.get().settings.halfRatio),
+    tiers: S.get().tiers.map((x) => ({ key: x.key, label: x.label })),
+    students: S.get().students.map((s, i) => ({ id: 's' + (i + 1), name: s.name })),
+    bank: [q1, q2, q3].map((q, i) => ({ id: 'q' + (i + 1), tier: q.tier, stem: q.stem })),
+    records: S.get().quizzes
+      .reduce((acc, qz2) => acc.concat(qz2.records || []), [])
+      .map((r, i) => ({
+        id: 'r' + (i + 1),
+        sid: (() => {
+          const idx = S.get().students.findIndex((s) => s.id === r.sid);
+          return idx >= 0 ? 's' + (idx + 1) : null;
+        })(),
+        qid: r.qid ? 'q' + ([q1, q2, q3].findIndex((q) => q.id === r.qid) + 1) : null,
+        tier: r.tier || '',
+        result: r.result,
+        points: Number(r.points)
+      })),
+    expect: got.map((x) => ({
+      // qid 也要归一化：uid 每次都不同，不归一化基准就不可复现
+      qid: 'q' + ([q1, q2, q3].findIndex((q) => q.id === x.qid) + 1),
+      stem: x.stem,
+      tier: x.tier,
+      tierLabel: x.tierLabel,
+      attempts: x.attempts,
+      correct: x.correct,
+      half: x.half,
+      wrong: x.wrong,
+      skip: x.skip,
+      correctRate: x.correctRate,
+      creditRate: x.creditRate,
+      avgPoints: x.avgPoints,
+      missers: x.missers
+    }))
+  });
+}
+
+qsCase('默认 halfRatio（0.5）');
+qsCase('halfRatio 改为 0.4（掌握度跟着变）', 0.4);
+
+
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
@@ -559,7 +706,9 @@ const payload = {
   grading,
   rollcall,
   scoring,
-  classroom
+  classroom,
+  draw: drawCases,
+  questionStats
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
@@ -567,7 +716,7 @@ const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
 if (CHECK) {
   if (current === text) {
     console.log('[ok] parity.json 与 JS 参考实现一致（能力 ' + cases.length + ' + 判分 ' + grading.length +
-    ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' + 课堂 ' + classroom.length + ' 组）');
+    ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' + 课堂 ' + classroom.length + ' + 抽题 ' + drawCases.length + ' + 题目统计 ' + questionStats.length + ' 组）');
     process.exit(0);
   }
   console.error('[stale] parity.json 与 JS 参考实现不一致 —— 运行 node scripts/gen-parity-fixtures.mjs 重新生成');
@@ -583,3 +732,5 @@ grading.forEach((g) => console.log('   · ' + g.name.padEnd(28) + (g.expect ? g.
 rollcall.forEach((r) => console.log('   · ' + r.name.padEnd(34) + r.mode + '  ' + r.steps.length + ' 步'));
 scoring.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.steps.length + ' 步'));
 classroom.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.steps.length + ' 步'));
+drawCases.forEach((c) => console.log('   · ' + c.name.padEnd(34) + '抽 ' + c.expect.ids.length + ' 道'));
+questionStats.forEach((c) => console.log('   · ' + c.name.padEnd(34) + c.expect.length + ' 道题'));

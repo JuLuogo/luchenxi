@@ -21,6 +21,13 @@ const scopeName = computed(() => (scope.value === 'all'
   ? '全班'
   : ((store.teams.find((t) => t.id === scope.value) || {}).name || '该队伍')));
 
+/** 按题目正确率（低 → 高）：课后讲评顺序的依据 */
+const questionRows = computed<any[]>(() => {
+  void store.rev; // 状态变了就重算
+  return (CI.analysis.questionStats(store.state, null) as any[]).filter((x) => x.attempts > 0);
+});
+const reviewLine = computed<string>(() => (CI.analysis.questionReviewLine(questionRows.value) as string) || '');
+
 /** 题型掌握：按题型统计 答对 / 半对 / 答错 / 跳过（口径来自 CI.analysis.classStats.tiers） */
 const tierRows = computed(() => store.tiers.map((t) => {
   const b = (classStats.value.tiers || []).find((x) => x.key === t.key) || {};
@@ -224,6 +231,63 @@ function personalRate(tierKey) {
       </el-table>
     </div>
 
+    <!-- 按题目正确率：课后讲评的直接依据（哪几道题全班都不会） -->
+    <div class="panel">
+      <h3 class="panel-title">
+        按题目正确率
+        <span class="sub">低 → 高；「未答对」含答错与跳过 —— 这是下节课讲评的顺序</span>
+      </h3>
+      <el-alert
+        v-if="reviewLine"
+        :title="reviewLine"
+        type="warning"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 10px"
+      />
+      <el-table :data="questionRows" size="small" max-height="380">
+        <el-table-column type="index" label="#" width="50" />
+        <el-table-column prop="stem" label="题目" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="tierLabel" label="题型" width="90" />
+        <el-table-column label="作答" width="70" align="right">
+          <template #default="{ row }">{{ row.attempts }}</template>
+        </el-table-column>
+        <el-table-column label="答对" width="70" align="right">
+          <template #default="{ row }">{{ row.correct }}</template>
+        </el-table-column>
+        <el-table-column label="半对" width="70" align="right">
+          <template #default="{ row }">{{ row.half }}</template>
+        </el-table-column>
+        <el-table-column label="未答对" width="80" align="right">
+          <template #default="{ row }">{{ row.wrong + row.skip }}</template>
+        </el-table-column>
+        <el-table-column label="正确率" width="150">
+          <template #default="{ row }">
+            <el-progress
+              :percentage="row.correctRate"
+              :stroke-width="10"
+              :status="row.correctRate < 40 ? 'exception' : (row.correctRate < 70 ? 'warning' : 'success')"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column label="掌握度" width="80" align="right">
+          <template #default="{ row }">{{ row.creditRate }}%</template>
+        </el-table-column>
+        <el-table-column label="均分" width="70" align="right">
+          <template #default="{ row }">{{ row.avgPoints }}</template>
+        </el-table-column>
+        <el-table-column label="需要关注的学生" min-width="150">
+          <template #default="{ row }">
+            <span v-if="row.missers.length" class="missers">
+              {{ row.missers.slice(0, 5).join('、') }}<template v-if="row.missers.length > 5"> 等 {{ row.missers.length }} 人</template>
+            </span>
+            <span v-else class="sub">—</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div v-if="!questionRows.length" class="empty-hint">还没有按题目的作答数据（需要学生通过试卷作答，快捷记分不计入）</div>
+    </div>
+
     <el-row :gutter="14">
       <el-col :xs="24" :md="14">
         <div class="panel">
@@ -294,4 +358,6 @@ function personalRate(tierKey) {
 .tier-mini { margin-top: 14px; }
 .tm-row { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12px; }
 .tm-label { color: var(--ci-text-weak); }
+.missers { font-size: 12px; color: #b45309; }
+.empty-hint { color: var(--el-text-color-secondary); font-size: 13px; padding: 8px 0; }
 </style>
