@@ -347,6 +347,7 @@
     box.innerHTML =
       '<div class="cur-q-head" style="border-left-color:' + t.color + '">' +
         '<div class="cur-q-stem">' + U.escapeHTML(q.stem || '（空题干）') + '</div>' +
+        (q.imageUrl ? '<img class="cur-q-image" src="' + U.escapeHTML(q.imageUrl) + '" alt="题目配图">' : '') +
         '<div class="cur-q-meta">' +
           '<span class="tag" style="background:' + t.color + '22;color:' + t.color + '">' + U.escapeHTML(t.label) + '</span>' +
           '<span class="tag tag-points">基准 ' + base + ' 分</span>' +

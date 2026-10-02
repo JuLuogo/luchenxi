@@ -268,6 +268,8 @@
         id: q.id,
         stem: U.shortStem(q.stem, 120),
         fullStem: q.stem,
+        /* 题目配图（数学图形题）：大屏与学生端都据此显示 */
+        imageUrl: q.imageUrl || '',
         tier: q.tier,
         tierLabel: CI.store.tierOf(s, q.tier).label,
         points: CI.store.questionPoints(s, q),

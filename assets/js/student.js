@@ -433,6 +433,7 @@
           (accepting() ? '<span class="tag ok">正在接收作答</span>' : '<span class="tag warn">未开放作答</span>') +
         '</div>' +
         '<div class="q-stem">' + esc(q.fullStem || q.stem) + '</div>' +
+        (q.imageUrl ? '<img class="q-image" src="' + esc(q.imageUrl) + '" alt="题目配图">' : '') +
         body +
         whoPick +
         (q.type === 'choice'
@@ -544,7 +545,8 @@
       '</div>' +
       (q ? '<div class="card"><div class="q-head"><span class="tag">' + esc(q.tierLabel) + '</span>' +
         (accepting() ? '<span class="tag ok">正在作答</span>' : '<span class="tag warn">未开放作答</span>') + '</div>' +
-        '<div class="q-stem">' + esc(q.fullStem || q.stem) + '</div></div>' : '') +
+        '<div class="q-stem">' + esc(q.fullStem || q.stem) + '</div>' +
+        (q.imageUrl ? '<img class="q-image" src="' + esc(q.imageUrl) + '" alt="题目配图">' : '') + '</div>' : '') +
       '<div class="card"><h2>组员</h2><div class="list">' +
         myMembers().slice().sort(function (a, b) { return (b.score || 0) - (a.score || 0); }).map(function (s) {
           return '<div class="item"><span class="nm">' + esc(s.name) + '</span><span class="sc">' + (s.score || 0) + '</span></div>';

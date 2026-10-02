@@ -81,6 +81,8 @@ export type BankQuestion = {
 	tags: string[],
 	source: string,
 	note: string,
+	/**  题目配图（数学图形题刚需）：图片 URL 或 data:URI；空串表示没有图 */
+	imageUrl?: string,
 	archived: boolean,
 	createdAt: number,
 };

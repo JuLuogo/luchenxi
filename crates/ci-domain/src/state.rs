@@ -114,6 +114,9 @@ pub struct BankQuestion {
     pub tags: Vec<String>,
     pub source: String,
     pub note: String,
+    /// 题目配图（数学图形题刚需）：图片 URL 或 data:URI；空串表示没有图
+    #[serde(default)]
+    pub image_url: String,
     pub archived: bool,
     #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub created_at: i64,
@@ -388,6 +391,7 @@ mod tests {
             tags: vec!["集合与逻辑".into()],
             source: String::new(),
             note: String::new(),
+            image_url: String::new(),
             archived: false,
             created_at: 1,
         });
@@ -451,6 +455,43 @@ mod tests {
     }
 
     #[test]
+    fn bank_question_image_url_is_camel_case() {
+        // 前端发的是 JS 对象（imageUrl）；Rust 侧必须按驼峰收发，
+        // 否则配图字段会被 serde 静默忽略（迁移里抓到过好几次这类"静默错值"）
+        let q = BankQuestion {
+            id: "q1".into(),
+            tier: "basic".into(),
+            points: None,
+            stem: "如图，求阴影面积".into(),
+            answer: "6".into(),
+            options: vec![],
+            tags: vec![],
+            source: String::new(),
+            note: String::new(),
+            image_url: "./images/图1.png".into(),
+            archived: false,
+            created_at: 0,
+        };
+
+        // 序列化用驼峰
+        let out = serde_json::to_string(&q).unwrap();
+        assert!(out.contains("\"imageUrl\":\"./images/图1.png\""), "序列化用驼峰：{}", out);
+
+        // 反序列化认驼峰
+        let back: BankQuestion = serde_json::from_str(&out).expect("应能反序列化");
+        assert_eq!(back.image_url, "./images/图1.png", "驼峰 imageUrl → image_url");
+
+        // 缺字段时默认为空串（老备份/老数据没有这个字段）
+        let no_image = r#"{"id":"q2","tier":"basic","points":null,"stem":"x","answer":"","options":[],"tags":[],"source":"","note":"","archived":false,"createdAt":0}"#;
+        let bare: BankQuestion = serde_json::from_str(no_image).expect("缺 imageUrl 也要能读");
+        assert_eq!(bare.image_url, "", "缺字段时默认为空串");
+
+        // 判分子集不受配图影响
+        let g = q.to_grade_question();
+        assert_eq!(g.answer, "6");
+    }
+
+    #[test]
     fn bank_question_to_grade_subset() {
         let mut q = BankQuestion {
             id: "q1".into(),
@@ -462,6 +503,7 @@ mod tests {
             tags: vec![],
             source: String::new(),
             note: String::new(),
+            image_url: String::new(),
             archived: false,
             created_at: 0,
         };

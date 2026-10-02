@@ -187,6 +187,8 @@
       tags: Array.isArray(q.tags) ? q.tags.map(str) : (q.tag ? [str(q.tag)] : []),
       source: str(q.source),
       note: str(q.note),
+      // 题目配图：图片 URL 或 data:URI（导入时也认 image_url / image 两种写法）
+      imageUrl: str(q.imageUrl || q.image_url || q.image),
       archived: !!q.archived,
       createdAt: num(q.createdAt, Date.now())
     };
@@ -950,6 +952,8 @@
         tags: Array.isArray(raw.tags) ? raw.tags : (raw.tag ? [raw.tag] : []),
         source: raw.source,
         note: raw.note,
+        // 题目配图：三种写法都认（导出用 imageUrl，手写 JSON 常见 image_url / image）
+        imageUrl: raw.imageUrl || raw.image_url || raw.image,
         createdAt: Date.now()
       }, s.tiers));
       added++;
@@ -977,7 +981,8 @@
           options: q.options.slice(),
           tags: q.tags.slice(),
           source: q.source,
-          note: q.note
+          note: q.note,
+          imageUrl: q.imageUrl || ''
         };
       })
     };

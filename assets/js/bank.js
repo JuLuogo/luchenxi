@@ -109,7 +109,8 @@
       }, 0);
       return '<div class="q-item" style="border-left-color:' + t.color + '">' +
         '<div class="q-main">' +
-          '<div class="q-stem">' + U.escapeHTML(q.stem || '（空题干）') + '</div>' +
+          '<div class="q-stem">' + U.escapeHTML(q.stem || '（空题干）') +
+        (q.imageUrl ? '<img class="q-thumb" src="' + U.escapeHTML(q.imageUrl) + '" alt="配图" loading="lazy">' : '') + '</div>' +
           '<div class="q-meta">' +
             '<span class="tag" style="background:' + t.color + '22;color:' + t.color + '">' + U.escapeHTML(t.label) + '</span>' +
             '<span class="tag tag-points">' + eff + ' 分' + (q.points === null ? '（继承题型）' : '（自定义）') + '</span>' +
@@ -184,6 +185,11 @@
           '<button class="mini-btn" onclick="CI.bankUI.closeEditor()">✕</button></div>' +
         '<div class="modal-body">' +
           '<label class="fld"><span>题干 *</span><textarea id="qStem" rows="3" placeholder="例如：已知集合 A={x|x²-3x+2=0}，求 A 的子集个数">' + U.escapeHTML(q ? q.stem : '') + '</textarea></label>' +
+          '<label class="fld"><span>图片地址（可选，数学图形题用）</span>' +
+            '<input id="qImage" placeholder="https://… 或 data:image/png;base64,… 或 ./images/图1.png" value="' +
+            U.escapeHTML(q && q.imageUrl ? q.imageUrl : '') + '">' +
+            (q && q.imageUrl ? '<img class="q-image-preview" src="' + U.escapeHTML(q.imageUrl) + '" alt="题目配图">' : '') +
+          '</label>' +
           '<div class="fld-row">' +
             '<label class="fld"><span>题型（决定加权分）</span><select id="qTier">' + tierOpts + '</select></label>' +
             '<label class="fld"><span>自定义分值（留空=继承题型）</span><input type="number" id="qPoints" step="0.5" min="0" value="' + (q && q.points !== null ? q.points : '') + '" placeholder="继承题型权重"></label>' +
@@ -256,6 +262,7 @@
       points: (el('qPoints') || {}).value === '' ? null : Number((el('qPoints') || {}).value),
       answer: (el('qAnswer') || {}).value || '',
       options: options,
+      imageUrl: ((el('qImage') || {}).value || '').trim(),
       tags: String((el('qTags') || {}).value || '').split(/[,，、;；\s]+/).filter(function (x) { return !!x; }),
       source: (el('qSource') || {}).value || '',
       note: (el('qNote') || {}).value || ''

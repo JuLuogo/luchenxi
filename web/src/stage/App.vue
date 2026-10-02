@@ -182,6 +182,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
           <span class="tier-type">{{ question.typeLabel }}</span>
         </div>
         <div class="q-stem">{{ question ? question.fullStem : '教师端还没有选择题目' }}</div>
+        <img v-if="question && question.imageUrl" class="q-image" :src="question.imageUrl" alt="题目配图" />
         <div v-if="question && question.options.length" class="q-options" :class="{ many: question.options.length > 4 }">
           <div
             v-for="(o, i) in question.options"
@@ -436,4 +437,5 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
 .tip-rate.bad { color: var(--c-bad); }
 .tip-detail { flex: none; font-size: 12px; color: var(--c-text-3); }
 .tip-who { flex: none; font-size: 12px; color: var(--c-text-3); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.q-image { display: block; max-width: 100%; max-height: 300px; margin: 12px 0 0; border-radius: 10px; border: 1px solid var(--c-line); }
 </style>

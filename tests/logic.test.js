@@ -194,6 +194,35 @@ eq(CI.bankUI.parseImport('[{"stem":"JSON题","tier":"improve"}]').length, 1, 'JS
 const parsedChoice = CI.bankUI.parseImport('下列哪个是质数？ | 4 ; 6 ; 7 ; 9 | C');
 eq(parsedChoice[0].options, ['4', '6', '7', '9'], '文本导入识别选择题选项');
 eq(parsedChoice[0].answer, 'C', '文本导入识别选择题答案');
+
+/* ---- 题目配图（数学图形题）---- */
+reset();
+const qImg = S.addQuestion({ stem: '如图，求阴影面积', tier: 'basic', answer: '6', imageUrl: './images/图1.png' });
+eq(S.get().bank[0].imageUrl, './images/图1.png', 'addQuestion 保存图片地址');
+S.updateQuestion(qImg.id, { imageUrl: 'https://example.com/a.png' });
+eq(S.get().bank[0].imageUrl, 'https://example.com/a.png', 'updateQuestion 改图片地址');
+S.updateQuestion(qImg.id, { imageUrl: '' });
+eq(S.get().bank[0].imageUrl, '', '清空图片地址');
+// 导入时三种写法都认（imageUrl / image_url / image）
+const imgImport = S.bulkImportQuestions([
+  { stem: '导入题一', tier: 'basic', imageUrl: 'a.png' },
+  { stem: '导入题二', tier: 'basic', image_url: 'b.png' },
+  { stem: '导入题三', tier: 'basic', image: 'c.png' },
+  { stem: '导入题四', tier: 'basic' }
+], { dedupe: false });
+eq(imgImport.added, 4, '导入 4 道带图/不带图的题');
+const bankNow = S.get().bank;
+eq(bankNow[bankNow.length - 4].imageUrl, 'a.png', '导入认 imageUrl');
+eq(bankNow[bankNow.length - 3].imageUrl, 'b.png', '导入认 image_url');
+eq(bankNow[bankNow.length - 2].imageUrl, 'c.png', '导入认 image');
+eq(bankNow[bankNow.length - 1].imageUrl, '', '没有图时为空串（不是 undefined）');
+// 导出/导入往返不丢图
+const imgDump = S.exportBank();
+const withImg = imgDump.questions.filter((x) => x.imageUrl === 'a.png');
+eq(withImg.length, 1, '导出带上图片地址');
+reset();
+S.bulkImportQuestions(imgDump.questions, { dedupe: false });
+eq(S.get().bank.filter((x) => x.imageUrl === 'a.png').length, 1, '按导出内容重新导入后图片地址仍在');
 eq(parsedChoice[0].stem, '下列哪个是质数？', '选择题题干正确');
 
 const qx = S.addQuestion({ stem: '待改题', tier: 'basic' });
