@@ -2642,9 +2642,10 @@
       "steps": [
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "basic",
@@ -2652,6 +2653,7 @@
           "tier": null,
           "result": "correct",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 3,
@@ -2664,9 +2666,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "advanced",
@@ -2674,6 +2677,7 @@
           "tier": null,
           "result": "correct",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -2686,9 +2690,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "advanced",
@@ -2696,6 +2701,7 @@
           "tier": null,
           "result": "half",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -2708,9 +2714,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "advanced",
@@ -2718,6 +2725,7 @@
           "tier": null,
           "result": "wrong",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -2730,9 +2738,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": false,
           "questionTier": null,
@@ -2740,6 +2749,7 @@
           "tier": "improve",
           "result": "correct",
           "fast": false,
+          "rank": null,
           "source": "quick",
           "expect": {
             "base": 10,
@@ -2771,9 +2781,10 @@
       "steps": [
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "basic",
@@ -2781,6 +2792,7 @@
           "tier": null,
           "result": "correct",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 3,
@@ -2793,9 +2805,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "advanced",
@@ -2803,6 +2816,7 @@
           "tier": null,
           "result": "correct",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -2815,9 +2829,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "advanced",
@@ -2825,6 +2840,7 @@
           "tier": null,
           "result": "half",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -2837,9 +2853,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "advanced",
@@ -2847,6 +2864,7 @@
           "tier": null,
           "result": "wrong",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 5,
@@ -2859,9 +2877,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": false,
           "questionTier": null,
@@ -2869,6 +2888,7 @@
           "tier": "improve",
           "result": "correct",
           "fast": false,
+          "rank": null,
           "source": "quick",
           "expect": {
             "base": 10,
@@ -2881,9 +2901,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.4,
-            "fast_bonus": 1,
-            "wrong_penalty": 2
+            "halfRatio": 0.4,
+            "fastBonus": 1,
+            "wrongPenalty": 2,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "basic",
@@ -2891,6 +2912,7 @@
           "tier": null,
           "result": "wrong",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 3,
@@ -2903,9 +2925,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.4,
-            "fast_bonus": 1,
-            "wrong_penalty": 2
+            "halfRatio": 0.4,
+            "fastBonus": 1,
+            "wrongPenalty": 2,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "basic",
@@ -2913,6 +2936,7 @@
           "tier": null,
           "result": "correct",
           "fast": true,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 3,
@@ -2925,9 +2949,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.4,
-            "fast_bonus": 1,
-            "wrong_penalty": 2
+            "halfRatio": 0.4,
+            "fastBonus": 1,
+            "wrongPenalty": 2,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "basic",
@@ -2935,6 +2960,7 @@
           "tier": null,
           "result": "half",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 3,
@@ -2966,9 +2992,10 @@
       "steps": [
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "extended",
@@ -2976,6 +3003,7 @@
           "tier": null,
           "result": "correct",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 20,
@@ -2988,9 +3016,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "extended",
@@ -2998,6 +3027,7 @@
           "tier": null,
           "result": "half",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 20,
@@ -3010,9 +3040,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "extended",
@@ -3020,6 +3051,7 @@
           "tier": null,
           "result": "不存在的类型",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 20,
@@ -3032,9 +3064,10 @@
         },
         {
           "settings": {
-            "half_ratio": 0.5,
-            "fast_bonus": 0,
-            "wrong_penalty": 0
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": []
           },
           "hasQuestion": true,
           "questionTier": "basic",
@@ -3042,6 +3075,7 @@
           "tier": null,
           "result": "skip",
           "fast": false,
+          "rank": null,
           "source": "quiz",
           "expect": {
             "base": 3,
@@ -3050,6 +3084,160 @@
             "result": "skip",
             "tier": "basic",
             "scoreAfter": 50
+          }
+        }
+      ]
+    },
+    {
+      "name": "抢答名次加分（buzzRankBonuses=[2,1]）",
+      "questions": [
+        {
+          "tier": "basic",
+          "points": null
+        },
+        {
+          "tier": "advanced",
+          "points": null
+        },
+        {
+          "tier": "extended",
+          "points": 20
+        }
+      ],
+      "steps": [
+        {
+          "settings": {
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": [
+              2,
+              1
+            ]
+          },
+          "hasQuestion": true,
+          "questionTier": "basic",
+          "customPoints": null,
+          "tier": null,
+          "result": "correct",
+          "fast": false,
+          "rank": 1,
+          "source": "quiz",
+          "expect": {
+            "base": 3,
+            "ratio": 1,
+            "points": 5,
+            "result": "correct",
+            "tier": "basic",
+            "scoreAfter": 5
+          }
+        },
+        {
+          "settings": {
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": [
+              2,
+              1
+            ]
+          },
+          "hasQuestion": true,
+          "questionTier": "advanced",
+          "customPoints": null,
+          "tier": null,
+          "result": "correct",
+          "fast": false,
+          "rank": 2,
+          "source": "quiz",
+          "expect": {
+            "base": 5,
+            "ratio": 1,
+            "points": 6,
+            "result": "correct",
+            "tier": "advanced",
+            "scoreAfter": 11
+          }
+        },
+        {
+          "settings": {
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": [
+              2,
+              1
+            ]
+          },
+          "hasQuestion": true,
+          "questionTier": "advanced",
+          "customPoints": null,
+          "tier": null,
+          "result": "wrong",
+          "fast": false,
+          "rank": 1,
+          "source": "quiz",
+          "expect": {
+            "base": 5,
+            "ratio": 0,
+            "points": 0,
+            "result": "wrong",
+            "tier": "advanced",
+            "scoreAfter": 11
+          }
+        },
+        {
+          "settings": {
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": [
+              2,
+              1
+            ]
+          },
+          "hasQuestion": true,
+          "questionTier": "advanced",
+          "customPoints": null,
+          "tier": null,
+          "result": "half",
+          "fast": false,
+          "rank": 1,
+          "source": "quiz",
+          "expect": {
+            "base": 5,
+            "ratio": 0.5,
+            "points": 2.5,
+            "result": "half",
+            "tier": "advanced",
+            "scoreAfter": 13.5
+          }
+        },
+        {
+          "settings": {
+            "halfRatio": 0.5,
+            "fastBonus": 0,
+            "wrongPenalty": 0,
+            "buzzRankBonuses": [
+              2,
+              1
+            ]
+          },
+          "hasQuestion": true,
+          "questionTier": "basic",
+          "customPoints": null,
+          "tier": null,
+          "result": "correct",
+          "fast": false,
+          "rank": 9,
+          "source": "quiz",
+          "expect": {
+            "base": 3,
+            "ratio": 1,
+            "points": 3,
+            "result": "correct",
+            "tier": "basic",
+            "scoreAfter": 16.5
           }
         }
       ]

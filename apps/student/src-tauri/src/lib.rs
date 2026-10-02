@@ -99,6 +99,12 @@ fn reqwest_get(url: &str) -> Result<String, String> {
 }
 
 /// 供桌面端 `main.rs` 与移动端平台工程共同调用
+///
+/// `mobile_entry_point` 是 **Android/iOS 必需**的：它生成 JNI 入口符号
+/// （`Java_..._...`），Tauri 的 Android 构建会校验这些符号，缺了就报
+/// "does not include required runtime symbols" 并让 APK 构建失败。
+/// 桌面端不受影响（`cfg(mobile)` 只在移动目标下生效）。
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())

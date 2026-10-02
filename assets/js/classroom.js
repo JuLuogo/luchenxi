@@ -250,6 +250,17 @@
       }
 
       // 客观题：自动判分并立即记分（先记分再补一条带分数的实时流）
+      // 抢答名次：本队对该题在抢答榜里的位置（1 起）——前面抢到的排前面，
+      // 答对时按名次加分（第1个+2/第2个+1，见 settings.buzzRankBonuses）；没抢过答就没有名次。
+      var rank = (question && cmd.teamId)
+        ? (function () {
+            var pos = -1;
+            (CI.store.get().classroom.buzz || []).forEach(function (b, i) {
+              if (pos < 0 && b.teamId === cmd.teamId && b.qid === question.id) pos = i;
+            });
+            return pos < 0 ? null : (pos + 1);
+          })()
+        : null;
       var rec = CI.store.recordResult({
         sid: sid,
         qid: question ? question.id : null,
@@ -258,7 +269,8 @@
         quizId: s.runtime.quizId || null,
         source: 'student',
         note: desc,
-        by: 'student'
+        by: 'student',
+        rank: rank
       });
 
       CI.store.tx('class-answer-feed', function (st) {

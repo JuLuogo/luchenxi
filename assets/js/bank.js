@@ -447,10 +447,14 @@
           '</div>' +
           '<div class="fld-row">' +
             '<label class="fld"><span>抢答额外加分（仅答对时）</span><input type="number" id="setFast" step="0.5" min="0" value="' + U.num(st.fastBonus, 0) + '"></label>' +
+            '<label class="fld"><span>抢答名次加分（逗号分隔，第1/第2名…）</span><input id="setRankBonus" placeholder="留空=不启用；例：2,1" value="' + U.escapeHTML((Array.isArray(st.buzzRankBonuses) ? st.buzzRankBonuses : []).join(',')) + '"></label>' +
+          '</div>' +
+          '<div class="fld-row">' +
             '<label class="fld"><span>快捷加分是否计入统计</span><select id="setQuickCount">' +
               '<option value="1"' + (st.quickCountsAsAttempt !== false ? ' selected' : '') + '>计入（视为该题型答对一次）</option>' +
               '<option value="0"' + (st.quickCountsAsAttempt === false ? ' selected' : '') + '>只加分，不计入正确率</option>' +
             '</select></label>' +
+            '<label class="fld"><span>&nbsp;</span><span class="hint-inline">填了名次分后，抢答答对按名次加分，不再叠加上面的「抢答额外加分」。</span></label>' +
           '</div>' +
           '<div class="fld-row">' +
             '<label class="fld"><span>薄弱阈值（得分率低于）</span><input type="number" id="setWeak" step="0.05" min="0" max="1" value="' + U.num(st.weakThreshold, 0.6) + '"></label>' +
@@ -468,11 +472,17 @@
   }
 
   function saveSettings() {
+    // 名次加分：逗号/空格分隔的数字；留空 = 不启用（默认关闭，既有行为不变）
+    var rankRaw = ((el('setRankBonus') || {}).value || '').trim();
+    var rankBonuses = rankRaw
+      ? rankRaw.split(/[,，\s]+/).map(function (x) { return Number(x); }).filter(function (x) { return !isNaN(x) && x >= 0; })
+      : [];
     CI.store.updateSettings({
       courseName: (el('setCourse') || {}).value || '',
       halfRatio: Number((el('setHalf') || {}).value),
       wrongPenalty: Number((el('setWrong') || {}).value) || 0,
       fastBonus: Number((el('setFast') || {}).value) || 0,
+      buzzRankBonuses: rankBonuses,
       quickCountsAsAttempt: (el('setQuickCount') || {}).value === '1',
       weakThreshold: Number((el('setWeak') || {}).value),
       strongThreshold: Number((el('setStrong') || {}).value),

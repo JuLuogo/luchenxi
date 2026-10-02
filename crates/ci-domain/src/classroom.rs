@@ -404,6 +404,10 @@ pub struct ScoreRequest {
     pub result: String,
     pub note: String,
     pub points: f64,
+    /// 抢答名次（1 起）：本队此前是否对该题抢过答、排第几。
+    /// 答对且有名次 → 存储层按名次加分（第 1 个 +2 / 第 2 个 +1，见 ScoringSettings）。
+    #[serde(default)]
+    pub rank: Option<u32>,
 }
 
 /// 命令处理结果（对应 JS handleCmd 的返回值，外加要落库的副作用）
@@ -622,6 +626,13 @@ pub fn handle_cmd(
                         .map(|q| q.tier_key())
                         .filter(|t| !t.is_empty())
                         .unwrap_or_default();
+                    // 抢答名次：本队对该题在抢答榜里的位置（1 起）；没抢过答就没有名次。
+                    // 前面抢到的队排前面，所以 position + 1 即名次。
+                    let rank = current_qid.and_then(|cqid| {
+                        buzz.iter()
+                            .position(|b| b.team_id == cmd.team_id.clone().unwrap_or_default() && b.qid.as_deref() == Some(cqid))
+                            .map(|i| (i + 1) as u32)
+                    });
                     let mut r = CmdResult::new(CmdOutcome::AnswerScored {
                         sid: sid.clone(),
                         result: g.result.as_str().to_string(),
@@ -646,6 +657,7 @@ pub fn handle_cmd(
                         result: g.result.as_str().to_string(),
                         note: desc,
                         points: 0.0,
+                        rank,
                     });
                     r
                 }

@@ -126,6 +126,8 @@ struct ScoreStep {
     tier: Option<String>,
     result: String,
     fast: bool,
+    #[serde(default)]
+    rank: Option<usize>,
     source: String,
     expect: ScoreExpect,
 }
@@ -418,6 +420,7 @@ fn scoring_matches_js_reference() {
                 base: None,
                 result: step.result.clone(),
                 fast: step.fast,
+                rank: step.rank,
                 source: Some(step.source.clone()),
             };
             let got = score_of_input(&tiers, &step.settings, &input);

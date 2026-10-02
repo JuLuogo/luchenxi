@@ -87,9 +87,14 @@ pub fn normalize_result(result: &str) -> &'static str {
     }
 }
 
-/// 计分相关设置（只取算分要用的三项）
+/// 计分相关设置（只取算分要用的几项）
+///
+/// **字段名是驼峰**：前端传的是 JS 的 settings 对象（`halfRatio` / `fastBonus` /
+/// `wrongPenalty` / `buzzRankBonuses`）。少了 rename_all 会让这些值被 serde 静默忽略——
+/// 这类"静默错值"在迁移里抓到过好几次了。
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ScoringSettings {
     #[serde(default = "default_half_ratio")]
     pub half_ratio: f64,
@@ -97,10 +102,34 @@ pub struct ScoringSettings {
     pub fast_bonus: f64,
     #[serde(default)]
     pub wrong_penalty: f64,
+    /// 抢答名次加分（学习通"不同名次的分数"经验）：第 1 个抢答的队 +bonuses[0]，
+    /// 第 2 个 +bonuses[1]，以此类推，名单之外的名次不加分。
+    /// 传了名次就用名次分，不再叠加扁平 fastBonus；不传名次时 fastBonus 照旧（老行为）。
+    #[serde(default = "default_buzz_rank_bonuses")]
+    pub buzz_rank_bonuses: Vec<f64>,
 }
 
 fn default_half_ratio() -> f64 {
     0.5
+}
+
+fn default_buzz_rank_bonuses() -> Vec<f64> {
+    // 默认关闭：空名单 = 不给名次分，既有计分行为完全不变。
+    // 想开启的老师在设置里填 [2,1]（第1个抢答的队+2、第2个+1）等。
+    vec![]
+}
+
+impl ScoringSettings {
+    /// 第 n 个抢答应得的加分（n 从 1 起；名单外为 0）
+    pub fn buzz_rank_bonus(&self, rank: usize) -> f64 {
+        if rank == 0 {
+            return 0.0;
+        }
+        self.buzz_rank_bonuses
+            .get(rank - 1)
+            .copied()
+            .unwrap_or(0.0)
+    }
 }
 
 impl Default for ScoringSettings {
@@ -109,6 +138,7 @@ impl Default for ScoringSettings {
             half_ratio: 0.5,
             fast_bonus: 0.0,
             wrong_penalty: 0.0,
+            buzz_rank_bonuses: default_buzz_rank_bonuses(),
         }
     }
 }
@@ -144,11 +174,13 @@ pub fn question_points(tiers: &[Tier], custom_points: Option<f64>, tier_key: &st
 ///
 /// * `ratio` —— 显式比例（手动调整等场景）；给了就不用结果推断
 /// * `fast` —— 是否抢答（只在答对时加 fastBonus）
+/// * `rank` —— 抢答名次（第 1 个抢到的队为 1）；给了就用名次分、不用扁平 fastBonus
 pub fn compute_points(
     result: &str,
     base: f64,
     ratio: Option<f64>,
     fast: bool,
+    rank: Option<usize>,
     st: &ScoringSettings,
 ) -> f64 {
     let r = match ratio {
@@ -159,8 +191,12 @@ pub fn compute_points(
         },
     };
     let mut pts = base * r;
-    if result == "correct" && fast {
-        pts += st.fast_bonus;
+    if result == "correct" {
+        match rank {
+            Some(n) => pts += st.buzz_rank_bonus(n),
+            None if fast => pts += st.fast_bonus,
+            _ => {}
+        }
     }
     if result == "wrong" {
         pts -= st.wrong_penalty;
@@ -192,8 +228,11 @@ pub struct ScoreSnapshot {
 }
 
 /// 计分输入（对应 recordResult 的参数）
+///
+/// 同样是驼峰（`questionTier` / `customPoints`），因为前端/枢纽 API 传的是 JS 的对象字面量。
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ScoreInput {
     #[serde(default)]
     pub sid: String,
@@ -215,6 +254,9 @@ pub struct ScoreInput {
     pub result: String,
     #[serde(default)]
     pub fast: bool,
+    /// 抢答名次（1 起）：答对且给了名次 → 用名次加分
+    #[serde(default)]
+    pub rank: Option<usize>,
     #[serde(default)]
     pub source: Option<String>,
 }
@@ -243,7 +285,7 @@ pub fn score_of_input(tiers: &[Tier], st: &ScoringSettings, input: &ScoreInput) 
     } else {
         base_ratio(&result).unwrap_or(0.0)
     };
-    let points = compute_points(&result, base, None, input.fast, st);
+    let points = compute_points(&result, base, None, input.fast, input.rank, st);
 
     ScoreSnapshot {
         sid: input.sid.clone(),
@@ -336,7 +378,7 @@ mod tests {
     #[test]
     fn penalties_and_bonus_follow_settings() {
         let tiers = default_tiers();
-        let s = ScoringSettings { half_ratio: 0.4, fast_bonus: 1.0, wrong_penalty: 2.0 };
+        let s = ScoringSettings { half_ratio: 0.4, fast_bonus: 1.0, wrong_penalty: 2.0, buzz_rank_bonuses: vec![2.0, 1.0] };
         let mut recs: Vec<ScoreSnapshot> = Vec::new();
         // 先攒到 20.5（与上一组同样的过程，但换设置）
         recs.push(score_of_input(&tiers, &st(), &basic_input("correct")));
@@ -377,7 +419,7 @@ mod tests {
     #[test]
     fn rounding_is_two_decimals() {
         // 3 × 0.4 = 1.2000000000000002 → 必须四舍五入到 1.2
-        assert_eq!(compute_points("half", 3.0, None, false, &ScoringSettings { half_ratio: 0.4, ..Default::default() }), 1.2);
+        assert_eq!(compute_points("half", 3.0, None, false, None, &ScoringSettings { half_ratio: 0.4, ..Default::default() }), 1.2);
         // 下面这几组期望值是用 JS 实测出来的（node -e 跑 Math.round(x*100)/100），
         // 不是"想当然的四舍五入"：浮点表示会让 2.675 与 1.005 朝不同方向走。
         assert_eq!(round2(1.665), 1.67);
@@ -396,13 +438,52 @@ mod tests {
     #[test]
     fn ratio_semantics() {
         let s = ScoringSettings { half_ratio: 0.4, ..Default::default() };
-        assert_eq!(compute_points("correct", 10.0, None, false, &s), 10.0);
-        assert_eq!(compute_points("half", 10.0, None, false, &s), 4.0, "半对用 halfRatio");
-        assert_eq!(compute_points("wrong", 10.0, None, false, &s), 0.0);
-        assert_eq!(compute_points("skip", 10.0, None, false, &s), 0.0);
+        assert_eq!(compute_points("correct", 10.0, None, false, None, &s), 10.0);
+        assert_eq!(compute_points("half", 10.0, None, false, None, &s), 4.0, "半对用 halfRatio");
+        assert_eq!(compute_points("wrong", 10.0, None, false, None, &s), 0.0);
+        assert_eq!(compute_points("skip", 10.0, None, false, None, &s), 0.0);
         // 显式比例优先（手动调整场景）
-        assert_eq!(compute_points("manual", 5.0, Some(1.0), false, &s), 5.0);
-        assert_eq!(compute_points("wrong", 10.0, Some(0.5), false, &s), 5.0);
+        assert_eq!(compute_points("manual", 5.0, Some(1.0), false, None, &s), 5.0);
+        assert_eq!(compute_points("wrong", 10.0, Some(0.5), false, None, &s), 5.0);
+    }
+
+    #[test]
+    fn buzz_rank_bonus_semantics() {
+        let tiers = default_tiers();
+        // 默认关闭：没有名次分，行为与老版本一致
+        let s = ScoringSettings::default();
+        assert!(s.buzz_rank_bonuses.is_empty(), "默认不给名次分");
+        assert_eq!(s.buzz_rank_bonus(1), 0.0);
+        assert_eq!(compute_points("correct", 3.0, None, true, Some(1), &s), 3.0, "默认关闭：抢答不加分");
+
+        // 开启后（[2, 1]）：第 1 个抢答 +2、第 2 个 +1、第 3 个起不加分
+        let s = ScoringSettings { buzz_rank_bonuses: vec![2.0, 1.0], ..Default::default() };
+        assert_eq!(s.buzz_rank_bonus(1), 2.0);
+        assert_eq!(s.buzz_rank_bonus(2), 1.0);
+        assert_eq!(s.buzz_rank_bonus(3), 0.0);
+        assert_eq!(s.buzz_rank_bonus(0), 0.0, "名次从 1 起");
+
+        // 名次分替代扁平 fastBonus（不叠加）
+        assert_eq!(compute_points("correct", 3.0, None, true, Some(1), &s), 5.0, "基础题 3 + 名次1 → 5");
+        assert_eq!(compute_points("correct", 3.0, None, true, Some(2), &s), 4.0, "基础题 3 + 名次2 → 4");
+        assert_eq!(compute_points("correct", 3.0, None, true, Some(9), &s), 3.0, "名单外名次不加分");
+        assert_eq!(compute_points("correct", 3.0, None, true, None, &s), 3.0, "无名次 + fastBonus(0) → 3");
+
+        // 只有答对才给名次分（答错没有）
+        assert_eq!(compute_points("wrong", 3.0, None, true, Some(1), &s), 0.0);
+        // 半对也没有
+        assert_eq!(compute_points("half", 3.0, None, true, Some(1), &s), 1.5);
+
+        // 自定义名次分（如第 1 名 +5 / 第 2 名 +3 / 第 3 名 +1）
+        let s2 = ScoringSettings { buzz_rank_bonuses: vec![5.0, 3.0, 1.0], ..Default::default() };
+        assert_eq!(compute_points("correct", 3.0, None, false, Some(3), &s2), 4.0);
+        assert_eq!(compute_points("correct", 3.0, None, false, Some(4), &s2), 3.0);
+        // 与 score_of_input 的整链路：input.rank → 快照
+        let snap = score_of_input(&tiers, &s2, &ScoreInput {
+            sid: "s1".into(), qid: Some("q1".into()), question_tier: Some("basic".into()),
+            result: "correct".into(), rank: Some(2), ..Default::default()
+        });
+        assert_eq!(snap.points, 6.0, "3 + 名次2(3) → 6");
     }
 
     #[test]

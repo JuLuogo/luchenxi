@@ -311,6 +311,11 @@ export type ScoreRequest = {
 	result: string,
 	note: string,
 	points: number | null,
+	/**
+	 *  抢答名次（1 起）：本队此前是否对该题抢过答、排第几。
+	 *  答对且有名次 → 存储层按名次加分（第 1 个 +2 / 第 2 个 +1，见 ScoringSettings）。
+	 */
+	rank?: number | null,
 };
 
 /**  一条流水的算分快照（写库前的那部分） */
@@ -325,11 +330,23 @@ export type ScoreSnapshot = {
 	source?: string,
 };
 
-/**  计分相关设置（只取算分要用的三项） */
+/**
+ *  计分相关设置（只取算分要用的几项）
+ * 
+ *  **字段名是驼峰**：前端传的是 JS 的 settings 对象（`halfRatio` / `fastBonus` /
+ *  `wrongPenalty` / `buzzRankBonuses`）。少了 rename_all 会让这些值被 serde 静默忽略——
+ *  这类"静默错值"在迁移里抓到过好几次了。
+ */
 export type ScoringSettings = {
-	half_ratio?: number | null,
-	fast_bonus?: number | null,
-	wrong_penalty?: number | null,
+	halfRatio?: number | null,
+	fastBonus?: number | null,
+	wrongPenalty?: number | null,
+	/**
+	 *  抢答名次加分（学习通"不同名次的分数"经验）：第 1 个抢答的队 +bonuses[0]，
+	 *  第 2 个 +bonuses[1]，以此类推，名单之外的名次不加分。
+	 *  传了名次就用名次分，不再叠加扁平 fastBonus；不传名次时 fastBonus 照旧（老行为）。
+	 */
+	buzzRankBonuses?: (number | null)[],
 };
 
 /**  课堂设置（`state.settings` 全集） */

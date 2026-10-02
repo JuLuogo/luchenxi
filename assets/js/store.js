@@ -132,7 +132,8 @@
         courseName: '24机械高考公开课',
         halfRatio: 0.5,        // 部分正确计分系数
         wrongPenalty: 0,       // 答错扣分（正数表示扣多少分）
-        fastBonus: 0,          // 抢答额外加分（仅“答对”时生效）
+        fastBonus: 0,          // 抢答额外加分（仅“答对”时生效；传了名次则改用名次分）
+        buzzRankBonuses: [],   // 抢答名次加分（默认关闭）：设为 [2,1] 表示第1个抢答的队+2、第2个+1
         weakThreshold: 0.6,    // 正确率低于该值 → 薄弱
         strongThreshold: 0.85, // 正确率高于该值 → 优势
         minSample: 2           // 判定薄弱/优势所需最少作答次数
@@ -555,7 +556,9 @@
 
   /**
    * 计算一次判定的得分
-   * @param {Object} opt {result, base, ratio?, fast?}
+   * @param {Object} opt {result, base, ratio?, fast?, rank?}
+   *   rank —— 抢答名次（1 起）：答对且给了名次 → 用名次加分（不同名次不同分），
+   *           不再叠加扁平 fastBonus；不传名次时 fastBonus 照旧（老行为）。
    * @returns {Number} 实际得分
    */
   function computePoints(opt) {
@@ -566,9 +569,23 @@
     else ratio = RESULT_RATIO[opt.result] !== undefined ? RESULT_RATIO[opt.result] : 0;
 
     var pts = num(opt.base, 0) * ratio;
-    if (opt.result === 'correct') pts += num(opt.fast ? st.fastBonus : 0, 0);
+    if (opt.result === 'correct') {
+      if (opt.rank) {
+        var bonuses = Array.isArray(st.buzzRankBonuses) ? st.buzzRankBonuses : [2, 1];
+        pts += num(bonuses[opt.rank - 1], 0);
+      } else {
+        pts += num(opt.fast ? st.fastBonus : 0, 0);
+      }
+    }
     if (opt.result === 'wrong') pts -= num(st.wrongPenalty, 0);
     return Math.round(pts * 100) / 100;
+  }
+
+  /** 第 n 个抢答应得的加分（1 起；名单外为 0） */
+  function buzzRankBonus(rank) {
+    var st = get().settings;
+    var bonuses = Array.isArray(st.buzzRankBonuses) ? st.buzzRankBonuses : [2, 1];
+    return rank >= 1 ? num(bonuses[rank - 1], 0) : 0;
   }
 
   /** 无归属试卷的流水统一放进“快捷记分”收集器，避免污染正式试卷 */
@@ -623,7 +640,7 @@
       result: result,
       base: base,
       ratio: result === 'half' ? num(s.settings.halfRatio, 0.5) : RESULT_RATIO[result],
-      points: computePoints({ result: result, base: base, fast: opt.fast }),
+      points: computePoints({ result: result, base: base, fast: opt.fast, rank: opt.rank }),
       source: opt.source || 'quiz',
       note: opt.note || '',
       at: Date.now(),
@@ -1257,6 +1274,7 @@
     isCountable: isCountable, scoreOf: scoreOf, teamScore: teamScore, studentsOf: studentsOf,
     calledCount: calledCount, lastRecord: lastRecord, answeredAlready: answeredAlready,
     describeRecord: describeRecord, computePoints: computePoints, collectorQuiz: collectorQuiz,
+    buzzRankBonus: buzzRankBonus,
 
     recordResult: recordResult, addManual: addManual, resetStudentScore: resetStudentScore,
     undoLastRecord: undoLastRecord, removeRecord: removeRecord, clearRecords: clearRecords,

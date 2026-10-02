@@ -334,13 +334,16 @@ function scoringCase(name, steps, settingsPatch) {
       tier: step.tier || undefined,
       result: step.result,
       fast: !!step.fast,
+      rank: step.rank || undefined,
       source: step.source || 'quiz'
     });
     rec.steps.push({
+      // 键名与 JS 的 settings 对象一致（驼峰）——Rust 侧 ScoringSettings 也按驼峰反序列化
       settings: {
-        half_ratio: Number(before.halfRatio === undefined ? 0.5 : before.halfRatio),
-        fast_bonus: Number(before.fastBonus || 0),
-        wrong_penalty: Number(before.wrongPenalty || 0)
+        halfRatio: Number(before.halfRatio === undefined ? 0.5 : before.halfRatio),
+        fastBonus: Number(before.fastBonus || 0),
+        wrongPenalty: Number(before.wrongPenalty || 0),
+        buzzRankBonuses: Array.isArray(before.buzzRankBonuses) ? before.buzzRankBonuses.map(Number) : []
       },
       hasQuestion: !!q,
       questionTier: q ? q.tier : null,
@@ -348,6 +351,7 @@ function scoringCase(name, steps, settingsPatch) {
       tier: step.tier || null,
       result: step.result,
       fast: !!step.fast,
+      rank: step.rank || null,
       source: step.source || 'quiz',
       expect: {
         base: Number(r.base),
@@ -387,6 +391,16 @@ scoringCase('自定义分值 + 未知结果归一化', [
   { q: 'custom', result: 'half' },
   { q: 'custom', result: '不存在的类型' },
   { q: 'basic', result: 'skip' }
+]);
+// 抢答名次加分（学习通"不同名次的分数"经验）：开启 [2,1] 后按名次加分，
+// 名次分替代扁平 fastBonus；只有答对才有名次分
+scoringCase('抢答名次加分（buzzRankBonuses=[2,1]）', [
+  { settings: { buzzRankBonuses: [2, 1] } },
+  { q: 'basic', result: 'correct', rank: 1 },
+  { q: 'adv', result: 'correct', rank: 2 },
+  { q: 'adv', result: 'wrong', rank: 1 },
+  { q: 'adv', result: 'half', rank: 1 },
+  { q: 'basic', result: 'correct', rank: 9 }
 ]);
 
 

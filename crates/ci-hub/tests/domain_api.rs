@@ -116,8 +116,8 @@ async fn score_endpoint_uses_tier_weights_and_settings() {
         &base,
         "/api/domain/score",
         json!({
-            "settings": { "half_ratio": 0.5, "fast_bonus": 0, "wrong_penalty": 0 },
-            "input": { "sid": "s1", "qid": "q1", "question_tier": "basic", "result": "correct" }
+            "settings": { "halfRatio": 0.5, "fastBonus": 0, "wrongPenalty": 0 },
+            "input": { "sid": "s1", "qid": "q1", "questionTier": "basic", "result": "correct" }
         }),
     )
     .await;
@@ -132,8 +132,8 @@ async fn score_endpoint_uses_tier_weights_and_settings() {
         &base,
         "/api/domain/score",
         json!({
-            "settings": { "half_ratio": 0.4 },
-            "input": { "sid": "s1", "qid": "q2", "question_tier": "advanced", "result": "half" }
+            "settings": { "halfRatio": 0.4 },
+            "input": { "sid": "s1", "qid": "q2", "questionTier": "advanced", "result": "half" }
         }),
     )
     .await;
@@ -144,8 +144,8 @@ async fn score_endpoint_uses_tier_weights_and_settings() {
         &base,
         "/api/domain/score",
         json!({
-            "settings": { "wrong_penalty": 2, "fast_bonus": 1 },
-            "input": { "sid": "s1", "qid": "q1", "question_tier": "basic", "result": "wrong" }
+            "settings": { "wrongPenalty": 2, "fastBonus": 1 },
+            "input": { "sid": "s1", "qid": "q1", "questionTier": "basic", "result": "wrong" }
         }),
     )
     .await;
@@ -155,8 +155,8 @@ async fn score_endpoint_uses_tier_weights_and_settings() {
         &base,
         "/api/domain/score",
         json!({
-            "settings": { "wrong_penalty": 2, "fast_bonus": 1 },
-            "input": { "sid": "s1", "qid": "q1", "question_tier": "basic", "result": "correct", "fast": true }
+            "settings": { "wrongPenalty": 2, "fastBonus": 1 },
+            "input": { "sid": "s1", "qid": "q1", "questionTier": "basic", "result": "correct", "fast": true }
         }),
     )
     .await;
@@ -167,7 +167,7 @@ async fn score_endpoint_uses_tier_weights_and_settings() {
         &base,
         "/api/domain/score",
         json!({
-            "input": { "sid": "s1", "qid": "q9", "question_tier": "extended", "custom_points": 20, "result": "correct" }
+            "input": { "sid": "s1", "qid": "q9", "questionTier": "extended", "customPoints": 20, "result": "correct" }
         }),
     )
     .await;
