@@ -65,3 +65,6 @@ apps/*/src-tauri/binaries/*
 !apps/*/src-tauri/binaries/.gitkeep
 
 apps/*/node_modules/
+
+# 调研用的临时抓取脚本（子代理生成，不入库）
+_research/
