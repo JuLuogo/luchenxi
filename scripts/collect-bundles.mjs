@@ -61,7 +61,9 @@ try {
 
 let picked = found;
 if (productName) {
-  picked = found.filter((f) => path.basename(f).includes(productName));
+  // 桌面安装包按 productName 命名（课堂积分-教师端_…msi），要过滤；
+  // 但 Android 的 APK 叫 app-universal-release.apk，**不含** productName —— 不能一起过滤掉
+  picked = found.filter((f) => f.endsWith('.apk') || path.basename(f).includes(productName));
   if (!picked.length) {
     console.error(`::error::找到了 ${found.length} 个安装包，但都不属于本客户端（productName=${productName}）`);
     process.exit(1);
