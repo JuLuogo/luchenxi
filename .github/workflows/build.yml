@@ -208,12 +208,14 @@ jobs:
             # Gradle/cargo 的错误行常常带缩进，所以不锚定行首
             grep -nE "FAILURE:|What went wrong|Caused by:|error(\[|:)|error: |Execution failed|linker|not found|NDK|toolchain" android-build.log \
               | head -30 | while IFS= read -r l; do echo "::error file=apps/student::$l"; done || true
-            echo "==== 环境 ===="
+            echo "==== 环境 ====" | while IFS= read -r l; do echo "::error::$l"; done
+            # 关键：把**日志尾部也写成注解**。
+            # 否则出错细节只躺在 job 日志里，而匿名调用者（没有 token）读不到 job 日志，
+            # 只能靠猜 —— 上面那轮"rustBuildArm64Release 失败但看不到原因"就是这么来的。
+            tail -45 android-build.log | while IFS= read -r l; do echo "::error::【日志尾部】$l"; done || true
             echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT NDK_HOME=$NDK_HOME"
             ls "$ANDROID_SDK_ROOT/ndk" 2>/dev/null || true
             rustup target list --installed 2>/dev/null || true
-            echo "==== android-build.log 尾部 ===="
-            tail -80 android-build.log || true
           else
             echo "::error::没有生成 android-build.log（失败发生在更早的步骤）"
           fi
@@ -251,14 +253,26 @@ jobs:
         run: gh release delete "${{ github.ref_name }}" --yes --cleanup-tag=false || true
 
       - name: 创建 Draft Release
-        # 这里**故意不加 continue-on-error**：上一轮它被标成"成功"，实际 Release 根本没建出来
-        # （API 查 releases/tags/v4.0.0 是 404），排查全靠猜。宁可红得明白。
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: '课堂积分 ${{ github.ref_name }}'
-          draft: true
-          files: dist/**
+        # 用 gh CLI 而不是 action-gh-release：它的 stderr 能被下面那步捕获成注解。
+        # （上一轮用 action 时有 continue-on-error 兜着，"成功"了但 Release 没建出来，
+        #   谁也看不到原因 —— 换成显式命令后失败原因会写进日志。）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -o pipefail
+          ls -R dist | head -30
+          gh release create "${{ github.ref_name }}" \
+            --title "课堂积分 ${{ github.ref_name }}" \
+            --notes "v5 迁移版：Rust 核心（ci-protocol/ci-domain/ci-store/ci-hub/ci-core）+ Vue3 全量 TS 展示层。详见仓库 docs/14。" \
+            --draft \
+            dist/** 2>&1 | tee release.log
+
+      - name: 失败时把 Release 的错误写成注解
+        if: failure()
+        run: |
+          if [ -f release.log ]; then
+            tail -30 release.log | while IFS= read -r l; do echo "::error::【release.log】$l"; done || true
+          fi
 
       - name: 确认 Release 与资产（给"安装包在不在"一个明确结论）
         env:
