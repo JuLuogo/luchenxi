@@ -50,10 +50,24 @@ pub struct Settings {
     /// 掌握度衰减平均系数：最近一次占多少（默认 0.65，看重"现在会什么"）
     #[serde(default = "default_decay_ratio")]
     pub decay_ratio: f64,
+    /// 手动加减分的上限（防通胀：单次加分不超过它，默认 +2）
+    #[serde(default = "default_cap_plus")]
+    pub manual_cap_plus: f64,
+    /// 手动加减分的下限（单次扣分不低于它，默认 −1）
+    #[serde(default = "default_cap_minus")]
+    pub manual_cap_minus: f64,
 }
 
 fn default_decay_ratio() -> f64 {
     0.65
+}
+
+fn default_cap_plus() -> f64 {
+    2.0
+}
+
+fn default_cap_minus() -> f64 {
+    -1.0
 }
 
 impl Default for Settings {
@@ -68,6 +82,8 @@ impl Default for Settings {
             min_sample: 5,
             eval_weights: crate::composite::EvalWeights::default(),
             decay_ratio: 0.65,
+            manual_cap_plus: 2.0,
+            manual_cap_minus: -1.0,
         }
     }
 }

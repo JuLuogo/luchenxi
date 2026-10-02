@@ -473,9 +473,14 @@
             '<label class="fld"><span>评价权重 · 参与度</span><input type="number" id="setWPart" min="0" max="100" value="' + U.num((st.evalWeights || {}).participation, 25) + '"></label>' +
             '<label class="fld"><span>评价权重 · 进步</span><input type="number" id="setWGrowth" min="0" max="100" value="' + U.num((st.evalWeights || {}).growth, 15) + '"></label>' +
             '<label class="fld"><span>掌握度衰减（最近一次占比）</span><input type="number" id="setDecay" step="0.05" min="0" max="1" value="' + U.num(st.decayRatio, 0.65) + '"></label>' +
+            '<label class="fld"><span>手动加分上限 / 扣分下限</span>' +
+              '<input type="number" id="setCapPlus" step="0.5" value="' + U.num(st.manualCapPlus, 2) + '" style="width:46%"> ' +
+              '<input type="number" id="setCapMinus" step="0.5" value="' + U.num(st.manualCapMinus, -1) + '" style="width:46%">' +
+            '</label>' +
           '</div>' +
           '<div class="hint-inline">评价权重是「综合表现」的三个维度占比（不必和为 100，会自动按有效维度归一）；' +
-            '参与度只看「答没答」不论对错，进步与自己前半段比。掌握度衰减 = 最近一次作答占多少（0.65 表示更看重现在会什么）。</div>' +
+            '参与度只看「答没答」不论对错，进步与自己前半段比。掌握度衰减 = 最近一次作答占多少（0.65 表示更看重现在会什么）。' +
+            '手动加/扣分的上下限用于防通胀（单次 +2 / −1 是同行已验参数），只约束手动调整，不影响答题得分。</div>' +
           '<div class="fld-row">' +
           '</div>' +
           '<div class="hint-inline">数值以 0~1 小数填写，例如 0.6 表示 60%。判定薄弱需同时满足「作答次数 ≥ 最少样本量」。</div>' +
@@ -509,7 +514,9 @@
         participation: Number((el('setWPart') || {}).value) || 0,
         growth: Number((el('setWGrowth') || {}).value) || 0
       },
-      decayRatio: (el('setDecay') || {}).value === '' ? 0.65 : Number((el('setDecay') || {}).value)
+      decayRatio: (el('setDecay') || {}).value === '' ? 0.65 : Number((el('setDecay') || {}).value),
+      manualCapPlus: Number((el('setCapPlus') || {}).value) || 2,
+      manualCapMinus: (el('setCapMinus') || {}).value === '' ? -1 : Number((el('setCapMinus') || {}).value)
     });
     closeEditor();
   }

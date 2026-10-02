@@ -392,6 +392,10 @@ export type Settings = {
 	evalWeights?: EvalWeights,
 	/**  掌握度衰减平均系数：最近一次占多少（默认 0.65，看重"现在会什么"） */
 	decayRatio?: number | null,
+	/**  手动加减分的上限（防通胀：单次加分不超过它，默认 +2） */
+	manualCapPlus?: number | null,
+	/**  手动加减分的下限（单次扣分不低于它，默认 −1） */
+	manualCapMinus?: number | null,
 };
 
 /**

@@ -139,7 +139,10 @@
         minSample: 5,          // 判定等级/薄弱所需最少作答次数（调研：少于 5 题的分类极不稳定）
         // 多维度评价权重（百分比；调研：权重没有实证最优值，属课程政策 → 可配置）
         evalWeights: { mastery: 60, participation: 25, growth: 15 },
-        decayRatio: 0.65       // 掌握度衰减平均：最近一次占 65%（Otus 默认，看重「现在会什么」）
+        decayRatio: 0.65,      // 掌握度衰减平均：最近一次占 65%（Otus 默认，看重「现在会什么」）
+        // 手动加减分的上下限（防通胀：调研建议单次 +2 封顶、−1 下限，照抄同行已验参数）
+        manualCapPlus: 2,
+        manualCapMinus: -1
       },
       tiers: clone(DEFAULT_TIERS),
       tags: ['集合与逻辑', '函数与导数', '三角函数', '数列', '立体几何', '解析几何', '概率统计'],
@@ -711,18 +714,31 @@
     return rec;
   }
 
-  /** 手动加减分 */
+  /**
+   * 手动加减分
+   *
+   * **防通胀**（调研结论，照抄同行已验参数）：单次加分不超过 `manualCapPlus`（默认 +2）、
+   * 单次扣分不低于 `manualCapMinus`（默认 −1）。课堂积分靠"次数多"累积才合理，
+   * 单次给 10 分会让积分迅速通胀、失去区分度（"谁话多谁分高"的成因之一）。
+   * 注意：这只约束**手动加减**，不约束答题得分（那是按题型权重算出来的）。
+   */
   function addManual(sid, delta, note) {
     var s = get();
     var stu = student(s, sid);
     if (!stu) return null;
+    var raw = num(delta, 0);
+    var capPlus = num(s.settings.manualCapPlus, 2);
+    var capMinus = num(s.settings.manualCapMinus, -1);
+    var capped = raw > capPlus ? capPlus : (raw < capMinus ? capMinus : raw);
     var rec = normalizeRecord({
       sid: sid, qid: null, tier: '', quizId: null, result: 'manual',
-      base: num(delta, 0), ratio: 1, points: num(delta, 0), source: 'manual',
-      note: note || '', at: Date.now(), by: 'manual'
+      base: capped, ratio: 1, points: capped, source: 'manual',
+      note: (capped === raw ? '' : ('（已按上限 ' + (raw > 0 ? '+' + capPlus : capMinus) + ' 收敛）')) + (note || ''),
+      at: Date.now(), by: 'manual'
     });
     collectorQuiz(s).records.push(rec);
-    log('手动调整', stu.name + ' ' + (delta >= 0 ? '+' : '') + delta + ' → ' + scoreOf(s, sid));
+    log('手动调整', stu.name + ' ' + (capped >= 0 ? '+' : '') + capped +
+      (capped === raw ? '' : '（原 ' + raw + '，按上限收敛）') + ' → ' + scoreOf(s, sid));
     commit('manual');
     return rec;
   }

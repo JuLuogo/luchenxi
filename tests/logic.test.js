@@ -92,9 +92,21 @@ eq(S.get().students.length, 7, '批量后共 7 人');
 
 S.addManual(stuA.id, 5);
 S.addManual(stuB.id, 3);
-eq(S.scoreOf(S.get(), stuA.id), 5, '手动 +5');
-eq(S.teamScore(S.get(), t1), 8, '队伍分 = 成员分之和');
+// 防通胀：手动加分单次上限 +2（settings.manualCapPlus），所以 +5 会收敛成 +2、+3 收敛成 +2
+eq(S.scoreOf(S.get(), stuA.id), 2, '手动 +5 被上限收敛为 +2');
+eq(S.teamScore(S.get(), t1), 4, '队伍分 = 成员分之和（2 + 2）');
 eq(S.teamScore(S.get(), t2), 0, '二队 0 分');
+// 上限内不受影响
+S.addManual(stuA.id, 1);
+eq(S.scoreOf(S.get(), stuA.id), 3, '上限内的 +1 正常记');
+// 下限：单次扣分不低于 −1
+S.addManual(stuA.id, -5);
+eq(S.scoreOf(S.get(), stuA.id), 2, '手动 −5 被下限收敛为 −1');
+// 上限可配置
+S.updateSettings({ manualCapPlus: 10 });
+S.addManual(stuA.id, 5);
+eq(S.scoreOf(S.get(), stuA.id), 7, '把上限改成 10 后 +5 正常记');
+S.updateSettings({ manualCapPlus: 2 });
 
 S.updateStudent(stuC.id, { teamId: t1 });
 eq(S.studentsOf(S.get(), t1).length, 3, '改换队伍生效');
