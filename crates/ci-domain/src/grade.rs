@@ -72,6 +72,7 @@ impl Verdict {
 }
 
 /// 题目（判分需要的字段 + 计分需要的题型/自定义分值；其余字段仍在 dump 里，由前端展示）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Question {
     #[serde(default)]
@@ -83,6 +84,7 @@ pub struct Question {
     pub tier: String,
     /// 题目自定义分值；为 None 时取题型权重
     #[serde(default)]
+    #[cfg_attr(feature = "bindings", specta(type = Option<specta_typescript::Number>))]
     pub points: Option<i64>,
 }
 

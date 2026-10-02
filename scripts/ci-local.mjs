@@ -292,6 +292,38 @@ if (cargoAvailable) {
   if (rt.status !== 0) annotate('CI 步骤失败：cargo test --workspace', (results[results.length - 1].tail || '退出码 ' + rt.status));
   console.log((rt.status === 0 ? C.ok + '✔ ' : C.bad + '✘ ') + 'Rust：cargo test --workspace' + C.x + '\n');
 
+  // ---- P3：前端类型检查 + 类型绑定一致性 ----
+  {
+    // vue-tsc：把前端类型错误拦在构建之前（构建脚本里也前置了它，这里再显式跑一遍，
+    // 这样 CI 上"类型错"会有独立的一步与注解，而不是埋在构建输出里）
+    const t0t = Date.now();
+    process.stdout.write(C.b + '▶ 前端类型检查（vue-tsc）' + C.x + '\n');
+    const vtsc = path.join(ROOT, 'web', 'node_modules', 'vue-tsc', 'bin', 'vue-tsc.js');
+    let okTsc = false;
+    if (!fs.existsSync(vtsc)) {
+      console.log(C.dim + '  · 跳过：web/node_modules 里没有 vue-tsc（先 npm install --prefix web）' + C.x + '\n');
+    } else {
+      const rt2 = spawnSync(process.execPath, [vtsc, '--noEmit', '-p', path.join(ROOT, 'web', 'tsconfig.json')], {
+        cwd: ROOT, stdio: 'inherit'
+      });
+      okTsc = rt2.status === 0;
+      results.push({ title: '前端类型检查（vue-tsc）', pass: okTsc, ms: Date.now() - t0t });
+      if (!okTsc) annotate('CI 步骤失败：前端类型检查', 'vue-tsc --noEmit 有类型错误，详见上方输出');
+      console.log((okTsc ? C.ok + '✔ ' : C.bad + '✘ ') + '前端类型检查（vue-tsc）' + C.x + '\n');
+    }
+
+    // 绑定一致性：Rust 改了字段但没重新生成 → 前端会按老结构读（P2 里 scores/ips 就是这么翻车的）
+    const t0c = Date.now();
+    process.stdout.write(C.b + '▶ 前端类型绑定与 Rust 一致（specta）' + C.x + '\n');
+    const rb2 = spawnSync(cargoBin, ['run', '-q', '-p', 'ci-core', '--bin', 'export-bindings', '--features', 'bindings', '--', '--check'], {
+      cwd: ROOT, stdio: 'inherit', env: cargoEnv
+    });
+    const okBind = rb2.status === 0;
+    results.push({ title: '前端类型绑定与 Rust 一致（specta）', pass: okBind, ms: Date.now() - t0c });
+    if (!okBind) annotate('CI 步骤失败：类型绑定过期', '运行 cargo run -p ci-core --bin export-bindings --features bindings 重新生成');
+    console.log((okBind ? C.ok + '✔ ' : C.bad + '✘ ') + '前端类型绑定与 Rust 一致（specta）' + C.x + '\n');
+  }
+
   // ---- P2：两条端到端改打 **Rust 枢纽** ----
   {
     const t0b = Date.now();

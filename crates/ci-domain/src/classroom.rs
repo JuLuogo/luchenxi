@@ -33,6 +33,7 @@ pub fn phase_label(phase: &str) -> &'static str {
     }
 }
 
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Phase {
@@ -66,6 +67,7 @@ impl Phase {
 }
 
 /// 环节相关的运行态（对应 state.runtime 里与课堂有关的部分）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Runtime {
     #[serde(default)]
@@ -162,6 +164,7 @@ fn apply_phase(rt: &mut Runtime, phase: Phase, quiz_first_qid: Option<&str>, ban
  * 学生 / 队伍
  * ------------------------------------------------------------------ */
 
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClassStudent {
     pub id: String,
@@ -176,6 +179,7 @@ fn default_true() -> bool {
     true
 }
 
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClassTeam {
     pub id: String,
@@ -238,6 +242,7 @@ fn team_name(teams: &[ClassTeam], tid: Option<&str>) -> String {
  * ------------------------------------------------------------------ */
 
 /// 实时流条目（教师端右上角滚动显示）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FeedItem {
     pub kind: String,
@@ -256,6 +261,7 @@ pub struct FeedItem {
     #[serde(default)]
     pub points: f64,
     pub text: String,
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub at: i64,
 }
 
@@ -267,6 +273,7 @@ pub fn push_feed(feed: &mut Vec<FeedItem>, item: FeedItem) {
     feed.truncate(FEED_CAP);
 }
 
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Buzz {
     pub team_id: String,
@@ -274,12 +281,14 @@ pub struct Buzz {
     pub qid: Option<String>,
     #[serde(default)]
     pub sid: Option<String>,
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub at: i64,
 }
 
 pub const BUZZ_CAP: usize = 40;
 
 /// 抢答结果
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BuzzOutcome {
     /// 同一队同一题重复抢答被忽略
@@ -326,6 +335,7 @@ pub fn add_buzz(
 }
 
 /// 待确认提交（主观题由老师判定）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Pending {
     pub sid: String,
@@ -339,6 +349,7 @@ pub struct Pending {
     pub answer: String,
     #[serde(default)]
     pub backlog: bool,
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub at: i64,
 }
 
@@ -354,6 +365,7 @@ pub fn add_pending(pending: &mut Vec<Pending>, item: Pending) {
  * ------------------------------------------------------------------ */
 
 /// 学生命令（对应 cmd.kind = hello | buzz | answer）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct StudentCmd {
     pub kind: String,
@@ -374,6 +386,7 @@ pub struct StudentCmd {
 }
 
 /// 记分请求（由存储层执行：写流水 + 落库）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ScoreRequest {
     pub sid: String,
@@ -385,6 +398,7 @@ pub struct ScoreRequest {
 }
 
 /// 命令处理结果（对应 JS handleCmd 的返回值，外加要落库的副作用）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum CmdOutcome {
@@ -405,6 +419,7 @@ pub enum CmdOutcome {
 }
 
 /// 一次命令处理的完整产物
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct CmdResult {
     pub outcome: CmdOutcome,
@@ -657,6 +672,7 @@ pub fn finalize_feed(feed: &mut FeedItem, snapshot: &ScoreSnapshot, students: &[
  * 大屏数据打包
  * ------------------------------------------------------------------ */
 
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TeamStat {
     #[serde(rename = "teamId")]
@@ -670,6 +686,7 @@ pub struct TeamStat {
     pub credit_rate: f64,
     pub score: Option<f64>,
     #[serde(rename = "memberCount")]
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub member_count: usize,
 }
 
@@ -723,13 +740,17 @@ pub fn team_stats(
 }
 
 /// 大屏/学生端的"能力画像"打包
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AbilityPack {
     pub id: String,
     pub name: String,
     pub kind: String,
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub overall: i64,
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub coverage: i64,
+    #[cfg_attr(feature = "bindings", specta(type = Option<specta_typescript::Number>))]
     pub balance: Option<i64>,
     pub attempts: u32,
     pub grade: GradePack,
@@ -739,6 +760,7 @@ pub struct AbilityPack {
     pub comment: String,
 }
 
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GradePack {
     pub key: String,
@@ -747,18 +769,22 @@ pub struct GradePack {
     pub color: String,
 }
 
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AxisPack {
     pub key: String,
     pub label: String,
     pub color: String,
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub rate: i64,
     pub attempts: u32,
 }
 
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AxisBrief {
     pub label: String,
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub rate: i64,
 }
 

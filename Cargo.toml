@@ -39,6 +39,10 @@ futures-util = "0.3"
 if-addrs = "0.15"
 # 二维码（/qr.png）：只开 svg 特性，避免为一张图拖进整个 image/png 依赖
 qrcode = { version = "0.14", default-features = false, features = ["svg"] }
+# 前端类型绑定：从 Rust 类型生成 TS（specta 2 目前仍是 rc，锁定小版本）
+specta = { version = "=2.0.0-rc.25", features = ["derive", "serde_json", "collect"] }
+specta-serde = "0.0.12"
+specta-typescript = "0.0.12"
 tokio-tungstenite = { version = "0.24", default-features = false, features = ["connect", "handshake"] }
 
 [profile.release]

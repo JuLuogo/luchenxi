@@ -9,3 +9,13 @@ authors.workspace = true
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }
+# 可选：给前端用的类型绑定（specta 生成 TS）。默认不启用，
+# 这样 ci-domain 依旧是"纯逻辑、零重依赖"的 crate。
+# specta-typescript 只用到它的 Number 标记类型（把 i64 导出成 TS 的 number
+# 而不是 `number | null` —— f64 在 specta 里默认是可空的）。
+specta = { workspace = true, optional = true }
+specta-typescript = { workspace = true, optional = true }
+
+[features]
+default = []
+bindings = ["dep:specta", "dep:specta-typescript"]

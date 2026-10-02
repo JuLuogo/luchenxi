@@ -165,6 +165,62 @@ const pkg = JSON.parse(read('package.json'));
 ok(/v5-workspace\.test\.js/.test(pkg.scripts.test), 'package.json 的 test 包含本组断言');
 
 /* ================= 汇总 ================= */
+/* ================= 7. P3：前端 TS 与类型绑定 ================= */
+
+console.log('\n== 前端 TS 与类型绑定（P3） ==');
+
+const tsconfigPath = path.join(ROOT, 'web', 'tsconfig.json');
+ok(has('web/tsconfig.json'), '存在 web/tsconfig.json（TS 工程配置）');
+if (fs.existsSync(tsconfigPath)) {
+  // tsconfig 是 JSON5（带注释），不做 JSON.parse —— 直接按文本断言，
+  // 免得为了读一个配置项再引一套 JSON5 解析器
+  const tsc = fs.readFileSync(tsconfigPath, 'utf8');
+  ok(/"allowJs"\s*:\s*true/.test(tsc), '允许 JS/TS 混跑（分阶段迁移：老模块不拖进度）');
+  ok(/"strictNullChecks"\s*:\s*true/.test(tsc), '打开了 strictNullChecks（最容易藏 bug 的一项）');
+  ok(/"noEmit"\s*:\s*true/.test(tsc), 'noEmit：类型检查交给 vue-tsc，不产出文件');
+  ok(/"@bindings\/\*"/.test(tsc), '配置了 @bindings/* 别名（指向生成类型）');
+}
+
+/* 生成类型：必须存在、必须有 key 类型、必须标明"勿手改" */
+const genPath = path.join(ROOT, 'web', 'src', 'bindings', 'generated.ts');
+ok(fs.existsSync(genPath), '存在 specta 生成的 web/src/bindings/generated.ts');
+if (fs.existsSync(genPath)) {
+  const g = fs.readFileSync(genPath, 'utf8');
+  ok(/请勿手改|Do not edit/.test(g), '生成文件带"勿手改"提示');
+  const need = ['Ability', 'TeamStat', 'CmdOutcome', 'Runtime', 'Question', 'Tier'];
+  const missing = need.filter((n) => !g.includes('export type ' + n));
+  ok(missing.length === 0, '生成类型覆盖前端要用的关键类型（缺：' + (missing.join('、') || '无') + '）');
+  // i64 字段必须导成 number：早期用 f64 override 时是全可空的 number | null
+  const abilityBlock = (g.split('export type Ability =')[1] || '').split('export type')[0];
+  ok(/overall: number,/.test(abilityBlock), 'i64 字段导出为 number（不是 number | null）');
+}
+
+/* 生成器：Rust 侧必须有导出 bin，且默认构建不引入 specta */
+ok(has('crates/ci-core/src/bin/export-bindings.rs'), '存在类型绑定生成器（ci-core --bin export-bindings）');
+const coreToml = read('crates/ci-core/Cargo.toml');
+ok(/required-features\s*=\s*\["bindings"\]/.test(coreToml), '生成器带 required-features（默认构建不编译它）');
+const domainToml = read('crates/ci-domain/Cargo.toml');
+ok(/bindings\s*=\s*\["dep:specta"/.test(domainToml), 'ci-domain 的 specta 是可选依赖（纯 crate 默认零重依赖）');
+
+/* 派生必须是门控的：否则默认构建会去要 specta */
+const domainSrc = ['ability.rs', 'classroom.rs', 'grade.rs', 'scoring.rs']
+  .map((f) => read('crates/ci-domain/src/' + f)).join('\n');
+const plainDerive = domainSrc.match(/#\[derive\([^)]*specta::Type[^)]*\)\]/g) || [];
+ok(plainDerive.length === 0, '没有裸的 specta::Type 派生（都要 cfg_attr 门控，当前 ' + plainDerive.length + ' 处）');
+const plainField = (domainSrc.match(/#\[specta\(type = /g) || []).length;
+ok(plainField === 0, '没有裸的 #[specta(type = …)] 字段属性（都要 cfg_attr 门控，当前 ' + plainField + ' 处）');
+const gated = (domainSrc.match(/cfg_attr\(feature = "bindings"/g) || []).length;
+ok(gated >= 40, '门控派生/属性数量足够（当前 ' + gated + ' 处）');
+
+/* npm 脚本与 CI 步骤：绑定过期必须能让 CI 红 */
+const webPkg = JSON.parse(read('web/package.json'));
+ok(!!webPkg.scripts.typecheck, 'web 有 typecheck 脚本');
+ok(!!webPkg.scripts['bindings:check'], 'web 有 bindings:check 脚本（防止契约漂移）');
+ok(/typecheck/.test(webPkg.scripts.build || ''), '构建前置 typecheck（类型错就别出包）');
+const ciLocalP3 = read('scripts/ci-local.mjs');
+ok(/前端类型检查（vue-tsc）/.test(ciLocalP3), 'CI 有「前端类型检查」步骤');
+ok(/export-bindings/.test(ciLocalP3) && /--check/.test(ciLocalP3), 'CI 有「类型绑定一致性」步骤');
+
 console.log('\n' + '-'.repeat(44));
 if (failures.length) {
   console.log('❌ 失败 ' + failures.length + ' 项 / 通过 ' + passed + ' 项');

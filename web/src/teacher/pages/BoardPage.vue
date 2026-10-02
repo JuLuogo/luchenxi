@@ -6,8 +6,8 @@
  */
 import { computed } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { useClassStore } from '../../shared/class-store.js';
-import { CI } from '../../shared/bridge.js';
+import { useClassStore } from '../../shared/class-store';
+import { CI } from '../../shared/bridge';
 import EChart from '../components/EChart.vue';
 
 const store = useClassStore();

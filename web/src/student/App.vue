@@ -10,7 +10,7 @@
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { showToast, showConfirmDialog } from 'vant';
-import { CIStudent } from './bridge-student.js';
+import { CIStudent } from './bridge-student';
 
 const ready = ref(false);
 const boardMode = ref(false);

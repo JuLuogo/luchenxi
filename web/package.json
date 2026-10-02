@@ -6,8 +6,11 @@
   "description": "课堂积分系统 v4 前端：Vue 3 + Element Plus（教师端）/ Vant（学生端）+ 大屏，三个入口一次构建",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview --port 4173"
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview --port 4173",
+    "typecheck": "vue-tsc --noEmit",
+    "bindings:gen": "cargo run -q -p ci-core --bin export-bindings --features bindings --manifest-path ../Cargo.toml",
+    "bindings:check": "cargo run -q -p ci-core --bin export-bindings --features bindings --manifest-path ../Cargo.toml -- --check"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
@@ -19,7 +22,10 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@types/node": "^26.6.4",
     "@vitejs/plugin-vue": "^6.0.1",
-    "vite": "^7.1.7"
+    "typescript": "^5.9.3",
+    "vite": "^7.1.7",
+    "vue-tsc": "^3.3.11"
   }
 }

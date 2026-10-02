@@ -17,6 +17,7 @@
 use serde::{Deserialize, Serialize};
 
 /// 题型（权重是计分核心）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Tier {
     pub key: String,
@@ -87,6 +88,7 @@ pub fn normalize_result(result: &str) -> &'static str {
 }
 
 /// 计分相关设置（只取算分要用的三项）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct ScoringSettings {
     #[serde(default = "default_half_ratio")]
@@ -172,6 +174,7 @@ pub fn is_countable(tier: &str, result: &str) -> bool {
 }
 
 /// 一条流水的算分快照（写库前的那部分）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ScoreSnapshot {
     pub sid: String,
@@ -189,6 +192,7 @@ pub struct ScoreSnapshot {
 }
 
 /// 计分输入（对应 recordResult 的参数）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, Default)]
 pub struct ScoreInput {
     pub sid: String,

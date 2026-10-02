@@ -4,7 +4,7 @@
  * 把"当前跑在什么环境里"讲清楚，减少排障时间（浏览器 / 客户端、协议版本、数据落点）。
  */
 import { computed, onMounted, ref } from 'vue';
-import { CI } from '../../../shared/bridge.js';
+import { CI } from '../../../shared/bridge';
 
 const info = ref({});
 const settings = computed(() => CI.store.get().settings || {});

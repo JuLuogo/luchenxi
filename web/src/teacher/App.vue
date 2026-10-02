@@ -7,10 +7,10 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { buildMenu } from './router.js';
-import { useClassStore } from '../shared/class-store.js';
-import { createRuntime } from '../shared/runtime.js';
-import { CI } from '../shared/bridge.js';
+import { buildMenu } from './router';
+import { useClassStore } from '../shared/class-store';
+import { createRuntime } from '../shared/runtime';
+import { CI } from '../shared/bridge';
 
 const route = useRoute();
 const router = useRouter();

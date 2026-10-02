@@ -5,7 +5,7 @@
  */
 import { computed, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { useClassStore } from '../../shared/class-store.js';
+import { useClassStore } from '../../shared/class-store';
 
 const store = useClassStore();
 

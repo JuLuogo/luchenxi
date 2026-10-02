@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+
+    /* 分阶段迁移：允许 .js/.vue(js) 与 .ts 混跑，只检查已经转成 TS 的部分。
+       checkJs 保持 false —— 老文件（assets/js/* 那套参考实现）不该拖住迁移进度，
+       等某个模块整体转完再打开对应检查。 */
+    "allowJs": true,
+    "checkJs": false,
+
+    /* 严格但不折磨：noImplicitAny 先关，避免一次性上千个报错；
+       strictNullChecks 打开，这是最容易藏 bug 的一项。 */
+    "strict": false,
+    "strictNullChecks": true,
+    "noImplicitAny": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    "noEmit": true,
+
+    /* 生成绑定（specta）与手写类型放这里分开管理 */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@bindings/*": ["src/bindings/*"]
+    },
+
+    "jsx": "preserve"
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue", "src/**/*.js"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+}

@@ -18,6 +18,7 @@
 use serde::{Deserialize, Serialize};
 
 /// 题型统计（finalizeBucket 之后的形态）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TierStat {
     pub key: String,
@@ -98,6 +99,7 @@ pub fn pct(a: f64, b: u32) -> f64 {
 }
 
 /// 评级档位
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Grade {
     pub key: &'static str,
@@ -133,6 +135,7 @@ pub fn grade_by_key(key: &str) -> Grade {
 }
 
 /// 雷达上的一条轴（rate 为整数百分比，供前端直接显示）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Axis {
     pub key: String,
@@ -142,27 +145,38 @@ pub struct Axis {
     pub attempts: u32,
     pub correct: u32,
     /// 掌握度（整数百分比）
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub rate: i64,
     pub correct_rate: f64,
 }
 
 /// 能力评价结果
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Ability {
     pub axes: Vec<Axis>,
     /// 综合分（掌握度 × 覆盖系数）
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub overall: i64,
     /// 掌握度（只在有作答的题型上加权）
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub mastery: i64,
     /// 均衡度：答过 <2 个题型时为 None（与 JS 的 null 对应）
+    #[cfg_attr(feature = "bindings", specta(type = Option<specta_typescript::Number>))]
     pub balance: Option<i64>,
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub coverage: i64,
     pub attempts: u32,
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub filled: usize,
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub max_rate: i64,
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub min_rate: i64,
     /// 最弱/最强轴的**下标**（axes 内），无作答时为 None
+    #[cfg_attr(feature = "bindings", specta(type = Option<specta_typescript::Number>))]
     pub weakest: Option<usize>,
+    #[cfg_attr(feature = "bindings", specta(type = Option<specta_typescript::Number>))]
     pub strongest: Option<usize>,
     pub grade: Grade,
     pub comment: String,

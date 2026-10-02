@@ -5,8 +5,8 @@
  */
 import { computed, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { useClassStore } from '../../../shared/class-store.js';
-import { CI } from '../../../shared/bridge.js';
+import { useClassStore } from '../../../shared/class-store';
+import { CI } from '../../../shared/bridge';
 
 const store = useClassStore();
 const keyword = ref('');

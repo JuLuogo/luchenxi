@@ -1,5 +1,5 @@
 /**
- * 领域层桥接：**不重写业务逻辑**，直接复用 assets/js/*（已被 1243 项断言覆盖）。
+ * 领域层桥接：**不重写业务逻辑**，直接复用 assets/js/*（已有 1300+ 断言覆盖）。
  *
  * 这些模块是挂在 window.CI 上的经典 IIFE 脚本（原页面用 <script src> 按固定顺序加载），
  * 这里按**同样的顺序** import 它们产生副作用，再把 CI 暴露给 Vue 组件。
@@ -8,6 +8,8 @@
  * 它们内部只在函数被调用时才访问 DOM，因此不加载旧页面也不会报错；
  * 旧的那批 render 函数（CI.bankUI.render 等）保留但不再使用。
  */
+import type { DomainApi } from '@/bindings/domain';
+
 import '@domain/store.js';
 import '@domain/storage.js';
 import '@domain/analysis.js';
@@ -21,6 +23,6 @@ import '@domain/quiz.js';
 import '@domain/analysis-ui.js';
 
 /** 领域层命名空间（store / grade / classroom / sync / net / analysis / rollcall …） */
-export const CI = globalThis.CI;
+export const CI: DomainApi = (globalThis as unknown as { CI: DomainApi }).CI;
 
 export default CI;

@@ -6,7 +6,7 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { useClassStore } from '../../../shared/class-store.js';
+import { useClassStore } from '../../../shared/class-store';
 
 const store = useClassStore();
 const router = useRouter();

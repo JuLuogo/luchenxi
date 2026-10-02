@@ -5,8 +5,8 @@
  */
 import { computed, ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { useClassStore } from '../../shared/class-store.js';
-import { CI } from '../../shared/bridge.js';
+import { useClassStore } from '../../shared/class-store';
+import { CI } from '../../shared/bridge';
 import EChart from '../components/EChart.vue';
 import AbilityPanel from '../components/AbilityPanel.vue';
 

@@ -6,7 +6,7 @@
  */
 import { computed, onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { CI } from '../../../shared/bridge.js';
+import { CI } from '../../../shared/bridge';
 
 const form = ref(CI.net.cfg());
 const runtime = ref({ running: false, busy: false, error: '', lastArgs: [] });

@@ -21,3 +21,28 @@ axum = { workspace = true }
 [[bin]]
 name = "ci-hub-server"
 path = "src/bin/ci-hub-server.rs"
+
+# 前端类型绑定生成器（specta → web/src/bindings/generated.ts）
+# required-features：默认构建（不含 bindings）时不编译它，
+# 这样 ci-domain 依旧是"默认零 specta 依赖"的纯逻辑 crate
+[[bin]]
+name = "export-bindings"
+path = "src/bin/export-bindings.rs"
+required-features = ["bindings"]
+
+[features]
+# 生成绑定时打开：让 ci-domain 的 specta 派生生效，并带上 specta 本体
+bindings = ["ci-domain/bindings", "dep:specta", "dep:specta-typescript", "dep:specta-serde"]
+
+# 生成器 bin 需要 specta 本体（普通依赖即可，不影响默认构建）
+[dependencies.specta]
+workspace = true
+optional = true
+
+[dependencies.specta-typescript]
+workspace = true
+optional = true
+
+[dependencies.specta-serde]
+workspace = true
+optional = true
