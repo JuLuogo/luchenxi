@@ -4,7 +4,7 @@
   "ability": [
     {
       "name": "全才：四题型各答对两次",
-      "minSample": 2,
+      "minSample": 5,
       "totalAttempts": 8,
       "tiers": [
         {
@@ -111,7 +111,7 @@
     },
     {
       "name": "偏科：基础拔高全对，扩展提升全错",
-      "minSample": 2,
+      "minSample": 5,
       "totalAttempts": 8,
       "tiers": [
         {
@@ -218,7 +218,7 @@
     },
     {
       "name": "半对：基础题两次半对",
-      "minSample": 2,
+      "minSample": 5,
       "totalAttempts": 2,
       "tiers": [
         {
@@ -271,10 +271,10 @@
         "filled": 1,
         "maxRate": 50,
         "minRate": 50,
-        "grade": "weak",
-        "gradeShort": "D",
-        "gradeLabel": "需要重点辅导",
-        "comment": "已作答的题型掌握度接近（约 50%）。建议课后单独安排针对性练习。（还有题型没作答，数据会随课堂更新）",
+        "grade": "insufficient",
+        "gradeShort": "—",
+        "gradeLabel": "数据不足",
+        "comment": "作答次数还太少、分类不可靠 —— 多给几次机会（建议累计 ≥5 题）（目前只有 1 个题型有作答）",
         "weakest": {
           "key": "basic",
           "rate": 50
@@ -325,7 +325,7 @@
     },
     {
       "name": "新手：只答对一道基础题",
-      "minSample": 2,
+      "minSample": 5,
       "totalAttempts": 1,
       "tiers": [
         {
@@ -380,8 +380,8 @@
         "minRate": 100,
         "grade": "insufficient",
         "gradeShort": "—",
-        "gradeLabel": "样本不足",
-        "comment": "多给几次机会，数据才说明问题（目前只有 1 个题型有作答）",
+        "gradeLabel": "数据不足",
+        "comment": "作答次数还太少、分类不可靠 —— 多给几次机会（建议累计 ≥5 题）（目前只有 1 个题型有作答）",
         "weakest": {
           "key": "basic",
           "rate": 100
@@ -432,7 +432,7 @@
     },
     {
       "name": "混合：基础全对 + 提升全错（权重差异）",
-      "minSample": 2,
+      "minSample": 5,
       "totalAttempts": 4,
       "tiers": [
         {
@@ -485,10 +485,10 @@
         "filled": 2,
         "maxRate": 100,
         "minRate": 0,
-        "grade": "specialist",
-        "gradeShort": "B+",
-        "gradeLabel": "偏科尖子",
-        "comment": "基础题 掌握最好（100%），提升题 是短板（0%）。强项很强，先把短板补到及格线，总分涨得最快。（还有题型没作答，数据会随课堂更新）",
+        "grade": "insufficient",
+        "gradeShort": "—",
+        "gradeLabel": "数据不足",
+        "comment": "作答次数还太少、分类不可靠 —— 多给几次机会（建议累计 ≥5 题）（目前只有 2 个题型有作答）",
         "weakest": {
           "key": "improve",
           "rate": 0
@@ -539,7 +539,7 @@
     },
     {
       "name": "三题型满分（覆盖率 75%）",
-      "minSample": 2,
+      "minSample": 5,
       "totalAttempts": 6,
       "tiers": [
         {
@@ -646,7 +646,7 @@
     },
     {
       "name": "接近但不相等（评语不能自相矛盾）",
-      "minSample": 2,
+      "minSample": 5,
       "totalAttempts": 8,
       "tiers": [
         {
@@ -753,7 +753,7 @@
     },
     {
       "name": "全部答错（最低档）",
-      "minSample": 2,
+      "minSample": 5,
       "totalAttempts": 8,
       "tiers": [
         {
@@ -860,7 +860,7 @@
     },
     {
       "name": "跳过的题也算作答次数（skip）",
-      "minSample": 2,
+      "minSample": 5,
       "totalAttempts": 4,
       "tiers": [
         {
@@ -913,10 +913,10 @@
         "filled": 2,
         "maxRate": 50,
         "minRate": 0,
-        "grade": "weak",
-        "gradeShort": "D",
-        "gradeLabel": "需要重点辅导",
-        "comment": "基础题 掌握最好（50%），拔高题 是短板（0%）。建议课后单独安排针对性练习。（还有题型没作答，数据会随课堂更新）",
+        "grade": "insufficient",
+        "gradeShort": "—",
+        "gradeLabel": "数据不足",
+        "comment": "作答次数还太少、分类不可靠 —— 多给几次机会（建议累计 ≥5 题）（目前只有 2 个题型有作答）",
         "weakest": {
           "key": "advanced",
           "rate": 0

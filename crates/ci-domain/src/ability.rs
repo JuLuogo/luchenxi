@@ -118,7 +118,7 @@ pub const GRADES: [Grade; 8] = [
     Grade { key: "steady", short: "B", label: "稳步提升", color: "#6366f1", tip: "基础还行，靠多练把正确率提上来" },
     Grade { key: "basic", short: "C", label: "基础待巩固", color: "#fb923c", tip: "简单题先稳住，再挑战难题" },
     Grade { key: "weak", short: "D", label: "需要重点辅导", color: "#ef4444", tip: "建议单独安排针对性练习" },
-    Grade { key: "insufficient", short: "—", label: "样本不足", color: "#94a3b8", tip: "多给几次机会，数据才说明问题" },
+    Grade { key: "insufficient", short: "—", label: "数据不足", color: "#94a3b8", tip: "作答次数还太少、分类不可靠 —— 多给几次机会（建议累计 ≥5 题）" },
 ];
 
 const G_HEXAGON: usize = 0;
@@ -197,7 +197,7 @@ impl Ability {
 ///
 /// * `tiers` —— 题型统计（顺序任意，内部按权重升序排列）
 /// * `total_attempts` —— 合计作答次数（样本量判定用；直接传 total.attempts）
-/// * `min_sample` —— 少于这个作答次数判为「样本不足」（默认 2，取自 settings.minSample）
+/// * `min_sample` —— 少于这个作答次数判为「数据不足」（默认 5，取自 settings.minSample）
 pub fn ability_of_tiers(tiers: &[TierStat], total_attempts: u32, min_sample: u32) -> Ability {
     // 轴按题型权重升序（拔高题排在后面，视觉上就是"越来越难"）
     let mut sorted: Vec<&TierStat> = tiers.iter().collect();

@@ -411,6 +411,12 @@
       status = '<div class="answer-box pending">已提交，等待判定…</div>';
     }
 
+    // 反馈三件套：公布答案后，在「你的答案 + 判定结果」之外再给「正确答案 + 为什么」
+    // （为什么 = 题目的讲评要点/易错点 note 字段，由老师备课时填写；没填就不显示这块）
+    if (m.reveal && q.explanation) {
+      status += '<div class="answer-box why">💡 ' + esc(q.explanation) + '</div>';
+    }
+
     var members = myMembers();
     var who = me();
     var whoPick = members.length > 1

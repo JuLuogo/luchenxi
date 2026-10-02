@@ -198,7 +198,11 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
         <div v-else-if="question" class="q-fill">
           {{ question.type === 'subjective' ? '主观题：请口头作答，老师判定' : '填空题：请写出答案' }}
         </div>
-        <div v-if="question && revealed" class="q-answer">正确答案：<b>{{ question.answerKey || '（见教师端）' }}</b></div>
+        <div v-if="question && revealed" class="q-answer">
+          正确答案：<b>{{ question.answerKey || '（见教师端）' }}</b>
+          <!-- 讲评要点/易错点（题目 note）：公布答案后一并显示，老师照着讲 -->
+          <div v-if="question.explanation" class="q-why">💡 {{ question.explanation }}</div>
+        </div>
       </section>
       <aside class="q-side">
         <div class="side-title">⚡ 抢答榜</div>
@@ -438,4 +442,5 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
 .tip-detail { flex: none; font-size: 12px; color: var(--c-text-3); }
 .tip-who { flex: none; font-size: 12px; color: var(--c-text-3); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .q-image { display: block; max-width: 100%; max-height: 300px; margin: 12px 0 0; border-radius: 10px; border: 1px solid var(--c-line); }
+.q-why { margin-top: 6px; font-size: 15px; font-weight: 500; color: #b45309; line-height: 1.5; }
 </style>

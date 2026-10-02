@@ -55,7 +55,7 @@ impl Default for Settings {
             fast_bonus: 0.0,
             weak_threshold: 0.6,
             strong_threshold: 0.85,
-            min_sample: 2,
+            min_sample: 5,
         }
     }
 }
@@ -404,7 +404,8 @@ mod tests {
         assert_eq!(d.settings.half_ratio, 0.5);
         assert_eq!(d.settings.weak_threshold, 0.6);
         assert_eq!(d.settings.strong_threshold, 0.85);
-        assert_eq!(d.settings.min_sample, 2);
+        // 2026-10：从 2 提到 5 —— 少于 5 题的等级分类极不稳定（调研：单次评价 <5 题不生成等级）
+        assert_eq!(d.settings.min_sample, 5);
         assert_eq!(d.settings.course_name, "24机械高考公开课");
         assert_eq!(d.tiers.len(), 4, "默认四个题型");
         assert_eq!(d.tags.len(), 7, "默认七个标签");

@@ -278,6 +278,7 @@ ws://<host>:<port>/?room=<房间id>&role=host|stage|team&team=<队伍id>&label=<
       "options": [ { "key": "A", "text": "4" }, { "key": "B", "text": "6" } ],
       "hasAnswer": true,                        // 题库里是否填了答案
       "answerKey": null,                        // 仅 reveal=true 时给出参考答案
+      "explanation": "",                        // 仅 reveal=true 时给出讲评要点（题目 note 字段）
       "tags": ["函数与导数"]
     },
     "tierWeights": [ { "key": "basic", "label": "基础题", "weight": 3, "color": "#66bb6a" } ],
@@ -299,6 +300,8 @@ ws://<host>:<port>/?room=<房间id>&role=host|stage|team&team=<队伍id>&label=<
 
 - **只给必要字段**：学生端拿不到 `logs`、题库、完整流水等无关数据；`stem` 与 `fullStem` 分开是为了让列表用短串、答题用全串。
 - **`answerKey` 只在公布答案后下发**（`sync.js:254`），否则学生端无答案可抄。
+- **`explanation`（题目讲评要点/易错点）同样只在公布答案后下发** —— 它与学生端的
+  「你的答案 + 正确答案 + 为什么」三件套配套（`student.js`），提前下发等于泄题。
 - **`meta.reveal` 是"按题"的**：教师端把"公布的是哪一道题"记在 `state.runtime.revealedQid`，快照里的 `reveal` 只有
   `reveal && revealedQid === 当前题` 时才为真（`classroom.js:273` `isRevealed`）；换题（上一题/下一题、改当前题）自动收起，
   避免下一题的答案提前出现在学生手机与大屏上（`classroom.js:267` 写入、`classroom.js:298` 换题清空）。

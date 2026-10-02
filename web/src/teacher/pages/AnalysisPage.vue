@@ -12,10 +12,15 @@ import AbilityPanel from '../components/AbilityPanel.vue';
 
 const store = useClassStore();
 const scope = ref('all');                 // all | teamId
+/** 数据范围：current = 只看本节课（当前试卷）｜all = 全部课次 */
+const quizScope = ref<'current' | 'all'>('current');
+const scopeOpts = computed(() => ({
+  quizId: quizScope.value === 'all' ? null : ((store.runtime as any).quizId || null)
+}));
 const detailSid = ref('');
 
-const classStats = computed(() => CI.analysis.classStats(store.state, scope.value));
-const ranking = computed(() => CI.analysis.ranking(store.state, scope.value));
+const classStats = computed(() => CI.analysis.classStats(store.state, scope.value, scopeOpts.value));
+const ranking = computed(() => CI.analysis.ranking(store.state, scope.value, scopeOpts.value));
 
 const scopeName = computed(() => (scope.value === 'all'
   ? '全班'
@@ -24,7 +29,7 @@ const scopeName = computed(() => (scope.value === 'all'
 /** 按题目正确率（低 → 高）：课后讲评顺序的依据 */
 const questionRows = computed<any[]>(() => {
   void store.rev; // 状态变了就重算
-  return (CI.analysis.questionStats(store.state, null) as any[]).filter((x) => x.attempts > 0);
+  return (CI.analysis.questionStats(store.state, (scopeOpts.value as any).quizId) as any[]).filter((x) => x.attempts > 0);
 });
 const reviewLine = computed<string>(() => (CI.analysis.questionReviewLine(questionRows.value) as string) || '');
 
@@ -85,9 +90,9 @@ const rateOption = computed<any>(() => ({
 const detail = computed(() => {
   const sid = detailSid.value || (ranking.value[0] ? ranking.value[0].sid : '');
   if (!sid) return null;
-  const stats = CI.analysis.studentStats(store.state, sid);
+  const stats = CI.analysis.studentStats(store.state, sid, scopeOpts.value);
   if (!stats) return null;
-  return { sid, stats, summary: CI.analysis.summarizeStudent(store.state, sid) };
+  return { sid, stats, summary: CI.analysis.summarizeStudent(store.state, sid, scopeOpts.value) };
 });
 
 const overall = computed(() => {
@@ -106,13 +111,13 @@ const overall = computed(() => {
 /* ---------- 小结与导出 ---------- */
 const summaryText = ref('');
 function genClassSummary() {
-  summaryText.value = CI.analysis.summarizeClass(store.state, scope.value).join('\n');
+  summaryText.value = (CI.analysis.summarizeClass(store.state, scope.value, scopeOpts.value) as any).join('\n');
   ElMessage.success('已生成班级小结');
 }
 function genStudentSummary() {
   const sid = detailSid.value || (ranking.value[0] ? ranking.value[0].sid : '');
   if (!sid) { ElMessage.warning('还没有学生数据'); return; }
-  const lines = CI.analysis.summarizeStudent(store.state, sid);
+  const lines = CI.analysis.summarizeStudent(store.state, sid, scopeOpts.value);
   summaryText.value = Array.isArray(lines) ? lines.join('\n') : String(lines);
   ElMessage.success('已生成个人小结');
 }
@@ -148,7 +153,7 @@ function exportCSV(kind) {
 
 /** 导出课后课堂报告（Markdown：出勤 / 整体 / 各队对比 / 题型 / 题目正确率 / 学生表现） */
 function downloadReport() {
-  const rep = CI.analysis.classReport(store.state, {});
+  const rep = CI.analysis.classReport(store.state, scopeOpts.value);
   const stamp = new Date().toISOString().slice(0, 10);
   const name = (rep.data.courseName || '课堂') + '_课堂报告_' + stamp + '.md';
   download(name, rep.markdown, 'text/markdown');
@@ -158,7 +163,7 @@ function downloadReport() {
 /** 错题本：按学生汇总答错/跳过的题（数据早就在流水里，这里按"人"聚合） */
 const mistakes = computed<any[]>(() => {
   void store.rev;
-  return CI.analysis.mistakeBoard(store.state) as any[];
+  return CI.analysis.mistakeBoard(store.state, scopeOpts.value) as any[];
 });
 function mistakeTotal(m: any): number {
   return m.items.reduce((n: number, x: any) => n + x.count, 0);
@@ -186,6 +191,10 @@ function personalRate(tierKey) {
         <el-select v-model="scope" style="width: 150px">
           <el-option label="全班" value="all" />
           <el-option v-for="t in store.teams" :key="t.id" :label="t.name" :value="t.id" />
+        </el-select>
+        <el-select v-model="quizScope" style="width: 170px" title="数据范围：本节课只统计当前试卷的流水">
+          <el-option label="本节课（当前试卷）" value="current" />
+          <el-option label="全部课次" value="all" />
         </el-select>
         <el-button @click="genClassSummary">生成班级小结</el-button>
         <el-button @click="genStudentSummary">生成个人小结</el-button>

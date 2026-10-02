@@ -1057,6 +1057,93 @@ group('课后课堂报告（Markdown 汇总）');
   ok(withTeams.markdown.indexOf('## 三、各队对比') >= 0, '有队伍数据时出对比节');
 })();
 
+/* ================= 18. 评价口径（等级统一 / 样本量 / 课次边界 / 反馈三件套） ================= */
+group('评价口径：等级统一 · 样本量 · 课次边界');
+
+(function () {
+  const A = CI.analysis;
+  S.replaceState(S.defaultState());
+  const team = S.get().teams[0].id;
+  const sid = (x) => (typeof x === 'string' ? x : x.id);
+
+  /* ---- ① 等级统一：明细评定与能力等级必须是同一个 ---- */
+  const mk = (name, records) => {
+    const stu = S.addStudent(name, team);
+    records.forEach(([tier, result]) => S.recordResult({ sid: sid(stu), tier, result }));
+    return sid(stu);
+  };
+  const idAll = mk('全对型', [['basic', 'correct'], ['basic', 'correct'], ['advanced', 'correct'], ['advanced', 'correct'], ['extended', 'correct'], ['extended', 'correct'], ['improve', 'correct'], ['improve', 'correct']]);
+  const idSome = mk('只做基础', [['basic', 'correct'], ['basic', 'correct'], ['basic', 'correct'], ['basic', 'correct'], ['basic', 'correct']]);
+  const idOne = mk('偏科型', [['basic', 'correct'], ['basic', 'correct'], ['advanced', 'correct'], ['advanced', 'correct'], ['extended', 'wrong'], ['extended', 'wrong'], ['improve', 'wrong'], ['improve', 'wrong']]);
+
+  const lvAll = A.studentStats(S.get(), idAll).level;
+  eq(lvAll.label, '六边形战士', '全对型学生：明细评定就是自己的能力等级（不再另搞一套 4 档）');
+  eq(lvAll.key, 'hexagon', '等级 key 与雷达同一套');
+  // 逐个学生比对（同一状态里各人的等级由各自数据决定，这里直接看"同一口径"这件事）
+  const lvSome = A.studentStats(S.get(), idSome).level;
+  ok(lvSome.label !== '优秀' && lvSome.label !== '良好',
+    '只做基础题的学生不会再被判「优秀」（旧口径会，与雷达的「稳步提升」自相矛盾）→ 现在：' + lvSome.label);
+  const lvOne = A.studentStats(S.get(), idOne).level;
+  ok(lvOne.label !== '需重点关注',
+    '偏科型学生不会再被判「需重点关注」（旧口径会，与雷达的「偏科尖子」矛盾）→ 现在：' + lvOne.label);
+  ok(!!lvOne.short && lvOne.short.length <= 2, '等级带短标签（S/A/B+…）：' + lvOne.short);
+
+  /* ---- ② 样本量下限：minSample 默认 5 ---- */
+  eq(S.get().settings.minSample, 5, '默认最少样本量已从 2 提到 5');
+  S.replaceState(S.defaultState());
+  const few = S.addStudent('只答两题', S.get().teams[0].id);
+  S.recordResult({ sid: sid(few), tier: 'basic', result: 'wrong' });
+  S.recordResult({ sid: sid(few), tier: 'basic', result: 'wrong' });
+  eq(A.studentStats(S.get(), sid(few)).level.label, '数据不足', '只答 2 题 → 数据不足（旧口径会给「需要重点辅导」）');
+  eq(A.ability(S.get(), {}).grade.key, 'insufficient', '能力等级同样是 insufficient');
+
+  /* ---- ③ 课次边界：报告/错题本默认只看本节课 ---- */
+  S.replaceState(S.defaultState());
+  const stu = S.addStudent('甲', S.get().teams[0].id);
+  const q1 = S.addQuestion({ stem: '第一节课的题', tier: 'basic', answer: 'A' });
+  const q2 = S.addQuestion({ stem: '第二节课的题', tier: 'advanced', answer: 'B' });
+  const quiz1 = S.createQuiz('第一节课', [q1.id]);
+  S.recordResult({ sid: sid(stu), qid: q1.id, tier: 'basic', result: 'correct', quizId: quiz1.id });
+  const quiz2 = S.createQuiz('第二节课', [q2.id]);
+  S.recordResult({ sid: sid(stu), qid: q2.id, tier: 'advanced', result: 'wrong', quizId: quiz2.id });
+  S.setCurrentQuiz(quiz2.id);
+
+  const repNow = A.classReport(S.get(), {});
+  eq(repNow.data.attempts, 1, '报告默认只看本节课（当前试卷）→ 只统计 1 次作答');
+  eq(repNow.data.creditRate, 0, '本节课只答错一题 → 掌握度 0%');
+  ok(repNow.markdown.indexOf('第二节课的题') >= 0, '题目表只有本节课的题');
+  ok(repNow.markdown.indexOf('第一节课的题') < 0, '不含上一节课的题');
+  const repAll = A.classReport(S.get(), { quizId: null });
+  eq(repAll.data.attempts, 2, '显式传 quizId:null → 统计全部课次');
+  eq(repAll.data.creditRate, 50, '全部课次：1 对 1 错 → 50%');
+
+  // 错题本同理
+  const mkNow = A.mistakeBoard(S.get());
+  eq(mkNow.length, 1, '错题本默认只看本节课');
+  eq(mkNow[0].items.length, 1, '本节课只有一道错题');
+  eq(mkNow[0].items[0].stem.indexOf('第二节课') >= 0, true, '错的是第二节课那道题');
+  const mkAll = A.mistakeBoard(S.get(), { quizId: null });
+  eq(mkAll[0].items.length, 1, '全部课次也只有那一道错题（第一节课答对了）');
+
+  // 学生统计也支持范围
+  eq(A.studentStats(S.get(), sid(stu), { quizId: quiz2.id }).total.attempts, 1, '学生统计按试卷过滤');
+  eq(A.studentStats(S.get(), sid(stu)).total.attempts, 2, '不给范围时统计全部课次');
+
+  /* ---- ④ 反馈三件套：快照在公布答案后才下发"为什么" ---- */
+  S.replaceState(S.defaultState());
+  const q3 = S.addQuestion({ stem: '带解析的题', tier: 'basic', answer: 'A', note: '易错点：别忘了先通分' });
+  const qz3 = S.createQuiz('本节课', [q3.id]);
+  S.setCurrentQuiz(qz3.id);
+  S.setRuntime({ qid: q3.id, quizId: qz3.id });   // 快照按 runtime 里的"当前题"取题
+  const payloadBefore = CI.sync.snapshot().meta;
+  eq(payloadBefore.question.explanation, '', '没公布答案时不下发解析（否则等于泄题）');
+  eq(payloadBefore.question.answerKey, null, '没公布答案时也不下发答案');
+  CI.classroom.setReveal(true);   // 公布答案（用课堂模块的接口，与教师端点按钮同一条路径）
+  const payloadAfter = CI.sync.snapshot().meta;
+  ok(payloadAfter.question.explanation.indexOf('先通分') >= 0, '公布答案后下发解析：' + payloadAfter.question.explanation);
+  ok(!!payloadAfter.question.answerKey, '公布答案后同时下发正确答案');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

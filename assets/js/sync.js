@@ -279,6 +279,9 @@
         options: options,
         hasAnswer: !!String(q.answer || '').trim(),
         answerKey: (revealed && String(q.answer || '').trim()) ? CI.grade.answerKey(q) : null,
+        /* 讲评要点 / 易错点（题目的 note 字段）：**公布答案后才下发** ——
+           与学生端「你的答案 + 正确答案 + 为什么」三件套配套，提前下发会泄题。 */
+        explanation: revealed ? String(q.note || '') : '',
         tags: (q.tags || []).slice(0, 4)
       };
     }

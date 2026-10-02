@@ -256,6 +256,8 @@ function switchTeam() {
 
                 <div v-if="revealed && question.answerKey" class="answer">
                   正确答案：<b>{{ question.answerKey }}</b>
+                  <!-- 反馈三件套的第三件：为什么（题目讲评要点，公布答案后才下发） -->
+                  <div v-if="question.explanation" class="why">💡 {{ question.explanation }}</div>
                 </div>
               </div>
             </template>
@@ -377,4 +379,5 @@ function switchTeam() {
 .board .st-score { font-size: 56px; }
 .board .q-stem { font-size: 30px; }
 .board .opt { font-size: 22px; }
+.why { margin-top: 6px; font-size: 13px; color: #92400e; background: #fffbeb; border-radius: 8px; padding: 8px 10px; line-height: 1.6; }
 </style>

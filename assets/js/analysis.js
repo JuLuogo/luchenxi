@@ -59,13 +59,18 @@
    * 学生学情统计
    * @returns {Object} {sid,name,teamId,teamName,score,total,tiers[],tags[],rolls,lastAt,weak[],strong[],level}
    */
-  function studentStats(state, sid) {
+  /**
+   * 单个学生的统计
+   * @param {Object} opts {quizId} —— 只看某套试卷（= 本节课）；省略/null 表示全部课次
+   */
+  function studentStats(state, sid, opts) {
+    opts = opts || {};
     var s = state || CI.store.get();
     var stu = CI.store.student(s, sid);
     if (!stu) return null;
     var team = CI.store.team(s, stu.teamId);
 
-    var recs = CI.store.recordsOf(s, { sid: sid }).filter(function (r) { return counts(s, r); });
+    var recs = CI.store.recordsOf(s, { sid: sid, quizId: opts.quizId }).filter(function (r) { return counts(s, r); });
     var total = blankBucket();
     var tierMap = {};
     var tagMap = {};
@@ -132,7 +137,8 @@
       lastAt: lastAt,
       weak: weak,
       strong: strong,
-      level: levelOf(finalizeBucket(s, total), weak, strong, minSample, st.strongThreshold)
+      // 综合评定：与雷达/大屏同一套等级（见 levelOf 的说明）
+      level: levelOf(finalizeBucket(s, total), tiers, { minSample: minSample })
     };
   }
 
@@ -146,18 +152,28 @@
     return hit ? hit.creditRate : 0;
   }
 
-  function levelOf(total, weak, strong, minSample, strongThreshold) {
-    // 「优秀」的阈值跟随设置里的优势阈值（原来硬编码 85，改了设置却不生效）
-    var excellentAt = U.num(strongThreshold, 0.85) * 100;
-    if (total.attempts < minSample) return { key: 'insufficient', label: '样本不足', color: '#90a4ae' };
-    if (weak.length === 0 && total.creditRate >= excellentAt) return { key: 'excellent', label: '优秀', color: '#43a047' };
-    if (weak.length === 0) return { key: 'good', label: '良好', color: '#7cb342' };
-    if (weak.length >= 2) return { key: 'warn', label: '需重点关注', color: '#ef6c00' };
-    return { key: 'normal', label: '有待提升', color: '#fb8c00' };
+  /**
+   * 综合评定 —— **单一口径：直接取能力等级**
+   *
+   * 为什么改：原来这里是另一套 4 档（优秀 / 良好 / 有待提升 / 需重点关注），
+   * 与雷达的 8 档（S 六边形战士 … D 需要重点辅导）并存，同一个学生会拿到两个
+   * 互相矛盾的结论 —— 实测「只做 3 道基础题全对」的学生，明细是"优秀"、雷达是"稳步提升"；
+   * 偏科型学生明细"需重点关注"、雷达"偏科尖子"。
+   *
+   * 现在明细表 / 个人报告 / 大屏雷达 / 课后报告全用同一套等级，
+   * 而"哪些题型薄弱"作为**独立信息**保留在 `weak` / `strong` 字段里（不再混进等级）。
+   *
+   * 等级会随数据自然升降（每次都用当前全部数据重算），评语里会点名强项与短板，
+   * 相当于给了升降的原因。
+   */
+  function levelOf(total, tiers, opts) {
+    return abilityOfTiers(tiers || [], total, opts || {}).grade;
   }
 
   /** 全班（或某队伍）统计 */
-  function classStats(state, teamId) {
+  /** 全班（或某队伍）统计；opts.quizId 见 studentStats */
+  function classStats(state, teamId, opts) {
+    opts = opts || {};
     var s = state || CI.store.get();
     var list = CI.store.activeStudentsOf(s, teamId);
     var total = blankBucket();
@@ -166,7 +182,7 @@
     (s.tiers || []).forEach(function (t) { tierMap[t.key] = blankBucket(); });
 
     list.forEach(function (stu) {
-      var stats = studentStats(s, stu.id);
+      var stats = studentStats(s, stu.id, opts);
       stats.total && addBucket(total, stats.total);
       stats.tiers.forEach(function (t) {
         if (!tierMap[t.key]) tierMap[t.key] = blankBucket();
@@ -208,7 +224,8 @@
   }
 
   /** 排行榜：学生个人（可按队伍过滤） */
-  function ranking(state, teamId) {
+  function ranking(state, teamId, opts) {
+    opts = opts || {};
     var s = state || CI.store.get();
     var list = CI.store.activeStudentsOf(s, teamId).map(function (stu) {
       var stats = studentStats(s, stu.id);
@@ -284,7 +301,7 @@
   function summarizeStudent(state, sid, opts) {
     opts = opts || {};
     var s = state || CI.store.get();
-    var stats = studentStats(s, sid);
+    var stats = studentStats(s, sid, opts);
     if (!stats) return null;
 
     var lines = [];
@@ -331,9 +348,10 @@
   }
 
   /** 班级/队伍整体总结 */
-  function summarizeClass(state, teamId) {
+  function summarizeClass(state, teamId, opts) {
+    opts = opts || {};
     var s = state || CI.store.get();
-    var cs = classStats(s, teamId);
+    var cs = classStats(s, teamId, opts);
     var scopeName = (!teamId || teamId === 'all') ? '全班' : ((CI.store.team(s, teamId) || {}).name || '该队伍');
     var lines = [];
 
@@ -540,11 +558,13 @@
    * ------------------------------------------------------------------ */
 
   /** 单个学生的错题本（没有错题返回空 items，不返回 null —— 界面更好用） */
-  function studentMistakes(state, sid) {
+  function studentMistakes(state, sid, opts) {
+    opts = opts || {};
     var s = state || CI.store.get();
     var stu = CI.store.student(s, sid);
     var team = stu && stu.teamId ? CI.store.team(s, stu.teamId) : null;
-    var records = allRecords(s);
+    // 只看某套试卷（= 本节课）；省略则统计全部课次
+    var records = CI.store.recordsOf(s, { quizId: opts.quizId });
     var order = [];
     var map = {};
     records.forEach(function (r) {
@@ -593,9 +613,10 @@
   }
 
   /** 全班错题本：只保留有错题的学生，按错题次数降序 */
-  function mistakeBoard(state) {
+  function mistakeBoard(state, opts) {
+    opts = opts || {};
     var s = state || CI.store.get();
-    var out = CI.store.activeStudentsOf(s, 'all').map(function (stu) { return studentMistakes(s, stu.id); })
+    var out = CI.store.activeStudentsOf(s, 'all').map(function (stu) { return studentMistakes(s, stu.id, opts); })
       .filter(function (m) { return m.items.length > 0; });
     out.sort(function (a, b) {
       var ta = a.items.reduce(function (n, x) { return n + x.count; }, 0);
@@ -801,12 +822,18 @@
   }
 
   /** 便捷封装：从当前状态取齐入参 → { data, markdown } */
+  /**
+   * 课后课堂报告
+   * @param {Object} opts {quizId} —— 默认**只看本节课**（当前试卷）；传 null 表示全部课次。
+   *   原来不区分课次，两节课的流水会混在一起、界面却写着"本节课"。
+   */
   function classReport(state, opts) {
     opts = opts || {};
     var s = state || CI.store.get();
-    var cs = classStats(s, null);
+    var scopeQuizId = opts.quizId === undefined ? ((s.runtime && s.runtime.quizId) || null) : opts.quizId;
+    var cs = classStats(s, null, { quizId: scopeQuizId });
     var ab = ability(s, {});
-    var questions = questionStats(s, null);
+    var questions = questionStats(s, scopeQuizId);
     var checkin = opts.checkin || (CI.classroom && CI.classroom.checkinStats
       ? CI.classroom.checkinStats(s) : { seated: 0, total: 0, rate: 0 });
     var data = buildReport({
@@ -814,7 +841,7 @@
       room: opts.room || (s.runtime && s.runtime.room) || 'default',
       generatedAt: U.num(opts.generatedAt, Date.now()),
       checkin: checkin,
-      records: allRecords(s),
+      records: CI.store.recordsOf(s, { quizId: scopeQuizId }),
       students: CI.store.activeStudentsOf(s, 'all'),
       teams: s.teams || [],
       tiers: cs.tiers,
@@ -842,7 +869,7 @@
     { key: 'steady', short: 'B', label: '稳步提升', color: '#6366f1', tip: '基础还行，靠多练把正确率提上来' },
     { key: 'basic', short: 'C', label: '基础待巩固', color: '#fb923c', tip: '简单题先稳住，再挑战难题' },
     { key: 'weak', short: 'D', label: '需要重点辅导', color: '#ef4444', tip: '建议单独安排针对性练习' },
-    { key: 'insufficient', short: '—', label: '样本不足', color: '#94a3b8', tip: '多给几次机会，数据才说明问题' }
+    { key: 'insufficient', short: '—', label: '数据不足', color: '#94a3b8', tip: '作答次数还太少、分类不可靠 —— 多给几次机会（建议累计 ≥5 题）' }
   ];
 
   /**

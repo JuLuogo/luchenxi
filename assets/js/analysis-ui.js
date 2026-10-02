@@ -10,7 +10,19 @@
   var doc = root.document || null;
 
   var scope = 'all';
+  /** 数据范围：'current' = 只看本节课（当前试卷）｜'all' = 全部课次 */
+  var quizScope = 'current';
   var lastSummary = { class: null, students: [] };
+
+  /** 当前数据范围对应的 quizId（null = 全部课次） */
+  function scopeQuizId() {
+    if (quizScope === 'all') return null;
+    var s = CI.store.get();
+    return (s.runtime && s.runtime.quizId) || null;
+  }
+
+  /** 传给统计函数的 opts */
+  function scopeOpts() { return { quizId: scopeQuizId() }; }
 
   function el(id) { return doc ? doc.getElementById(id) : null; }
 
@@ -34,7 +46,11 @@
       '</select></label>' +
       '<label class="fld"><span>查看单个学生</span><select id="anaStudent" onchange="CI.analysisUI.showStudentReport(this.value)">' +
         '<option value="">— 选择学生 —</option>' + studentOptions() + '</select></label>' +
-      '<button class="btn btn-plus" onclick="CI.analysisUI.generate()">生成学情总结</button>' +
+      '<select onchange="CI.analysisUI.setQuizScope(this.value)" title="数据范围：本节课只统计当前试卷的流水">' +
+            '<option value="current"' + (quizScope === 'current' ? ' selected' : '') + '>本节课（当前试卷）</option>' +
+            '<option value="all"' + (quizScope === 'all' ? ' selected' : '') + '>全部课次</option>' +
+          '</select>' +
+          '<button class="btn btn-plus" onclick="CI.analysisUI.generate()">生成学情总结</button>' +
       '<button class="btn" onclick="CI.analysisUI.copySummary()">复制总结</button>' +
       '<button class="btn" onclick="CI.analysisUI.downloadSummary()">下载总结 (txt)</button>' +
       '<button class="btn btn-plus" onclick="CI.analysisUI.downloadReport()">导出课堂报告 (md)</button>' +
@@ -45,7 +61,7 @@
     var s = CI.store.get();
     var box = el('analysisOverview');
     if (!box) return;
-    var cs = CI.analysis.classStats(s, scope === 'all' ? null : scope);
+    var cs = CI.analysis.classStats(s, scope === 'all' ? null : scope, scopeOpts());
     var weakNames = cs.weakTiers.map(function (k) {
       var t = cs.tiers.filter(function (x) { return x.key === k; })[0];
       return U.escapeHTML(CI.store.tierOf(s, k).label) + '（' + (t ? t.creditRate : 0) + '%）';
@@ -107,7 +123,7 @@
     var s = CI.store.get();
     var box = el('analysisQuestions');
     if (!box) return;
-    var stats = CI.analysis.questionStats(s, null).filter(function (x) { return x.attempts > 0; });
+    var stats = CI.analysis.questionStats(s, scopeQuizId()).filter(function (x) { return x.attempts > 0; });
     if (!stats.length) {
       box.innerHTML = '<div class="panel-title">按题目正确率</div>' +
         '<div class="empty">还没有按题目的作答数据（学生通过试卷作答后，这里会按正确率从低到高列出）</div>';
@@ -146,7 +162,7 @@
     var s = CI.store.get();
     var box = el('analysisMistakes');
     if (!box) return;
-    var board = CI.analysis.mistakeBoard(s);
+    var board = CI.analysis.mistakeBoard(s, scopeOpts());
     if (!board.length) {
       box.innerHTML = '<div class="panel-title">错题本</div>' +
         '<div class="empty">还没有错题（学生答错或跳过之后，这里会按人列出，含标准答案）</div>';
@@ -181,7 +197,7 @@
     var s = CI.store.get();
     var box = el('analysisStudents');
     if (!box) return;
-    var rows = CI.analysis.ranking(s, scope === 'all' ? null : scope);
+    var rows = CI.analysis.ranking(s, scope === 'all' ? null : scope, scopeOpts());
 
     box.innerHTML = '<div class="panel-title">学生明细 <span class="panel-sub">（按积分排序，得分率低于阈值且样本足够的题型标红）</span></div>' +
       (rows.length ? '<div class="table-scroll"><table class="data-table"><thead><tr>' +
@@ -235,12 +251,15 @@
 
   function setScope(v) { scope = v || 'all'; render(); }
 
+  /** 切换数据范围（本节课 / 全部课次）并重渲染 */
+  function setQuizScope(v) { quizScope = v === 'all' ? 'all' : 'current'; render(); }
+
   function generate() {
     var s = CI.store.get();
     var teamId = scope === 'all' ? null : scope;
-    var cls = CI.analysis.summarizeClass(s, teamId);
+    var cls = CI.analysis.summarizeClass(s, teamId, scopeOpts());
     var students = CI.store.studentsOf(s, scope === 'all' ? 'all' : scope).map(function (stu) {
-      var one = CI.analysis.summarizeStudent(s, stu.id);
+      var one = CI.analysis.summarizeStudent(s, stu.id, scopeOpts());
       return one ? one.text : '';
     }).filter(Boolean);
     lastSummary = { class: cls.text, students: students };
@@ -251,7 +270,7 @@
   function showStudentReport(sid) {
     if (!sid) return;
     var s = CI.store.get();
-    var rep = CI.analysis.summarizeStudent(s, sid);
+    var rep = CI.analysis.summarizeStudent(s, sid, scopeOpts());
     if (!rep) return;
     var st = rep.stats;
     var box = el('analysisModal');
@@ -296,7 +315,7 @@
   }
 
   function copyStudent(sid) {
-    var rep = CI.analysis.summarizeStudent(CI.store.get(), sid);
+    var rep = CI.analysis.summarizeStudent(CI.store.get(), sid, scopeOpts());
     if (!rep) return;
     U.copyText(rep.text).then(function () { alert('已复制到剪贴板'); }, function () { alert('复制失败，请手动选择文本'); });
   }
@@ -317,7 +336,7 @@
 
   /** 导出课后课堂报告（Markdown，可直接发班级群 / 存档） */
   function downloadReport() {
-    var rep = CI.analysis.classReport(CI.store.get(), {});
+    var rep = CI.analysis.classReport(CI.store.get(), scopeOpts());
     var stamp = new Date().toISOString().slice(0, 10);
     var name = (rep.data.courseName || '课堂') + '_课堂报告_' + stamp + '.md';
     U.download(name, rep.markdown, 'text/markdown');
@@ -334,6 +353,8 @@
     showStudentReport: showStudentReport, closeReport: closeReport, copyStudent: copyStudent,
     copySummary: copySummary, downloadSummary: downloadSummary, downloadReport: downloadReport, exportCSV: exportCSV,
     getScope: function () { return scope; },
+      setQuizScope: setQuizScope,
+      getQuizScope: function () { return quizScope; },
     getSummary: function () { return lastSummary; }
   };
 })(typeof window !== 'undefined' ? window : globalThis);
