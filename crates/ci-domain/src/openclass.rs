@@ -180,6 +180,22 @@ pub fn evaluate_open(scores: &[(String, u8)], dims: &[OpenDimension]) -> OpenEva
     ev
 }
 
+/// 现场评价要不要在大屏上公开
+///
+/// **公开表扬、私下改进**：调研里公开"待改进"是有害的（国内教师反馈
+/// "垫底的学生每次抬头就看见自己名字在最后面，逐渐产生抵触心理"）。
+/// 所以默认只在"良好/优秀"时公开；合格/待改进只发给学生自己的设备。
+///
+/// `policy`：smart（默认）/ always / never
+pub fn show_on_stage(level: &str, policy: &str) -> bool {
+    match policy {
+        "always" => true,
+        "never" => false,
+        // smart 与任何未知值都按"只公开表扬"处理（安全默认）
+        _ => level == "优秀" || level == "良好",
+    }
+}
+
 /// 规则评语：说人话，指出强项与短板（老师可直接念）
 ///
 /// 与 `ability::ability_comment` 同一套思路：**只用已经算出来的事实**，
@@ -308,4 +324,19 @@ mod tests {
         assert!(ev.parts.is_empty());
         assert_eq!(ev.comment, "还没有评价任何维度。");
     }
+    #[test]
+    fn stage_policy_is_praise_public_criticism_private() {
+        // smart（默认）：只公开表扬
+        assert!(show_on_stage("优秀", "smart"));
+        assert!(show_on_stage("良好", "smart"));
+        assert!(!show_on_stage("合格", "smart"), "合格不公开（私下改进）");
+        assert!(!show_on_stage("待改进", "smart"), "待改进更不能公开");
+        // 未知策略按安全默认处理（宁可少公开）
+        assert!(!show_on_stage("待改进", "whatever"));
+        assert!(show_on_stage("优秀", ""));
+        // 显式策略
+        assert!(show_on_stage("待改进", "always"), "always：一律公开");
+        assert!(!show_on_stage("优秀", "never"), "never：一律不公开");
+    }
+
 }

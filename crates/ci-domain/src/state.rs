@@ -63,6 +63,9 @@ pub struct Settings {
     /// 默认 基础 30 / 拓展 30 / 表达 25 / 态度 15。
     #[serde(default = "default_open_dims")]
     pub open_dimensions: Vec<crate::openclass::OpenDimension>,
+    /// 现场评价要不要在大屏上公开：smart（默认，良好/优秀才公开）/ always / never
+    #[serde(default = "default_open_eval_stage")]
+    pub open_eval_on_stage: String,
 }
 
 fn default_decay_ratio() -> f64 {
@@ -81,6 +84,11 @@ fn default_open_dims() -> Vec<crate::openclass::OpenDimension> {
     crate::openclass::default_open_dimensions()
 }
 
+fn default_open_eval_stage() -> String {
+    // 默认"公开表扬、私下改进"：调研里公开"待改进"是有害的（垫底的学生会抵触）
+    "smart".to_string()
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Settings {
@@ -97,6 +105,7 @@ impl Default for Settings {
             manual_cap_plus: 2.0,
             manual_cap_minus: -1.0,
             open_dimensions: default_open_dims(),
+            open_eval_on_stage: default_open_eval_stage(),
         }
     }
 }
@@ -325,6 +334,12 @@ pub struct OpenRecord {
     /// correct | half | wrong（没判定时为空）
     #[serde(default)]
     pub verdict: String,
+    /// 这条记录是不是"换人之后"答的（学生答不出，老师换了人）
+    #[serde(default)]
+    pub switched: bool,
+    /// 被换下的那位（换人时记下，复盘时能解释"为什么两个人答了同一题"）
+    #[serde(default)]
+    pub prev_name: String,
     /// 现场评价（四维四档的结果）
     #[serde(default)]
     pub evaluation: Option<crate::openclass::OpenEvaluation>,

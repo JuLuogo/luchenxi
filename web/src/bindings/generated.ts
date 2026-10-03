@@ -299,6 +299,10 @@ export type OpenRecord = {
 	stem?: string,
 	/**  correct | half | wrong（没判定时为空） */
 	verdict?: string,
+	/**  这条记录是不是"换人之后"答的（学生答不出，老师换了人） */
+	switched?: boolean,
+	/**  被换下的那位（换人时记下，复盘时能解释"为什么两个人答了同一题"） */
+	prevName?: string,
 	/**  现场评价（四维四档的结果） */
 	evaluation?: OpenEvaluation | null,
 	at?: number,
@@ -491,6 +495,8 @@ export type Settings = {
 	 *  默认 基础 30 / 拓展 30 / 表达 25 / 态度 15。
 	 */
 	openDimensions?: OpenDimension[],
+	/**  现场评价要不要在大屏上公开：smart（默认，良好/优秀才公开）/ always / never */
+	openEvalOnStage?: string,
 };
 
 /**

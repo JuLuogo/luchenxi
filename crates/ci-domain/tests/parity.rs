@@ -13,6 +13,7 @@
 
 use ci_domain::state::ClassroomState;
 use ci_domain::{
+    show_on_stage,
     ability_of_tiers, answer_key, apply_pick, auto, build_report, decayed_rate, evaluate, growth_score,
     default_open_dimensions, evaluate_open,
     option_distribution, participation_rate, polish_prompt, sanitize_polish, student_stats, student_view,
@@ -47,6 +48,8 @@ struct Fixture {
     view: Vec<ViewCase>,
     openclass: Vec<OpenCase>,
     polish: Vec<PolishCase>,
+    #[serde(rename = "stagePolicy")]
+    stage_policy: Vec<PolicyCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -903,6 +906,16 @@ struct PolishCase {
 struct PolishExpect {
     prompt: String,
     sanitized: Vec<String>,
+}
+
+
+/* ---------- 大屏公开展示策略 ---------- */
+
+#[derive(Debug, Deserialize)]
+struct PolicyCase {
+    level: String,
+    policy: String,
+    expect: bool,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -2156,4 +2169,21 @@ fn polish_matches_js_reference() {
     assert_eq!(sanitized, fx.polish[0].expect.sanitized, "清理函数与 JS 一致");
     assert_eq!(sanitize_polish("x").chars().count(), 1);
     println!("\n✅ 润色提示词：{} 组用例与 JS 参考实现一致", fx.polish.len());
+}
+
+/// 大屏公开展示策略：与 JS 逐项比对
+///
+/// 规则是"公开表扬、私下改进" —— 公开"待改进"在调研里是有害的。
+#[test]
+fn stage_policy_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.stage_policy.is_empty(), "基准里没有策略用例");
+    for c in &fx.stage_policy {
+        let got = show_on_stage(&c.level, &c.policy);
+        assert_eq!(got, c.expect, "[{} / {}] 公开与否", c.level, c.policy);
+    }
+    // 核心性质：默认策略下"待改进"绝不公开
+    assert!(!show_on_stage("待改进", "smart"));
+    assert!(!show_on_stage("合格", "smart"));
+    println!("\n✅ 大屏策略：{} 组用例与 JS 一致", fx.stage_policy.len());
 }

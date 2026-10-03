@@ -23,6 +23,9 @@ const rows = ref<Dim[]>(JSON.parse(JSON.stringify(
   (store.settings as any).openDimensions || (CI as any).openclass.defaultDimensions()
 )));
 
+/** 大屏公开展示策略（smart / always / never） */
+const policy = ref<string>((store.settings as any).openEvalOnStage || 'smart');
+
 const total = computed(() => rows.value.reduce((n, d) => n + (Number(d.weight) || 0), 0));
 const valid = computed(() =>
   rows.value.length >= 2 &&
@@ -37,7 +40,7 @@ function save() {
     weight: Number(d.weight) || 0,
     anchor: d.anchor.trim()
   }));
-  CI.store.updateSettings({ openDimensions: clean } as any);
+  CI.store.updateSettings({ openDimensions: clean, openEvalOnStage: policy.value } as any);
   ElMessage.success('已保存（权重不必和为 100，会自动按有效维度归一）');
 }
 
@@ -101,6 +104,21 @@ function previewComment() {
       <span class="sum" :class="{ bad: total <= 0 }">当前权重合计：{{ total }}</span>
     </div>
 
+    <div class="policy">
+      <b>现场评价要不要在大屏公开</b>
+      <el-radio-group v-model="policy" class="policy-group">
+        <el-radio-button value="smart">公开表扬、私下改进（默认）</el-radio-button>
+        <el-radio-button value="always">一律公开</el-radio-button>
+        <el-radio-button value="never">一律不公开</el-radio-button>
+      </el-radio-group>
+      <div class="policy-hint">
+        选「公开表扬、私下改进」时：<b>良好/优秀</b>的评价会显示在大屏上；
+        <b>合格/待改进</b>只发给学生自己的设备。
+        依据：公开"待改进"会让垫底的学生抵触（国内教师反馈"每次抬头就看见自己名字在最后面"），
+        而公开表扬是有效的。
+      </div>
+    </div>
+
     <el-alert type="info" :closable="false" show-icon class="note">
       <template #title>默认四维是怎么来的</template>
       <div class="note-body">
@@ -120,4 +138,7 @@ function previewComment() {
 .sum { margin-left: auto; color: var(--el-text-color-secondary); font-size: 13px; }
 .sum.bad { color: var(--el-color-danger); }
 .note-body { font-size: 13px; line-height: 1.7; }
+.policy { margin-bottom: 16px; }
+.policy-group { margin: 8px 0; }
+.policy-hint { color: var(--el-text-color-secondary); font-size: 13px; line-height: 1.7; }
 </style>

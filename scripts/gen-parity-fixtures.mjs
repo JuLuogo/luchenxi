@@ -1199,6 +1199,16 @@ mkPolishCase('润色：四维全优秀', [{ key: 'basic', score: 4 }, { key: 'tr
 mkPolishCase('润色：强基础弱迁移', [{ key: 'basic', score: 4 }, { key: 'transfer', score: 1 }, { key: 'expression', score: 3 }, { key: 'attitude', score: 3 }]);
 mkPolishCase('润色：各维接近（不能硬编短板）', [{ key: 'basic', score: 3 }, { key: 'transfer', score: 3 }]);
 mkPolishCase('润色：一维都没评', []);
+
+/* ---------- 用例集：大屏公开展示策略（openclass.showOnStage）---------- *
+ * 公开表扬、私下改进：默认只在良好/优秀时公开 */
+const policyCases = [];
+
+['优秀', '良好', '合格', '待改进'].forEach((level) => {
+  ['smart', 'always', 'never', 'unknown'].forEach((policy) => {
+    policyCases.push({ level, policy, expect: CI.openclass.showOnStage(level, policy) });
+  });
+});
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
@@ -1217,7 +1227,8 @@ const payload = {
   stats: statsCases,
   view: viewCases,
   openclass: openCases,
-  polish: polishCases
+  polish: polishCases,
+  stagePolicy: policyCases
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
@@ -1230,7 +1241,7 @@ if (CHECK) {
     ' + 多维评价 ' + (compositeCases.participation.length + compositeCases.growth.length + compositeCases.decayed.length + compositeCases.evaluate.length) +
     ' + 选项分布 ' + optionDistCases.length + ' + 学情统计 ' + statsCases.length +
     ' + 学生视图 ' + viewCases.length + ' + 公开课量规 ' + openCases.length +
-    ' + 润色提示词 ' + polishCases.length + ' 组）');
+    ' + 润色提示词 ' + polishCases.length + ' + 大屏策略 ' + policyCases.length + ' 组）');
     process.exit(0);
   }
   console.error('[stale] parity.json 与 JS 参考实现不一致 —— 运行 node scripts/gen-parity-fixtures.mjs 重新生成');

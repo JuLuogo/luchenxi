@@ -143,6 +143,8 @@
         // 手动加减分的上下限（防通胀：调研建议单次 +2 封顶、−1 下限，照抄同行已验参数）
         manualCapPlus: 2,
         manualCapMinus: -1,
+        // 现场评价要不要在大屏公开：smart（默认，良好/优秀才公开）/ always / never
+        openEvalOnStage: 'smart',
         // 公开课现场评价量规（课程政策：各校评课表不同 → 可配置）
         openDimensions: [
           { key: 'basic', label: '基础掌握', weight: 30, anchor: '概念、公式、常规运算是否准确' },

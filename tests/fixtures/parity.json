@@ -9385,5 +9385,87 @@
         ]
       }
     }
+  ],
+  "stagePolicy": [
+    {
+      "level": "优秀",
+      "policy": "smart",
+      "expect": true
+    },
+    {
+      "level": "优秀",
+      "policy": "always",
+      "expect": true
+    },
+    {
+      "level": "优秀",
+      "policy": "never",
+      "expect": false
+    },
+    {
+      "level": "优秀",
+      "policy": "unknown",
+      "expect": true
+    },
+    {
+      "level": "良好",
+      "policy": "smart",
+      "expect": true
+    },
+    {
+      "level": "良好",
+      "policy": "always",
+      "expect": true
+    },
+    {
+      "level": "良好",
+      "policy": "never",
+      "expect": false
+    },
+    {
+      "level": "良好",
+      "policy": "unknown",
+      "expect": true
+    },
+    {
+      "level": "合格",
+      "policy": "smart",
+      "expect": false
+    },
+    {
+      "level": "合格",
+      "policy": "always",
+      "expect": true
+    },
+    {
+      "level": "合格",
+      "policy": "never",
+      "expect": false
+    },
+    {
+      "level": "合格",
+      "policy": "unknown",
+      "expect": false
+    },
+    {
+      "level": "待改进",
+      "policy": "smart",
+      "expect": false
+    },
+    {
+      "level": "待改进",
+      "policy": "always",
+      "expect": true
+    },
+    {
+      "level": "待改进",
+      "policy": "never",
+      "expect": false
+    },
+    {
+      "level": "待改进",
+      "policy": "unknown",
+      "expect": false
+    }
   ]
 }

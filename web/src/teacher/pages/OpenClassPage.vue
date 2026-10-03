@@ -35,6 +35,8 @@ const onlyObjective = ref(true);      // 抽题默认只抽客观题（公开课
 const allowRepeat = ref(false);
 const tierFilter = ref<string>('');   // 可选：限定题型
 const verdict = ref<'' | 'correct' | 'half' | 'wrong'>('');
+/** 换人留痕：被换下的那位（本题内只记第一个，避免连续换人时越滚越乱） */
+const switchedFrom = ref<string>('');
 const scores = ref<Record<string, number>>({});
 const evaluation = ref<any>(null);
 const evalSource = ref<'rust' | 'js' | ''>('');
@@ -87,6 +89,32 @@ async function doPick() {
     // 写进状态：大屏与学生端只拿得到快照，页面局部变量它们看不见
     (CI.classroom as any).setOpenState({ step: 'rollcall', sid: picked.value.sid, name: picked.value.name, qid: null, verdict: '', evaluation: null });
     step.value = 2;
+  } finally {
+    busy.value = false;
+  }
+}
+
+/**
+ * 换一位（学生答不出时）
+ *
+ * **不重新抽题** —— 换的是人，题还是这道；记录里会标注"换人 + 换下了谁"。
+ * 连续换人只记第一位（否则复盘时"换了三次"这种信息没有价值，反而看不清）。
+ */
+async function switchStudent() {
+  busy.value = true;
+  try {
+    const r = await fetchPick({ allowRepeat: allowRepeat.value });
+    if (!r.pick) { ElMessage.warning('没有可换的学生'); return; }
+    CI.rollcall.applyPick(r.pick);
+    const stu = store.students.find((x) => x.id === r.pick!.sid);
+    const next = stu
+      ? { sid: stu.id, name: stu.name, teamName: teamName(stu.teamId) }
+      : { sid: r.pick.sid, name: r.pick.name || '?', teamName: '' };
+    if (!switchedFrom.value && picked.value) switchedFrom.value = picked.value.name;
+    picked.value = next;
+    verdict.value = '';
+    (CI.classroom as any).setOpenState({ step: 'question', sid: next.sid, name: next.name, verdict: '' });
+    ElMessage.info('已换到 ' + next.name + (switchedFrom.value ? '（换下 ' + switchedFrom.value + '）' : ''));
   } finally {
     busy.value = false;
   }
@@ -181,6 +209,8 @@ async function finish() {
     qid: question.value?.id || null,
     stem: question.value?.stem || '',
     verdict: verdict.value,
+    switched: !!switchedFrom.value,
+    prevName: switchedFrom.value,
     evaluation: evaluation.value
   });
   (CI.classroom as any).clearOpenState();
@@ -191,6 +221,7 @@ async function finish() {
   verdict.value = '';
   scores.value = {};
   evaluation.value = null;
+  switchedFrom.value = '';   // 换人标记只对本题有效
   step.value = 1;
 }
 
@@ -333,7 +364,9 @@ function back() {
         <el-button type="success" size="large" :loading="busy" @click="judge('correct')">全对</el-button>
         <el-button type="warning" size="large" :loading="busy" @click="judge('half')">对一半</el-button>
         <el-button type="danger" size="large" :loading="busy" @click="judge('wrong')">不对</el-button>
+        <el-button size="large" :loading="busy" @click="switchStudent">换一位</el-button>
       </div>
+      <div v-if="switchedFrom" class="tip">已换人：{{ switchedFrom }} → {{ picked?.name }}（题不变，记录里会标注）</div>
       <div class="tip">判定即记分（走 Rust 核心的计分口径），不需要学生动设备</div>
     </el-card>
 
@@ -393,7 +426,12 @@ function back() {
         </div>
       </div>
       <el-table v-if="records.length" :data="records" size="small" max-height="260">
-        <el-table-column prop="name" label="姓名" width="90" />
+        <el-table-column label="姓名" width="120">
+          <template #default="{ row }">
+            {{ row.name }}
+            <el-tag v-if="row.switched" size="small" type="info" effect="plain">换人</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="判定" width="80">
           <template #default="{ row }">
             <el-tag

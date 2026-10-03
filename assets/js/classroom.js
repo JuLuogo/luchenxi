@@ -498,6 +498,8 @@
       var item = {
         sid: rec.sid || '', name: rec.name || '', qid: rec.qid || null,
         stem: rec.stem || '', verdict: rec.verdict || '',
+        // 换人留痕：复盘时要能解释"为什么两个人答了同一题"
+        switched: !!rec.switched, prevName: rec.prevName || '',
         evaluation: rec.evaluation || null, at: rec.at || Date.now()
       };
       st.openRecords.push(item);

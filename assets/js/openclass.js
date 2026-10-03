@@ -92,6 +92,18 @@
   }
 
   /**
+   * 现场评价要不要在大屏上公开（**公开表扬、私下改进**）
+   *
+   * 调研里公开"待改进"是有害的（"垫底的学生每次抬头就看见自己名字在最后面"）。
+   * 默认只在"良好/优秀"时公开；policy 可为 smart / always / never。
+   */
+  function showOnStage(level, policy) {
+    if (policy === 'always') return true;
+    if (policy === 'never') return false;
+    return level === '优秀' || level === '良好';   // smart 与未知值都按安全默认
+  }
+
+  /**
    * 规则评语：说人话，指出强项与短板（老师可直接念）
    * **只用已经算出来的事实**，不新增判断 —— 这是"AI 只润色不判断"的前提。
    */
@@ -132,6 +144,7 @@
     levelOf: levelOf,
     rateOf: rateOf,
     evaluate: evaluate,
-    comment: comment
+    comment: comment,
+    showOnStage: showOnStage
   };
 })(typeof window !== 'undefined' ? window : globalThis);

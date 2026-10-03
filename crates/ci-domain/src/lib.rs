@@ -42,6 +42,7 @@ pub use question_stats::{
     OptionCount, OptionView, QuestionStat, StudentQuestionView,
 };
 pub use openclass::{
+    show_on_stage,
     default_open_dimensions, evaluate_open, open_comment, open_level, open_rate, OpenDimension,
     OpenEvaluation, OpenPart, OPEN_LEVELS,
 };

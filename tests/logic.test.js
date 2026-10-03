@@ -1613,6 +1613,27 @@ group('公开课评价留痕');
   eq(S.get().openRecords.length, 0, '可以清空留痕');
 })();
 
+/* ================= 27. 大屏公开展示策略 ================= */
+group('大屏公开展示策略');
+
+(function () {
+  const O = CI.openclass;
+  // 默认（smart）：公开表扬、私下改进
+  eq(O.showOnStage('优秀', 'smart'), true, '优秀 → 公开');
+  eq(O.showOnStage('良好', 'smart'), true, '良好 → 公开');
+  eq(O.showOnStage('合格', 'smart'), false, '合格 → 不公开（私下改进）');
+  eq(O.showOnStage('待改进', 'smart'), false, '待改进 → 绝不公开');
+  // 未知策略按安全默认（宁可少公开）
+  eq(O.showOnStage('待改进', 'whatever'), false, '未知策略：待改进不公开');
+  eq(O.showOnStage('优秀', ''), true, '空策略：优秀仍公开');
+  // 显式策略
+  eq(O.showOnStage('待改进', 'always'), true, 'always：一律公开');
+  eq(O.showOnStage('优秀', 'never'), false, 'never：一律不公开');
+  // 默认设置就是 smart
+  S.replaceState(S.defaultState());
+  eq(S.get().settings.openEvalOnStage, 'smart', '默认策略是 smart');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

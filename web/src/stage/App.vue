@@ -68,6 +68,16 @@ const phase = computed(() => meta.value.phase || 'idle');
 const question = computed(() => meta.value.question || (state.value && state.value.question) || null);
 const teams = computed<any[]>(() => ((state.value && state.value.teams) || []).slice().sort((a, b) => b.score - a.score));
 // 注：原来这里算了一份按积分排序的学生名单（光荣榜用）；2026-10 去掉个人排名后不再需要。
+/** 这次评价能不能公开（策略来自快照；判定规则与 Rust openclass::show_on_stage 同契约） */
+const evalPublic = computed<boolean>(() => {
+  const ev = meta.value.open && meta.value.open.evaluation;
+  if (!ev) return false;
+  const policy = meta.value.openEvalPolicy || 'smart';
+  if (policy === 'always') return true;
+  if (policy === 'never') return false;
+  return ev.level === '优秀' || ev.level === '良好';
+});
+
 const teamStats = computed<any[]>(() => (meta.value.teamStats || []).filter((t) => t.teamId !== 'all'));
 const ability = computed(() => meta.value.ability || null);
 const buzz = computed<any[]>(() => (meta.value.buzz || []).slice(0, 5));
@@ -150,9 +160,17 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
               {{ meta.open.verdict === 'correct' ? '全对' : (meta.open.verdict === 'half' ? '对一半' : '不对') }}
             </span>
           </div>
-          <div v-if="meta.open.evaluation" class="open-eval">
+          <!--
+            公开表扬、私下改进：默认只在"良好/优秀"时把评价放到大屏；
+            合格/待改进只发给学生自己的设备（调研：公开"待改进"会让垫底的学生抵触）。
+            策略由 settings.openEvalOnStage 决定（smart / always / never）。
+          -->
+          <div v-if="meta.open.evaluation && evalPublic" class="open-eval">
             <span class="open-score">{{ meta.open.evaluation.total }} 分 · {{ meta.open.evaluation.level }}</span>
             <span class="open-comment">{{ meta.open.evaluation.comment }}</span>
+          </div>
+          <div v-else-if="meta.open.evaluation && !evalPublic" class="open-eval muted">
+            评价已记录（按当前策略不公开；学生自己的设备上能看到）
           </div>
         </div>
 
@@ -455,6 +473,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
 .open-verdict.v-half { background: #f59e0b; }
 .open-verdict.v-wrong { background: #ef4444; }
 .open-eval { margin-top: 10px; }
+.open-eval.muted { font-size: 13px; opacity: .85; }
 .open-score { font-size: 22px; font-weight: 800; margin-right: 12px; }
 .open-comment { font-size: 15px; opacity: .95; line-height: 1.6; }
 
