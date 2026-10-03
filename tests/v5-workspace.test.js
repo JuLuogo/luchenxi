@@ -119,7 +119,8 @@ const MIGRATION = [
   // 形状与其它用例集不同，所以不按数组长度校验；它自己的 41 组在 parity.rs 里逐字段比
   { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/composite.rs', name: '多维度评价', migrated: true },
   { js: 'assets/js/import.js', rs: 'crates/ci-domain/src/bank_import.rs', name: '批量导入解析', migrated: true },
-  { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/stats.rs', name: '学情统计聚合', migrated: true, parity: 'stats', minParity: 3 }
+  { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/stats.rs', name: '学情统计聚合', migrated: true, parity: 'stats', minParity: 3 },
+  { js: 'assets/js/openclass.js', rs: 'crates/ci-domain/src/openclass.rs', name: '公开课现场评价量规', migrated: true, parity: 'openclass', minParity: 3 }
 ];
 
 let done = 0;

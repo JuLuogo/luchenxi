@@ -8858,5 +8858,357 @@
         ]
       }
     }
+  ],
+  "openclass": [
+    {
+      "name": "公开课：四维全优秀",
+      "scores": [
+        {
+          "key": "basic",
+          "score": 4
+        },
+        {
+          "key": "transfer",
+          "score": 4
+        },
+        {
+          "key": "expression",
+          "score": 4
+        },
+        {
+          "key": "attitude",
+          "score": 4
+        }
+      ],
+      "expect": {
+        "total": 100,
+        "level": "优秀",
+        "weightUsed": 100,
+        "strongest": null,
+        "weakest": null,
+        "comment": "各维度比较均衡（约 100 分）。表现很完整，可以请他讲讲思路，给全班做个示范。",
+        "parts": [
+          {
+            "key": "basic",
+            "label": "基础掌握",
+            "weight": 30,
+            "score": 4,
+            "level": "优秀",
+            "rate": 100,
+            "contribution": 30
+          },
+          {
+            "key": "transfer",
+            "label": "拓展迁移",
+            "weight": 30,
+            "score": 4,
+            "level": "优秀",
+            "rate": 100,
+            "contribution": 30
+          },
+          {
+            "key": "expression",
+            "label": "思维表达",
+            "weight": 25,
+            "score": 4,
+            "level": "优秀",
+            "rate": 100,
+            "contribution": 25
+          },
+          {
+            "key": "attitude",
+            "label": "参与态度",
+            "weight": 15,
+            "score": 4,
+            "level": "优秀",
+            "rate": 100,
+            "contribution": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "公开课：四维全良好",
+      "scores": [
+        {
+          "key": "basic",
+          "score": 3
+        },
+        {
+          "key": "transfer",
+          "score": 3
+        },
+        {
+          "key": "expression",
+          "score": 3
+        },
+        {
+          "key": "attitude",
+          "score": 3
+        }
+      ],
+      "expect": {
+        "total": 67,
+        "level": "良好",
+        "weightUsed": 100,
+        "strongest": null,
+        "weakest": null,
+        "comment": "各维度比较均衡（约 67 分）。整体不错，把刚才那一步再追问一句，就能看出他到底懂到哪。",
+        "parts": [
+          {
+            "key": "basic",
+            "label": "基础掌握",
+            "weight": 30,
+            "score": 3,
+            "level": "良好",
+            "rate": 66.7,
+            "contribution": 20
+          },
+          {
+            "key": "transfer",
+            "label": "拓展迁移",
+            "weight": 30,
+            "score": 3,
+            "level": "良好",
+            "rate": 66.7,
+            "contribution": 20
+          },
+          {
+            "key": "expression",
+            "label": "思维表达",
+            "weight": 25,
+            "score": 3,
+            "level": "良好",
+            "rate": 66.7,
+            "contribution": 16.7
+          },
+          {
+            "key": "attitude",
+            "label": "参与态度",
+            "weight": 15,
+            "score": 3,
+            "level": "良好",
+            "rate": 66.7,
+            "contribution": 10
+          }
+        ]
+      }
+    },
+    {
+      "name": "公开课：强基础弱迁移",
+      "scores": [
+        {
+          "key": "basic",
+          "score": 4
+        },
+        {
+          "key": "transfer",
+          "score": 1
+        },
+        {
+          "key": "expression",
+          "score": 3
+        },
+        {
+          "key": "attitude",
+          "score": 3
+        }
+      ],
+      "expect": {
+        "total": 57,
+        "level": "合格",
+        "weightUsed": 100,
+        "strongest": "basic",
+        "weakest": "transfer",
+        "comment": "基础掌握 最突出（优秀），拓展迁移 还有空间（待改进）。基本答到了，建议追问一个变式，看能不能迁移。",
+        "parts": [
+          {
+            "key": "basic",
+            "label": "基础掌握",
+            "weight": 30,
+            "score": 4,
+            "level": "优秀",
+            "rate": 100,
+            "contribution": 30
+          },
+          {
+            "key": "transfer",
+            "label": "拓展迁移",
+            "weight": 30,
+            "score": 1,
+            "level": "待改进",
+            "rate": 0,
+            "contribution": 0
+          },
+          {
+            "key": "expression",
+            "label": "思维表达",
+            "weight": 25,
+            "score": 3,
+            "level": "良好",
+            "rate": 66.7,
+            "contribution": 16.7
+          },
+          {
+            "key": "attitude",
+            "label": "参与态度",
+            "weight": 15,
+            "score": 3,
+            "level": "良好",
+            "rate": 66.7,
+            "contribution": 10
+          }
+        ]
+      }
+    },
+    {
+      "name": "公开课：只评两维（要重新归一）",
+      "scores": [
+        {
+          "key": "basic",
+          "score": 4
+        },
+        {
+          "key": "transfer",
+          "score": 4
+        }
+      ],
+      "expect": {
+        "total": 100,
+        "level": "优秀",
+        "weightUsed": 60,
+        "strongest": null,
+        "weakest": null,
+        "comment": "各维度比较均衡（约 100 分）。表现很完整，可以请他讲讲思路，给全班做个示范。（还有 2 个维度没评）",
+        "parts": [
+          {
+            "key": "basic",
+            "label": "基础掌握",
+            "weight": 30,
+            "score": 4,
+            "level": "优秀",
+            "rate": 100,
+            "contribution": 30
+          },
+          {
+            "key": "transfer",
+            "label": "拓展迁移",
+            "weight": 30,
+            "score": 4,
+            "level": "优秀",
+            "rate": 100,
+            "contribution": 30
+          }
+        ]
+      }
+    },
+    {
+      "name": "公开课：只评一维",
+      "scores": [
+        {
+          "key": "transfer",
+          "score": 3
+        }
+      ],
+      "expect": {
+        "total": 67,
+        "level": "良好",
+        "weightUsed": 30,
+        "strongest": null,
+        "weakest": null,
+        "comment": "各维度比较均衡（约 67 分）。整体不错，把刚才那一步再追问一句，就能看出他到底懂到哪。（还有 3 个维度没评）",
+        "parts": [
+          {
+            "key": "transfer",
+            "label": "拓展迁移",
+            "weight": 30,
+            "score": 3,
+            "level": "良好",
+            "rate": 66.7,
+            "contribution": 20
+          }
+        ]
+      }
+    },
+    {
+      "name": "公开课：全是最低档",
+      "scores": [
+        {
+          "key": "basic",
+          "score": 1
+        },
+        {
+          "key": "transfer",
+          "score": 1
+        },
+        {
+          "key": "expression",
+          "score": 1
+        },
+        {
+          "key": "attitude",
+          "score": 1
+        }
+      ],
+      "expect": {
+        "total": 0,
+        "level": "待改进",
+        "weightUsed": 100,
+        "strongest": null,
+        "weakest": null,
+        "comment": "各维度比较均衡（约 0 分）。先肯定他愿意试，再从最基础的一步重新搭梯子。",
+        "parts": [
+          {
+            "key": "basic",
+            "label": "基础掌握",
+            "weight": 30,
+            "score": 1,
+            "level": "待改进",
+            "rate": 0,
+            "contribution": 0
+          },
+          {
+            "key": "transfer",
+            "label": "拓展迁移",
+            "weight": 30,
+            "score": 1,
+            "level": "待改进",
+            "rate": 0,
+            "contribution": 0
+          },
+          {
+            "key": "expression",
+            "label": "思维表达",
+            "weight": 25,
+            "score": 1,
+            "level": "待改进",
+            "rate": 0,
+            "contribution": 0
+          },
+          {
+            "key": "attitude",
+            "label": "参与态度",
+            "weight": 15,
+            "score": 1,
+            "level": "待改进",
+            "rate": 0,
+            "contribution": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "公开课：一维都没评",
+      "scores": [],
+      "expect": {
+        "total": 0,
+        "level": "待改进",
+        "weightUsed": 0,
+        "strongest": null,
+        "weakest": null,
+        "comment": "还没有评价任何维度。",
+        "parts": []
+      }
+    }
   ]
 }

@@ -20,17 +20,18 @@ const OUT = path.resolve(process.argv[3] || path.join(ROOT, 'docs', 'clients', '
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * 应用内的页签（注意：桌面客户端目前套的是**旧版零构建界面** admin.html，
- * 用 7 个 data-tab 面板切换，不是新版 Vue 的 hash 路由）。
+ * 应用内的页面（v5 重构后：客户端也套 **Vue 构建产物**，与网页版同一套界面，
+ * 用 hash 路由切换，不再是旧版的 data-tab 面板）。
  */
-const TABS = [
-  ['tab-class', '01-桌面应用-班级与积分', '班级与积分：桌面应用内直接建名单、记分'],
-  ['tab-quiz', '02-桌面应用-组卷与答题', '组卷与答题'],
-  ['tab-roll', '03-桌面应用-点名', '随机点名'],
-  ['tab-bank', '04-桌面应用-题库与题型', '题库与题型'],
-  ['tab-analysis', '05-桌面应用-学情分析', '学情分析'],
-  ['tab-board', '06-桌面应用-排行与数据', '排行与数据'],
-  ['tab-classroom', '07-桌面应用-课堂协同', '课堂协同：桌面应用内置枢纽，学生端与大屏可直接连它']
+const ROUTES = [
+  ['/', '01-桌面应用-概览', '概览：桌面应用与网页版同一套 Vue 界面'],
+  ['/class', '02-桌面应用-班级与积分', '班级与积分：应用内直接建名单、记分'],
+  ['/classroom', '03-桌面应用-课堂协同', '课堂协同：桌面应用内置 Rust 枢纽，学生端与大屏可直接连它'],
+  ['/bank', '04-桌面应用-题库中心', '题库中心'],
+  ['/analysis', '05-桌面应用-学情分析', '学情分析（统计来源标注为 Rust 核心时才真正走核心）'],
+  ['/settings/storage', '06-桌面应用-存储与备份', '存储与备份：应用内直接读写本机 SQLite（%APPDATA%）'],
+  ['/settings/network', '07-桌面应用-组网', '组网（EasyTier）：客户端独有能力，浏览器做不到'],
+  ['/settings/about', '08-桌面应用-关于', '关于：外壳=Tauri，存储后端=SQLite']
 ];
 
 class CDP {
@@ -93,9 +94,9 @@ class CDP {
   await cdp.send('Runtime.enable');
   await cdp.send('Page.enable');
 
-  // 等应用界面挂载（旧版界面是 data-tab 面板 + CI.admin，不是 Element Plus 的 .el-menu）
-  await cdp.waitFor('!!(window.CI && CI.store && CI.admin)', '应用界面挂载');
-  await cdp.waitFor('document.querySelectorAll(".tab-panel").length > 0', '页签面板');
+  // 等应用界面挂载（v5：客户端也是 Vue + Element Plus）
+  await cdp.waitFor('document.querySelector(".el-menu") !== null', '应用界面挂载');
+  await cdp.waitFor('!!(window.CI && CI.store)', '领域层加载');
   await sleep(2500);
   console.log('已加载：' + await cdp.eval('document.title'));
 
@@ -146,7 +147,6 @@ class CDP {
     S.setRuntime({ quizId: quiz.id, qid: bank[0].id });
     CI.classroom.setPhase('question');
     CI.classroom.setAccepting(true);
-    if (CI.admin && CI.admin.renderAll) CI.admin.renderAll();
     return S.get().students.length;
   })()`;
 
@@ -156,9 +156,9 @@ class CDP {
   console.log('应用内数据（模拟）：' + before);
   await dismiss();
 
-  for (const [tab, name, caption] of TABS) {
-    await cdp.eval('CI.admin.gotoTab(' + JSON.stringify(tab) + ')');
-    await sleep(1000);
+  for (const [route, name, caption] of ROUTES) {
+    await cdp.eval('location.hash = ' + JSON.stringify('#' + route));
+    await sleep(1100);
     await dismiss();
     const r = await cdp.send('Page.captureScreenshot', { format: 'png' }, 30000);
     const file = path.join(OUT, name + '.png');

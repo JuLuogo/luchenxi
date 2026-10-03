@@ -19,6 +19,7 @@ import '@domain/classroom.js';
 import '@domain/net.js';
 import '@domain/rollcall.js';
 import '@domain/import.js';
+import '@domain/openclass.js';
 /*
  * 说明（2026-10）：这里原来还按旧页面的顺序 import 了 quiz.js / analysis-ui.js。
  * Vue 界面**一处都没用到**它们 —— 它们只提供 CI.quizUI / CI.analysisUI 那批旧 render 函数，

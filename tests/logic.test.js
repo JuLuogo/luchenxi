@@ -29,6 +29,7 @@ require(path.join(__dirname, '..', 'assets', 'js', 'sync.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'rollcall.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'classroom.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'import.js'));
+require(path.join(__dirname, '..', 'assets', 'js', 'openclass.js'));
 // bank.js / quiz.js / analysis-ui.js / admin.js 已随旧界面删除（界面统一到 Vue，见 docs/13）
 
 const CI = globalThis.CI;
@@ -1428,6 +1429,61 @@ group('判分/计分的 Rust 接缝');
   const rec3 = S.recordsOf(S.get(), { sid: sid3, quizId: qz3.id })[0];
   eq(rec3.result, 'wrong', '不带 pre 时本地判分仍然正确（回退路径可用）');
   eq(rec3.points, 0, '答错 0 分');
+})();
+
+/* ================= 23. 公开课现场评价量规 ================= */
+group('公开课现场评价量规');
+
+(function () {
+  const O = CI.openclass;
+  const dims = O.defaultDimensions();
+  eq(dims.length, 4, '默认四维量规');
+  eq(dims.map((d) => d.key).join(','), 'basic,transfer,expression,attitude', '维度顺序固定');
+  eq(dims.reduce((n, d) => n + d.weight, 0), 100, '四维权重和为 100');
+  eq(dims.map((d) => d.weight).join(','), '30,30,25,15', '默认权重 30/30/25/15');
+  ok(dims.every((d) => d.anchor && d.anchor.length > 6), '每一维都带"看什么"的锚点');
+
+  // 档位 ↔ 分数映射
+  eq(O.rateOf(1), 0, '1 档 → 0 分');
+  eq(O.rateOf(2), 33.3, '2 档 → 33.3');
+  eq(O.rateOf(3), 66.7, '3 档 → 66.7');
+  eq(O.rateOf(4), 100, '4 档 → 100');
+  eq(O.levelOf(1), '待改进', '1 档文字');
+  eq(O.levelOf(4), '优秀', '4 档文字');
+
+  // 全档位一致性：**维度文字与总评档位必须对得上**
+  const all = (s) => O.evaluate(dims.map((d) => ({ key: d.key, score: s })));
+  eq(all(4).total, 100, '四维全 4 档 → 100');
+  eq(all(4).level, '优秀', '四维全 4 档 → 优秀');
+  eq(all(3).total, 67, '四维全 3 档 → 67');
+  eq(all(3).level, '良好', '四维全 3 档 → 良好（与维度文字一致）');
+  eq(all(2).level, '合格', '四维全 2 档 → 合格（与维度文字一致）');
+  eq(all(1).level, '待改进', '四维全 1 档 → 待改进');
+
+  // 漏评要重新归一（不能按 0 分算）
+  const two = O.evaluate([{ key: 'basic', score: 4 }, { key: 'transfer', score: 4 }]);
+  eq(two.total, 100, '只评两维且都最高 → 100（不被未评的拖低）');
+  eq(two.weightUsed, 60, '实际权重和 = 60');
+  ok(two.comment.indexOf('还有 2 个维度没评') >= 0, '评语要说明漏评');
+  const one = O.evaluate([{ key: 'transfer', score: 3 }]);
+  eq(one.total, 67, '只评一维 → 该维折算分');
+  eq(O.evaluate([]).total, 0, '一维都没评 → 0（不炸）');
+  eq(O.evaluate([]).comment, '还没有评价任何维度。', '没评时的评语');
+
+  // 强项/短板要有真实分差才指
+  const gap = O.evaluate([{ key: 'basic', score: 4 }, { key: 'transfer', score: 1 }]);
+  eq(gap.strongest, 'basic', '强项 = 基础掌握');
+  eq(gap.weakest, 'transfer', '短板 = 拓展迁移');
+  ok(gap.comment.indexOf('基础掌握 最突出') >= 0, '评语指出强项');
+  ok(gap.comment.indexOf('拓展迁移 还有空间') >= 0, '评语指出短板');
+  const flat = O.evaluate([{ key: 'basic', score: 3 }, { key: 'transfer', score: 3 }]);
+  eq(flat.strongest, null, '分差不足时不指强项（避免自相矛盾）');
+  ok(flat.comment.indexOf('均衡') >= 0, '分差不足时评语说"均衡"');
+
+  // 评语必须能直接念：有句号、不空、不超长
+  const c = gap.comment;
+  ok(c.length > 10 && c.length < 120, '评语长度适合当众念（' + c.length + ' 字）');
+  ok(c.indexOf('。') > 0, '评语是完整句子');
 })();
 
 /* ================= 汇总 ================= */

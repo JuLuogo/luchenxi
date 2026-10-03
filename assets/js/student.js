@@ -126,10 +126,22 @@
     return !hubHostRaw();
   }
 
-  /** 学生手动填写教师机地址（手机 App / 扫码带入）；保存后立刻重连 */
-  function saveHost() {
-    var input = $('hubInput');
-    var v = input ? input.value : '';
+  /**
+   * 学生手动填写教师机地址（手机 App / 扫码带入）；保存后立刻重连。
+   *
+   * v5：界面换成 Vue 后，输入框由组件持有，组件会把值**作为参数**传进来
+   * （`CIStudent.saveHost(hostInput.value)`）。旧实现只会去读 `#hubInput`，
+   * 而 Vue 界面里根本没有这个元素 —— 结果是"学生填了 IP、点保存、地址却存成空字符串"，
+   * 手机 App 永远连不上教师机，且界面上看不出任何异常。所以这里必须优先用传入值。
+   */
+  function saveHost(value) {
+    var v;
+    if (value === undefined || value === null) {
+      var input = $('hubInput');            // 兜底：旧入口仍然有真实 DOM 输入框
+      v = input ? input.value : '';
+    } else {
+      v = String(value);
+    }
     setHubHost(v);
     toast('已保存教师机地址：' + hubHost());
     reconnectNow();
@@ -207,7 +219,9 @@
         render();
       } else if (msg.type === 'presence') {
         presence = msg;
-        renderHeader();
+        // 旧 renderHeader() 已随旧界面删除（2026-10）；这里要的是"通知订阅者"，
+        // 与 render() 走同一个出口，否则 presence 变化时 Vue 学生端不会重绘（控制台还会刷 ReferenceError）。
+        notify();
       } else if (msg.type === 'welcome') {
         presence.hostOnline = !!msg.hostOnline;
         setConn('on', '已连接 ' + (msg.room || room));
@@ -327,13 +341,13 @@
   function switchTeam() {
     teamId = '';
     try { root.localStorage.removeItem(LS_TEAM); } catch (e) { /* 忽略 */ }
-    renderJoin();
+    notify();     // 旧 renderJoin() 已删；渲染交给 Vue
   }
 
   function setAnswerer(id) {
     answererId = id;
     try { root.localStorage.setItem(LS_ANSWERER, id); } catch (e) { /* 忽略 */ }
-    renderTeam();
+    notify();     // 旧 renderTeam() 已删
   }
 
   function toggleOption(key) {
@@ -346,7 +360,7 @@
       if (!multi) selected = [];     // 单选题：换选项即替换
       selected.push(key);
     }
-    renderQA();
+    notify();     // 旧 renderQA() 已删；渲染交给 Vue
   }
 
   /** 输入框草稿：避免收到状态广播重渲染时把学生正在输入的内容清掉 */
@@ -380,7 +394,7 @@
     send({ type: 'cmd', cmd: cmd });
     submitted = { qid: q.id, at: Date.now(), text: cmd.text || null };
     toast(skip ? '已提交：跳过' : '已提交，等待判定');
-    renderQA();
+    notify();     // 旧 renderQA() 已删
   }
 
   function buzz() {

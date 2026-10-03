@@ -14,6 +14,7 @@
 use ci_domain::state::ClassroomState;
 use ci_domain::{
     ability_of_tiers, answer_key, apply_pick, auto, build_report, decayed_rate, evaluate, growth_score,
+    default_open_dimensions, evaluate_open,
     option_distribution, participation_rate, student_stats, student_view, class_stats, ranking, team_ranking, default_tiers, describe_submission,
     draw_questions, finalize_feed, handle_cmd, mistake_board, question_stats, report_markdown,
     rollcall_pick, score_of_input, set_phase_named, student_mistakes, validate_question, BankQuestion,
@@ -43,6 +44,7 @@ struct Fixture {
     option_dist: Vec<OptionDistCase>,
     stats: Vec<StatsCase>,
     view: Vec<ViewCase>,
+    openclass: Vec<OpenCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -844,6 +846,45 @@ struct ViewExpect {
 struct ViewOption {
     key: String,
     text: String,
+}
+
+
+/* ---------- 公开课现场评价量规（openclass.js）---------- */
+
+#[derive(Debug, Deserialize)]
+struct OpenCase {
+    name: String,
+    scores: Vec<OpenScoreIn>,
+    expect: OpenExpect,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenScoreIn {
+    key: String,
+    score: u8,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenExpect {
+    total: i64,
+    level: String,
+    #[serde(rename = "weightUsed")]
+    weight_used: f64,
+    strongest: Option<String>,
+    weakest: Option<String>,
+    comment: String,
+    parts: Vec<OpenPartOut>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenPartOut {
+    key: String,
+    label: String,
+    weight: f64,
+    score: u8,
+    level: String,
+    rate: f64,
+    contribution: f64,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -2026,4 +2067,43 @@ fn view_matches_js_reference() {
         println!("  ✔ {} → answerKey {:?}", n, got.answer_key);
     }
     println!("\n✅ 学生可见视图：{} 组用例与 JS 参考实现逐字段一致", fx.view.len());
+}
+
+/// 公开课现场评价量规：与 JS 逐字段比对
+///
+/// 重点断言 **未评的维度要剔除并重新归一** —— 按 0 分算会凭空拉低总分，
+/// 那和"没数据就扣 15 分"是同一类错误（综合表现那边修过一次）。
+#[test]
+fn openclass_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.openclass.is_empty(), "基准里没有公开课用例");
+    for case in &fx.openclass {
+        let scores: Vec<(String, u8)> = case.scores.iter().map(|s| (s.key.clone(), s.score)).collect();
+        let got = evaluate_open(&scores, &default_open_dimensions());
+        let want = &case.expect;
+        let n = &case.name;
+        assert_eq!(got.total, want.total, "[{}] 总分", n);
+        assert_eq!(got.level, want.level, "[{}] 总评档位", n);
+        assert_eq!(got.weight_used, want.weight_used, "[{}] 实际权重和（漏评要重新归一）", n);
+        assert_eq!(got.strongest, want.strongest, "[{}] 最强维度", n);
+        assert_eq!(got.weakest, want.weakest, "[{}] 最弱维度", n);
+        assert_eq!(got.comment, want.comment, "[{}] 规则评语", n);
+        assert_eq!(got.parts.len(), want.parts.len(), "[{}] 维度条数", n);
+        for (i, w) in want.parts.iter().enumerate() {
+            let g = &got.parts[i];
+            assert_eq!(g.key, w.key, "[{}] 第 {} 维 key", n, i + 1);
+            assert_eq!(g.label, w.label, "[{}] 第 {} 维名称", n, i + 1);
+            assert_eq!(g.weight, w.weight, "[{}] 第 {} 维权重", n, i + 1);
+            assert_eq!(g.score, w.score, "[{}] 第 {} 维档位", n, i + 1);
+            assert_eq!(g.level, w.level, "[{}] 第 {} 维档位文字", n, i + 1);
+            assert_eq!(g.rate, w.rate, "[{}] 第 {} 维折算分", n, i + 1);
+            assert_eq!(g.contribution, w.contribution, "[{}] 第 {} 维贡献", n, i + 1);
+        }
+        // 漏评必须重新归一：只评一维且是最高档 → 满分（不是被剩下的三维拖到 30 分）
+        if case.scores.len() == 1 && case.scores[0].score == 4 {
+            assert_eq!(got.total, 100, "[{}] 只评一维最高档必须是 100", n);
+        }
+        println!("  ✔ {} → {} 分 {}", n, got.total, got.level);
+    }
+    println!("\n✅ 公开课量规：{} 组用例与 JS 参考实现逐字段一致", fx.openclass.len());
 }

@@ -231,10 +231,16 @@ const SEED = `
     [bank[0].id, bank[1].id, bank[3].id, bank[4].id, bank[6].id, bank[8].id], '重点讲评拔高题与扩展题');
   S.setCurrentQuiz(quiz.id);
 
-  /* 作答记录：造出不同"能力画像"，让学情分析/雷达图有内容 */
+  /* 作答记录：造出不同"能力画像"，让学情分析/雷达图有内容；
+     选择题额外补上「学生选了什么」，供大屏的「本题选项分布」与学生端错选分析使用 */
   function rec(i, qi, result) {
     var stu = S.get().students[i];
-    S.recordResult({ sid: stu.id, qid: bank[qi].id, result: result, quizId: quiz.id, source: 'quiz' });
+    var pick = '';
+    if (qi === 0) pick = ['B', 'B', 'B', 'A', 'C', 'B', 'C', 'B', 'A', 'B', 'B', 'C', 'B', 'A', 'B', 'C'][i % 16];
+    else if (qi === 1) pick = ['A', 'A', 'B', 'A', 'C', 'A', 'B', 'A', 'A', 'C', 'A', 'B', 'A', 'A', 'C', 'B'][i % 16];
+    else if (qi === 2) pick = ['B', 'B', 'A', 'B', 'C', 'B', 'A', 'B', 'B', 'C', 'B', 'A', 'B', 'B', 'C', 'A'][i % 16];
+    else if (qi === 5) pick = ['A', 'A', 'B', 'A', 'C', 'A', 'A', 'B', 'A', 'C', 'A', 'B', 'A', 'A', 'C', 'B'][i % 16];
+    S.recordResult({ sid: stu.id, qid: bank[qi].id, result: result, quizId: quiz.id, source: 'quiz', picked: pick });
   }
   // 张伟（0）：四题型都碰，整体不错
   rec(0,0,'correct'); rec(0,1,'correct'); rec(0,3,'correct'); rec(0,4,'half'); rec(0,6,'correct'); rec(0,8,'wrong');
@@ -291,13 +297,29 @@ const SEED = `
   fs.mkdirSync(profile, { recursive: true });
 
   const base = 'http://127.0.0.1:' + port;
-  const hub = spawn(process.execPath, [path.join(ROOT, 'sync-server.js')], {
-    cwd: ROOT,
-    env: Object.assign({}, process.env, { PORT: String(port), HOST: '127.0.0.1', DATA_DIR: dataDir }),
-    stdio: 'ignore'
-  });
+  /* v5：枢纽以 **Rust 核心**为准（ci-hub-server）。截图必须走它 ——
+     否则界面上的「统计来源」会退回「本地参考实现」，拍出来的就不是 v5 的真实形态。
+     找不到 Rust 枢纽时退回 Node 版（功能可用，只是领域端点缺失）。*/
+  const rustName = process.platform === 'win32' ? 'ci-hub-server.exe' : 'ci-hub-server';
+  const rustHub = ['debug', 'release']
+    .map((p) => path.join(ROOT, 'target', p, rustName))
+    .find((p) => fs.existsSync(p));
+  const hub = rustHub
+    ? spawn(rustHub, [], {
+        cwd: ROOT,
+        env: Object.assign({}, process.env, {
+          PORT: String(port), HOST: '127.0.0.1', DATA_DIR: dataDir, STATIC_ROOT: ROOT
+        }),
+        stdio: 'ignore'
+      })
+    : spawn(process.execPath, [path.join(ROOT, 'sync-server.js')], {
+        cwd: ROOT,
+        env: Object.assign({}, process.env, { PORT: String(port), HOST: '127.0.0.1', DATA_DIR: dataDir }),
+        stdio: 'ignore'
+      });
   await waitJson(base + '/health');
-  console.log('隔离枢纽：' + base + '（数据目录 ' + dataDir + '）\n');
+  console.log('隔离枢纽：' + base + '（' + (rustHub ? 'Rust 核心 ci-hub-server' : 'Node sync-server.js') +
+    '，数据目录 ' + dataDir + '）\n');
 
   const bin = [
     process.env.CHROME_PATH || '',
@@ -329,9 +351,11 @@ const SEED = `
   console.log('浏览器：' + version.Browser + '\n');
   const b = await Browser.connect(version.webSocketDebuggerUrl);
 
-  const T = base + '/next/admin.html?room=' + ROOM + '#/';
-  const S = base + '/next/join?room=' + ROOM;
-  const G = base + '/next/stage?room=' + ROOM;
+  // v5 重构后：四个入口统一为 Vue 构建产物，直接挂在根路径
+  // （/admin.html 教师端、/join 学生端、/stage 大屏；/next/* 仍作为别名保留）
+  const T = base + '/admin.html?room=' + ROOM + '#/';
+  const S = base + '/join?room=' + ROOM;
+  const G = base + '/stage?room=' + ROOM;
 
   try {
     /* ============================================================ *
@@ -438,8 +462,40 @@ const SEED = `
         await goto('/papers/' + quizId, 1200);
         await shot(b, teacher, 'teacher', '12-组卷编辑器', '组卷编辑器：左侧题库勾选加入，右侧试卷题目可排序/移除');
 
-        await goto('/analysis', 1200);
-        await shot(b, teacher, 'teacher', '13-学情分析', '学情分析：题型维度统计 + 每题正确率 + 学生掌握度');
+        // v5 新增：一键重测卷（错题重做）—— 阈值 35%，依据提取练习效应
+        await clickText(b, teacher, '一键重测卷');
+        await sleep(1400);
+        await shot(b, teacher, 'teacher', '13-组卷编辑器-一键重测卷', '一键重测卷（错题重做）：把答对率低于 35% 的题单独组一套新卷');
+        await b.eval(teacher, `(function(){
+          var x = document.querySelector('.el-message-box__headerbtn'); if (x) x.click();
+          return true;
+        })()`);
+        await sleep(700);
+        // 一键重测卷会把"当前试卷"切到新建的空卷上；后续要拍学情分析/大屏，
+        // 必须切回原来那套有数据的卷，否则统计全是 0（这不是 bug，是它的正常行为）。
+        await b.eval(teacher, `(function(){
+          var S = CI.store;
+          S.setCurrentQuiz(${JSON.stringify(quizId)});
+          S.setRuntime({ quizId: ${JSON.stringify(quizId)}, qid: S.get().bank[0].id });
+          return S.get().currentQuizId;
+        })()`);
+        await sleep(700);
+
+        await goto('/analysis', 1400);
+        await shot(b, teacher, 'teacher', '14-学情分析', '学情分析：能力评价雷达 + 综合分/覆盖率/均衡度 + 分题型掌握度');
+
+        // 往下滚，露出「综合评价总览」与「统计来源」标注
+        await b.eval(teacher, `(function(){
+          var m = document.querySelector('.el-main'); if (m) m.scrollTop = 640;
+          return true;
+        })()`);
+        await sleep(1000);
+        await shot(b, teacher, 'teacher', '15-学情分析-综合评价总览', '综合评价总览：队伍在前、学生按综合分排序；下方是各题型作答分布与正确率');
+        await b.eval(teacher, `(function(){
+          var m = document.querySelector('.el-main'); if (m) m.scrollTop = 0;
+          return true;
+        })()`);
+        await sleep(600);
 
         await clickText(b, teacher, '生成班级小结');
         await sleep(1200);
@@ -451,26 +507,26 @@ const SEED = `
           return true;
         })()`);
         await sleep(800);
-        await shot(b, teacher, 'teacher', '14-学情分析-班级小结', '一键生成班级小结（可复制/下载），自动点出薄弱与优势题型');
+        await shot(b, teacher, 'teacher', '16-学情分析-学生明细与班级小结', '「统计来源：Rust 核心」+ 学生明细（含综合表现分）+ 个人报告 + 一键生成的班级小结');
         await b.eval(teacher, `(function(){
           var m = document.querySelector('.el-main'); if (m) m.scrollTop = 0; return true;
         })()`);
         await sleep(500);
 
         await goto('/board', 1000);
-        await shot(b, teacher, 'teacher', '15-排行榜与导出', '排行榜与导出：个人榜 + 队伍榜 + CSV/JSON 导出');
+        await shot(b, teacher, 'teacher', '17-排行榜与导出', '排行榜与导出：个人榜 + 队伍榜 + CSV/JSON 导出');
 
         await goto('/settings/storage', 1200);
-        await shot(b, teacher, 'teacher', '16-设置-存储与备份', '存储与备份：显示 SQLite 后端、库文件位置、记录数，可导出/导入');
+        await shot(b, teacher, 'teacher', '18-设置-存储与备份', '存储与备份：显示 SQLite 后端、库文件位置、记录数，可导出/导入');
 
         await goto('/settings/network', 1000);
-        await shot(b, teacher, 'teacher', '17-设置-组网', '组网（EasyTier）：跨网段上课用，含「上课前自检」');
+        await shot(b, teacher, 'teacher', '19-设置-组网', '组网（EasyTier）：跨网段上课用，含「上课前自检」');
 
         await goto('/settings/room', 1000);
-        await shot(b, teacher, 'teacher', '18-设置-房间与大屏', '房间与大屏：房间号、大屏地址、学生端地址与二维码');
+        await shot(b, teacher, 'teacher', '20-设置-房间与大屏', '房间与大屏：房间号、大屏地址、学生端地址与二维码');
 
         await goto('/settings/about', 900);
-        await shot(b, teacher, 'teacher', '19-设置-关于与文档', '关于与文档：外壳/存储后端/协议版本/数据版本');
+        await shot(b, teacher, 'teacher', '21-设置-关于与文档', '关于与文档：外壳/存储后端/协议版本/数据版本');
 
         // 快捷键面板（按 ? 打开）
         await b.eval(teacher, `(function(){
@@ -478,7 +534,7 @@ const SEED = `
           return true;
         })()`);
         await sleep(700);
-        await shot(b, teacher, 'teacher', '20-快捷键面板', '按 ? 呼出快捷键面板（Alt+1~6 跳页，点名页 1/2/3/4 判分）');
+        await shot(b, teacher, 'teacher', '22-快捷键面板', '按 ? 呼出快捷键面板（Alt+1~6 跳页，点名页 1/2/3/4 判分）');
         await b.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', windowsVirtualKeyCode: 27 }, teacher).catch(() => {});
         await sleep(500);
       }
@@ -508,7 +564,7 @@ const SEED = `
       console.log('\n▶ 教师端：课堂协同（含在线小组）');
       await b.eval(teacher, 'location.hash = "#/classroom"; true');
       await sleep(1200);
-      await shot(b, teacher, 'teacher', '21-课堂协同', '课堂协同：环节切换、接收作答、二维码入座、在线小组、实时流');
+      await shot(b, teacher, 'teacher', '23-课堂协同', '课堂协同：环节切换、接收作答、二维码入座、在线小组、实时流');
 
       // 出题 + 开始接收 + 计时
       await b.eval(teacher, `(function(){
@@ -520,7 +576,7 @@ const SEED = `
         return true;
       })()`);
       await sleep(1400);
-      await shot(b, teacher, 'teacher', '22-课堂协同-出题与倒计时', '设为当前题并「开始接收作答」，可一键发起 30 秒 / 1 分钟 / 2 分钟倒计时');
+      await shot(b, teacher, 'teacher', '24-课堂协同-出题与倒计时', '设为当前题并「开始接收作答」，可一键发起 30 秒 / 1 分钟 / 2 分钟倒计时');
     }
 
     /* ============================================================ *
@@ -576,7 +632,7 @@ const SEED = `
       // 反证：教师端抢答榜确实收到了
       await b.eval(teacher, 'location.hash = "#/classroom"; true');
       await sleep(1300);
-      await shot(b, teacher, 'teacher', '23-课堂协同-抢答榜', '反证：学生点抢答后，教师端抢答榜立刻出现该队（服务端是好的，缺的只是学生端反馈）');
+      await shot(b, teacher, 'teacher', '25-课堂协同-抢答榜', '反证：学生点抢答后，教师端抢答榜立刻出现该队');
       await b.eval(teacher, `(function(){
         var S = CI.store, q = S.get().bank[0];
         S.setRuntime({ qid: q.id });
@@ -674,14 +730,17 @@ const SEED = `
       await sleep(1800);
       await shot(b, stage, 'stage', '01-待机-扫码入座', '待机：超大二维码 + 房间号，学生扫码直接进班');
 
-      // ② 随机点名
-      await b.eval(teacher, `(function(){
+      // ② 随机点名（抽一位并切环节；大屏要等推送到达才切屏，所以多等一会儿）
+      const rollres = await b.eval(teacher, `(function(){
         var res = CI.rollcall.pick(CI.store.get(), {});
         if (res) CI.rollcall.applyPick(res);
-        CI.classroom.setPhase('rollcall');
-        return true;
+        var p = CI.classroom.setPhase('rollcall');
+        return JSON.stringify({ phase: p, sid: CI.store.get().runtime.sid });
       })()`);
-      await sleep(1800);
+      console.log('  点名结果：' + rollres);
+      await sleep(2600);
+      const stagePhase = await b.eval(stage, `(document.querySelector('.phase-pill') || {}).textContent || ''`);
+      if (String(stagePhase).indexOf('点名') < 0) problems.push('大屏没有切到随机点名（当前：' + stagePhase + '）');
       await shot(b, stage, 'stage', '02-随机点名', '随机点名：大屏放大显示被点到的同学与所属队伍');
 
       // ③ 出题作答
@@ -699,7 +758,7 @@ const SEED = `
       // 排序（队伍榜按分排序，让榜有区分度）
       await b.eval(teacher, 'CI.sync.push(true); true');
       await sleep(1200);
-      await shot(b, stage, 'stage', '04-队伍实时榜', '队伍榜按积分实时排序（1 秒内同步），右侧显示作答进度');
+      await shot(b, stage, 'stage', '04-队伍实时榜', '出题环节右栏：抢答榜 + 各队实时积分（队伍榜按分排序，1 秒内同步）');
 
       // ④ 公布答案
       await b.eval(teacher, 'CI.classroom.setReveal(true); true');
@@ -714,7 +773,7 @@ const SEED = `
       // ⑥ 点评总结
       await b.eval(teacher, `(function(){ CI.classroom.clearTimer(); CI.classroom.setPhase('review'); return true; })()`);
       await sleep(2000);
-      await shot(b, stage, 'stage', '07-点评总结-能力雷达', '点评总结：各队答对情况 + 能力雷达 + 讲评建议（正确率最低的题）');
+      await shot(b, stage, 'stage', '07-点评总结-选项分布与能力雷达', '点评总结：各队答对情况 + 本题选项分布（哪个干扰项最吸引人）+ 能力雷达 + 讲评建议');
     }
 
     /* ---------- 清单 ---------- */

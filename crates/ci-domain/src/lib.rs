@@ -19,6 +19,7 @@ pub mod draw;
 pub mod grade;
 pub mod mistakes;
 pub mod question_stats;
+pub mod openclass;
 pub mod report;
 pub mod rollcall;
 pub mod scoring;
@@ -38,6 +39,10 @@ pub use mistakes::{mistake_board, student_mistakes, MistakeItem, StudentMistakes
 pub use question_stats::{
     option_distribution, question_stats, review_line, short_stem, short_stem_with, student_view,
     OptionCount, OptionView, QuestionStat, StudentQuestionView,
+};
+pub use openclass::{
+    default_open_dimensions, evaluate_open, open_comment, open_level, open_rate, OpenDimension,
+    OpenEvaluation, OpenPart, OPEN_LEVELS,
 };
 pub use report::{build_report, to_markdown as report_markdown, Checkin, ClassReport, ReportInput, ReportStudent};
 pub use rollcall::{
