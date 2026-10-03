@@ -8,6 +8,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useClassStore } from '../../shared/class-store';
 import { CI } from '../../shared/bridge';
+import { fetchPick } from '../../shared/domain-api';
 
 const store = useClassStore();
 const current = ref<any>(null);          // { sid, name, teamName }
@@ -22,8 +23,10 @@ const roundInfo = computed(() => ({
   pool: pool.value.length
 }));
 
-function doPick() {
-  const res = CI.rollcall.pick(store.state, {});
+async function doPick() {
+  // 点名优先走 Rust 核心（/api/domain/pick，与 parity 基准同一套算法），不可达时回退本地实现
+  const r = await fetchPick();
+  const res = r.pick;
   if (!res) { ElMessage.warning('没有可点名的学生（检查候选池设置或名单）'); return; }
   CI.rollcall.applyPick(res);
   // 顺带把课堂环节切到"随机点名"，大屏立刻放大显示这位同学

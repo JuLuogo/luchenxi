@@ -121,3 +121,93 @@ export async function fetchStats(opts: {
     note: probe.note
   };
 }
+
+/** 一次点名结果（与 Rust `rollcall::Pick` 同形，也是 JS `applyPick` 要的形状） */
+export interface DomainPick {
+  sid: string;
+  name: string;
+  mode: string;
+  note: string;
+  candidateCount?: number;
+  newRound?: boolean;
+  pool?: string[] | null;
+  round?: number | null;
+}
+
+export interface DomainPickResult {
+  source: StatsSource;
+  pick: DomainPick | null;
+  /** Rust 侧回传的随机种子（便于复现这次点名） */
+  seed?: number;
+  note?: string;
+}
+
+/**
+ * 随机点名：**Rust 优先**（`/api/domain/pick`，与 parity 基准同一套算法），失败回退本地参考实现
+ *
+ * 端点要求蛇形入参（rollcall 段的既有约定），所以这里把 JS 状态翻译一遍。
+ */
+export async function fetchPick(opts: { seed?: number } = {}): Promise<DomainPickResult> {
+  const state = CI.store.get() as {
+    students?: { id: string; name: string; active?: boolean; teamId?: string | null }[];
+    rollcall?: Record<string, unknown>;
+    runtime?: { quizId?: string | null; qid?: string | null };
+  };
+  const rollcall = (state.rollcall || {}) as Record<string, unknown>;
+
+  // 候选名单：与 JS 的 candidates() 同一来源（启用中的学生）
+  const students = (state.students || [])
+    .filter((x) => x.active !== false)
+    .map((x) => ({ id: x.id, name: x.name, active: true, called: CI.store.calledCount(x.id) }));
+
+  // 已作答的人（排除作答者模式用）
+  const quizId = state.runtime?.quizId ?? null;
+  const answered: string[] = [];
+  for (const st of students) {
+    const recs = CI.store.recordsOf(state, { sid: st.id, quizId }) as unknown[];
+    if (recs && recs.length) answered.push(st.id);
+  }
+
+  const body = {
+    students,
+    answered,
+    settings: {
+      mode: rollcall.mode ?? 'even',
+      scope: rollcall.scope ?? 'all',
+      exclude_answered: !!rollcall.excludeAnswered,
+      recent_exclude: Number(rollcall.recentExclude) || 0,
+      round: Number(rollcall.round) || 1,
+      round_pool: (rollcall.roundPool as string[]) || [],
+      history: ((rollcall.history as { sid: string }[]) || []).map((h) => ({ sid: h.sid, at: 0 }))
+    },
+    opts: {
+      // 与 JS 的 candidates() 口径一致：scope 为空表示全部
+      scope: (rollcall.scope as string) || 'all',
+      mode: (rollcall.mode as string) || 'even',
+      exclude_answered: !!rollcall.excludeAnswered,
+      recent_exclude: Number(rollcall.recentExclude) || 0,
+      has_current_question: !!(state.runtime?.quizId && state.runtime?.qid)
+    },
+    seed: opts.seed ?? null
+  };
+
+  const probe = await probeDomainApi();
+  if (probe.ok) {
+    try {
+      const res = await fetch(hubBase() + '/api/domain/pick', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        const j = await res.json();
+        if (j && j.ok) {
+          return { source: 'rust', pick: (j.pick as DomainPick) ?? null, seed: j.seed };
+        }
+      }
+    } catch { /* 落到回退分支 */ }
+  }
+
+  const local = (CI.rollcall as { pick(s: unknown, o: unknown): DomainPick | null }).pick(CI.store.get(), {});
+  return { source: 'js', pick: local, note: probe.note };
+}

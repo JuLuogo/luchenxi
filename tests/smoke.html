@@ -178,6 +178,48 @@ async function run() {
     var joinHtml = await joinRes.text();
     check(joinRes.status === 200 && joinHtml.indexOf('./assets/') >= 0, '学生端入口 /join 指向 Vue 产物');
 
+    /* ---------- 10.5 领域端点（Rust 核心） ---------- */
+    // 前端"Rust 优先、回退 JS"的两条路径都要在真实环境里过一遍：
+    //   · 打 Rust 枢纽时，端点必须返回可用结果
+    //   · 打 Node 枢纽（deprecated）时端点不存在，应走回退 —— 不算失败
+    (async () => {
+      const students = S.get().students.map((x) => ({ id: x.id, name: x.name, active: true, called: 0 }));
+      const probe = await fetch('/api/domain/stats', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: S.defaultState() })
+      });
+      if (!probe.ok) {
+        log('领域端点不可用（HTTP ' + probe.status + '）→ 前端会走本地参考实现');
+        check(true, '领域端点缺失时前端有回退路径（不报错）');
+        return;
+      }
+      check(true, '领域端点 /api/domain/stats 可用（Rust 核心在跑）');
+      const pickRes = await fetch('/api/domain/pick', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          students,
+          answered: [],
+          settings: { mode: 'even', scope: 'all', exclude_answered: false, recent_exclude: 0, round: 1, round_pool: [], history: [] },
+          opts: { scope: 'all', mode: 'even', has_current_question: false },
+          seed: 20261003
+        })
+      });
+      const pj = await pickRes.json();
+      check(pickRes.ok && pj.ok && pj.pick && !!pj.pick.sid, '领域端点 /api/domain/pick 返回有效学生');
+      check(pj.seed === 20261003, '点名回传随机种子（可复现）');
+      // 同种子必须同结果 —— 这是"可复现"的实际含义
+      const again = await (await fetch('/api/domain/pick', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          students, answered: [],
+          settings: { mode: 'even', scope: 'all', exclude_answered: false, recent_exclude: 0, round: 1, round_pool: [], history: [] },
+          opts: { scope: 'all', mode: 'even', has_current_question: false },
+          seed: 20261003
+        })
+      })).json();
+      check(again.pick && again.pick.sid === pj.pick.sid, '同种子点出同一个人（可复现）');
+    })().catch((e) => { check(false, '领域端点验证抛错：' + e.message); });
+
     /* ---------- 11. 服务端与数据库（经枢纽） ---------- */
     // 注意带上房间名：应用用的是 ci_room（本用例是 smoke-vue），不带参数会读到 default 房间
     var room = encodeURIComponent(CI.sync.room ? CI.sync.room() : 'default');

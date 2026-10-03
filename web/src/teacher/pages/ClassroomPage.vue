@@ -7,6 +7,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useClassStore } from '../../shared/class-store';
 import { CI } from '../../shared/bridge';
+import { fetchPick } from '../../shared/domain-api';
 
 const store = useClassStore();
 const tick = ref(0);
@@ -43,10 +44,11 @@ const PHASES = [
   { key: 'question', label: '出题答题', hint: '大屏显示题干与选项，学生端可作答' },
   { key: 'review', label: '点评总结', hint: '大屏显示各队答对情况 + 能力雷达与评价' }
 ];
-function gotoPhase(key) {
+async function gotoPhase(key: string) {
   if (key === 'rollcall') {
     // 点名环节顺手抽一位，大屏立刻有内容
-    const res = CI.rollcall.pick(store.state, {});
+    // 与点名页同一口径：优先 Rust 核心，回退本地实现
+    const res = (await fetchPick()).pick;
     if (res) CI.rollcall.applyPick(res);
     else ElMessage.warning('没有可点名的学生');
   }
