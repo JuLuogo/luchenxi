@@ -94,6 +94,8 @@ pub struct OpenPart {
 #[serde(rename_all = "camelCase")]
 pub struct OpenEvaluation {
     /// 加权总分（百分制，四舍五入到整数）
+    // specta 禁止裸 i64（BigInt 精度问题），显式导成 number
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub total: i64,
     /// 总评档位（优秀/良好/合格/待改进）
     pub level: String,

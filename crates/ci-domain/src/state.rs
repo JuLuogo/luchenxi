@@ -292,6 +292,35 @@ pub struct ClassroomBox {
     pub buzz: Vec<Buzz>,
     pub pending: Vec<Pending>,
     pub feed: Vec<FeedItem>,
+    /// 公开课现场状态（点名 → 抽题 → 判定 → 评价）—— 大屏与学生端据此同步显示。
+
+    /// 日常课为 None，公开课页面开始后才有值。
+    #[serde(default)]
+    pub open: Option<OpenClassState>,
+}
+
+/// 公开课现场状态（一次现场问答 + 评价）
+///
+/// 刻意只放"大屏与学生端要看到的东西"：被点到的学生、当前题、判定结果、四维评价。
+/// 量规本身在 `openclass.rs`，这里只存**这一次的结果**。
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
+pub struct OpenClassState {
+    /// 当前进行到哪一步：rollcall | question | verdict | eval
+    #[serde(default)]
+    pub step: String,
+    #[serde(default)]
+    pub sid: Option<String>,
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub qid: Option<String>,
+    /// correct | half | wrong（没判定时为空）
+    #[serde(default)]
+    pub verdict: String,
+    /// 这一次现场评价的结果（没评时 None）—— 用有类型的 OpenEvaluation，specta 才能生成 TS
+    pub evaluation: Option<crate::openclass::OpenEvaluation>,
 }
 
 /* ------------------------------------------------------------------ *

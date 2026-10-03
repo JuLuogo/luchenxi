@@ -172,7 +172,8 @@
         phase: 'idle', accepting: false, reveal: false, revealedQid: null, timerEndsAt: 0, timerLabel: ''
       },
       // classroom 同理：契约的一部分，懒创建会让请求缺字段
-      classroom: { buzz: [], pending: [], feed: [] }
+      // open 是公开课现场状态（大屏/学生端要同步看到），默认没有
+      classroom: { buzz: [], pending: [], feed: [], open: null }
     };
   }
 

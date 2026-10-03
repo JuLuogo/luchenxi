@@ -122,6 +122,11 @@ export type ClassroomBox = {
 	buzz: Buzz[],
 	pending: Pending[],
 	feed: FeedItem[],
+	/**
+	 *  公开课现场状态（点名 → 抽题 → 判定 → 评价）—— 大屏与学生端据此同步显示。
+	 *  日常课为 None，公开课页面开始后才有值。
+	 */
+	open?: OpenClassState | null,
 };
 
 /**  整份课堂状态（`CI.store.get()` 的返回形状） */
@@ -222,6 +227,52 @@ export type LogItem = {
 	detail: string,
 	/**  时间戳 —— JS 侧这个字段叫 `ts`，所以直接按它序列化（specta 不支持 alias） */
 	ts: number,
+};
+
+/**
+ *  公开课现场状态（一次现场问答 + 评价）
+ * 
+ *  刻意只放"大屏与学生端要看到的东西"：被点到的学生、当前题、判定结果、四维评价。
+ *  量规本身在 `openclass.rs`，这里只存**这一次的结果**。
+ */
+export type OpenClassState = {
+	/**  当前进行到哪一步：rollcall | question | verdict | eval */
+	step?: string,
+	sid?: string | null,
+	name?: string,
+	qid?: string | null,
+	/**  correct | half | wrong（没判定时为空） */
+	verdict?: string,
+	/**  这一次现场评价的结果（没评时 None）—— 用有类型的 OpenEvaluation，specta 才能生成 TS */
+	evaluation: OpenEvaluation | null,
+};
+
+/**  一次公开课现场评价 */
+export type OpenEvaluation = {
+	/**  加权总分（百分制，四舍五入到整数） */
+	total: number,
+	/**  总评档位（优秀/良好/合格/待改进） */
+	level: string,
+	parts: OpenPart[],
+	/**  实际使用的权重和（未评的维度会被剔除并重新归一） */
+	weightUsed: number | null,
+	/**  最强 / 最弱维度 key（分差 <8 分时不给，避免"X 最好、X 是短板"式自相矛盾） */
+	strongest: string | null,
+	weakest: string | null,
+	/**  规则评语（离线可用；AI 润色是另一回事） */
+	comment: string,
+};
+
+/**  单维结果 */
+export type OpenPart = {
+	key: string,
+	label: string,
+	weight: number | null,
+	score: number,
+	level: string,
+	rate: number | null,
+	/**  这一维对总分的贡献 */
+	contribution: number | null,
 };
 
 /**  待确认提交（主观题由老师判定） */

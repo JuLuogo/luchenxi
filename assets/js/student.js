@@ -287,6 +287,21 @@
   }
   function question() { return meta().question || null; }
   function accepting() { return !!meta().accepting; }
+
+  /**
+   * 公开课现场状态（大屏与教师端同步过来的）
+   *
+   * `mine` = 被点到的是不是"我们组的人"：公开课点名是按人点的，
+   * 学生端据此弹"到你了"，不用老师再喊一遍。
+   */
+  function openState() {
+    var o = meta().open || null;
+    if (!o) return null;
+    var list = myMembers();
+    var mine = false;
+    for (var i = 0; i < list.length; i++) if (list[i].id === o.sid) mine = true;
+    return { step: o.step, name: o.name, sid: o.sid, verdict: o.verdict, evaluation: o.evaluation, mine: mine };
+  }
   function me() {
     var list = myMembers();
     for (var i = 0; i < list.length; i++) if (list[i].id === answererId) return list[i];
@@ -461,6 +476,7 @@ function init() {
   CIStudent.students = students;
   CIStudent.meta = meta;
   CIStudent.me = me;
+  CIStudent.openState = openState;
   CIStudent.myTeam = myTeam;
   CIStudent.accepting = accepting;
   CIStudent.boardMode = function () { return !!boardMode; };

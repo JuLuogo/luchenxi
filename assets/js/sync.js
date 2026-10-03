@@ -298,6 +298,8 @@
         };
       }),
       meta: Object.assign({
+        // 公开课现场状态：大屏与学生端据此同步显示（点名放大 / 题干 / 判定 / 四维评价）
+        open: (s.classroom && s.classroom.open) ? s.classroom.open : null,
         quizName: qz ? qz.name : null,
         accepting: !!s.runtime.accepting,
         reveal: revealed,

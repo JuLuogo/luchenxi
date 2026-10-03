@@ -240,6 +240,21 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
           逐渐产生抵触心理"；国外 n=176 的真实课堂里 16% 学生因速度计分与公开排名退出评价）。
           个人成绩只发给学生自己的手机；大屏改为显示**全班分布**（见右侧选项分布与各队对比）。
         -->
+        <!-- 公开课：被点到的同学放大显示 + 现场评价（大屏是公开课最该亮的地方） -->
+        <div v-if="meta.open" class="open-block">
+          <div class="open-who">
+            <span class="open-tag">公开课</span>
+            <span class="open-name">{{ meta.open.name || '—' }}</span>
+            <span v-if="meta.open.verdict" class="open-verdict" :class="'v-' + meta.open.verdict">
+              {{ meta.open.verdict === 'correct' ? '全对' : (meta.open.verdict === 'half' ? '对一半' : '不对') }}
+            </span>
+          </div>
+          <div v-if="meta.open.evaluation" class="open-eval">
+            <span class="open-score">{{ meta.open.evaluation.total }} 分 · {{ meta.open.evaluation.level }}</span>
+            <span class="open-comment">{{ meta.open.evaluation.comment }}</span>
+          </div>
+        </div>
+
         <div v-if="meta.optionDist && meta.optionDist.length" class="side-title mt">📊 本题选项分布</div>
         <div v-for="o in meta.optionDist" :key="o.key" class="opt-row">
           <span class="opt-key" :class="{ right: o.correct }">{{ o.key }}</span>
@@ -428,6 +443,19 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
   display: flex; justify-content: space-between; padding: 8px 32px;
   border-top: 1px solid var(--c-line); color: var(--c-text-3); font-size: 13px; background: #fff;
 }
+
+/* 公开课：被点到的同学 + 现场评价 */
+.open-block { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #fff; border-radius: 14px; padding: 14px 18px; margin-bottom: 14px; }
+.open-who { display: flex; align-items: baseline; gap: 12px; }
+.open-tag { font-size: 12px; background: rgba(255, 255, 255, .25); padding: 2px 8px; border-radius: 999px; }
+.open-name { font-size: 30px; font-weight: 800; letter-spacing: 1px; }
+.open-verdict { font-size: 16px; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: rgba(255, 255, 255, .2); }
+.open-verdict.v-correct { background: #22c55e; }
+.open-verdict.v-half { background: #f59e0b; }
+.open-verdict.v-wrong { background: #ef4444; }
+.open-eval { margin-top: 10px; }
+.open-score { font-size: 22px; font-weight: 800; margin-right: 12px; }
+.open-comment { font-size: 15px; opacity: .95; line-height: 1.6; }
 
 /* 选项分布：正确项绿色、干扰项灰色；条宽 = 选择比例 */
 .opt-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 14px; }

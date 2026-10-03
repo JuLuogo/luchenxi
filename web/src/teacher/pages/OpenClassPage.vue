@@ -54,6 +54,8 @@ async function doPick() {
     question.value = null;
     scores.value = {};
     evaluation.value = null;
+    // 写进状态：大屏与学生端只拿得到快照，页面局部变量它们看不见
+    (CI.classroom as any).setOpenState({ step: 'rollcall', sid: picked.value.sid, name: picked.value.name, qid: null, verdict: '', evaluation: null });
     step.value = 2;
   } finally {
     busy.value = false;
@@ -84,6 +86,7 @@ function doDraw() {
   // 把当前题切到这道（大屏/学生端据此显示）
   CI.store.setRuntime({ qid: q.id, quizId: store.state.currentQuizId || null });
   CI.classroom.setPhase('question');
+  (CI.classroom as any).setOpenState({ step: 'question', qid: q.id, verdict: '', evaluation: null });
   verdict.value = '';
   step.value = 3;
 }
@@ -112,6 +115,7 @@ async function judge(v: 'correct' | 'half' | 'wrong') {
       picked: '',
       points: scored.score ? scored.score.points : undefined
     } as any);
+    (CI.classroom as any).setOpenState({ step: 'verdict', verdict: v });
     ElMessage.success(
       '已记录：' + (v === 'correct' ? '全对' : v === 'half' ? '对一半' : '不对') +
       (rec ? '（' + (rec.points >= 0 ? '+' : '') + rec.points + ' 分）' : '')
@@ -133,11 +137,14 @@ async function refreshEval() {
   const r = await fetchOpenEval(list);
   evaluation.value = r.evaluation;
   evalSource.value = r.source;
+  // 评价结果进状态 → 大屏与学生端立刻能看到
+  (CI.classroom as any).setOpenState({ step: 'eval', evaluation: r.evaluation });
 }
 
 async function finish() {
   if (!evaluation.value) { ElMessage.warning('至少评一个维度再完成'); return; }
   CI.store.log?.('公开课评价', (picked.value?.name || '') + ' · ' + evaluation.value.total + ' 分 ' + evaluation.value.level);
+  (CI.classroom as any).clearOpenState();
   ElMessage.success('已记录评价，可以请下一位同学了');
   // 进入下一位：保留量规，清空本轮
   picked.value = null;

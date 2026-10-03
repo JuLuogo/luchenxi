@@ -19,6 +19,12 @@ const hostInput = ref('');
 const textDraft = ref('');
 const tab = ref('qa');          // qa | score
 
+/** 公开课现场状态：被点到时弹「到你了」 */
+const open = computed<any>(() => {
+  void st.value;
+  try { return (CIStudent as any).openState ? (CIStudent as any).openState() : null; } catch { return null; }
+});
+
 function refresh() {
   st.value = CIStudent.state();
   ready.value = true;
@@ -128,6 +134,16 @@ function switchTeam() {
         <span class="conn" :class="{ on: st.connected }">{{ st.connected ? '已连接' : '未连接' }}</span>
       </template>
     </van-nav-bar>
+
+    <!-- 公开课：被点到时最显眼的提示（学生不用猜老师叫的是谁） -->
+    <div v-if="open && open.mine" class="open-me" :class="{ done: !!open.verdict }">
+      <span class="open-me-title">{{ open.verdict ? '本轮结束' : '到你了！' }}</span>
+      <span class="open-me-sub">{{ open.name }}{{ open.verdict ? ' · ' + (open.verdict === 'correct' ? '全对' : (open.verdict === 'half' ? '对一半' : '不对')) : '，请准备回答' }}</span>
+      <div v-if="open.evaluation" class="open-me-eval">
+        现场评价 {{ open.evaluation.total }} 分 · {{ open.evaluation.level }}
+        <div class="open-me-comment">{{ open.evaluation.comment }}</div>
+      </div>
+    </div>
 
     <!-- ① 未入座：选小组 -->
     <div v-if="!st.teamId" class="join">
@@ -291,6 +307,13 @@ function switchTeam() {
 </template>
 
 <style scoped>
+/* 公开课「到你了」 */
+.open-me { margin: 10px 12px; padding: 14px 16px; border-radius: 12px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; }
+.open-me.done { background: linear-gradient(135deg, #0ea5e9, #22c55e); }
+.open-me-title { display: block; font-size: 22px; font-weight: 800; letter-spacing: 1px; }
+.open-me-sub { display: block; margin-top: 4px; font-size: 14px; opacity: .95; }
+.open-me-eval { margin-top: 10px; font-size: 15px; font-weight: 700; }
+.open-me-comment { margin-top: 6px; font-size: 13px; font-weight: 400; line-height: 1.6; opacity: .95; }
 .stu { min-height: 100vh; background: #f7f8fa; }
 .conn { font-size: 12px; color: #969799; }
 .conn.on { color: #07c160; }

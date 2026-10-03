@@ -469,6 +469,29 @@
     };
   }
 
+  /**
+   * 公开课现场状态（点名 → 抽题 → 判定 → 评价）
+   *
+   * 写进 state.classroom.open 而不是留在页面里：**大屏与学生端只拿得到快照**，
+   * 页面局部变量它们看不见。日常课不用它（open 为 null）。
+   */
+  function setOpenState(patch) {
+    CI.store.tx('class-open', function (st) {
+      var box = st.classroom || (st.classroom = { buzz: [], pending: [], feed: [], open: null });
+      var cur = box.open || { step: 'rollcall', sid: null, name: '', qid: null, verdict: '', evaluation: null };
+      box.open = Object.assign({}, cur, patch || {});
+      return box.open;
+    }, { type: '公开课', silent: true });
+    return CI.store.get().classroom.open;
+  }
+
+  /** 结束公开课（清掉现场状态，大屏回到常规画面） */
+  function clearOpenState() {
+    CI.store.tx('class-open-clear', function (st) {
+      if (st.classroom) st.classroom.open = null;
+    }, { type: '公开课结束', silent: true });
+  }
+
   function isRevealed(s, q) {
     s = s || CI.store.get();
     q = q || currentQuestion(s);
@@ -858,6 +881,7 @@
     setAccepting: setAccepting, setReveal: setReveal, isRevealed: isRevealed, moveQuestion: moveQuestion,
     /* 课堂节奏：计时器 + 签到统计 */
     setTimer: setTimer, clearTimer: clearTimer, timerLeft: timerLeft, formatLeft: formatLeft,
+    setOpenState: setOpenState, clearOpenState: clearOpenState,
     studentView: studentView,
     checkinStats: checkinStats,
     focusBuzz: focusBuzz, loadRemoteState: loadRemoteState, applyRemote: applyRemote,
