@@ -13,7 +13,7 @@
 
 use ci_domain::state::ClassroomState;
 use ci_domain::{
-    show_on_stage,
+    default_open_levels, evaluate_open_full, levels_from_labels, open_rate, show_on_stage,
     ability_of_tiers, answer_key, apply_pick, auto, build_report, decayed_rate, evaluate, growth_score,
     default_open_dimensions, evaluate_open,
     option_distribution, participation_rate, polish_prompt, sanitize_polish, student_stats, student_view,
@@ -50,6 +50,7 @@ struct Fixture {
     polish: Vec<PolishCase>,
     #[serde(rename = "stagePolicy")]
     stage_policy: Vec<PolicyCase>,
+    levels: Vec<LevelCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -913,9 +914,30 @@ struct PolishExpect {
 
 #[derive(Debug, Deserialize)]
 struct PolicyCase {
-    level: String,
+    total: i64,
     policy: String,
     expect: bool,
+}
+
+
+/* ---------- 档位可配置 ---------- */
+
+#[derive(Debug, Deserialize)]
+struct LevelCase {
+    name: String,
+    labels: Option<Vec<String>>,
+    levels: Vec<ci_domain::openclass::OpenLevel>,
+    rows: Vec<LevelRow>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LevelRow {
+    score: u8,
+    total: i64,
+    level: String,
+    #[serde(rename = "partLevel")]
+    part_level: String,
+    rate: f64,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -2179,11 +2201,48 @@ fn stage_policy_matches_js_reference() {
     let fx = load();
     assert!(!fx.stage_policy.is_empty(), "基准里没有策略用例");
     for c in &fx.stage_policy {
-        let got = show_on_stage(&c.level, &c.policy);
-        assert_eq!(got, c.expect, "[{} / {}] 公开与否", c.level, c.policy);
+        let got = show_on_stage(c.total, &default_open_levels(), &c.policy);
+        assert_eq!(got, c.expect, "[{} 分 / {}] 公开与否", c.total, c.policy);
     }
     // 核心性质：默认策略下"待改进"绝不公开
-    assert!(!show_on_stage("待改进", "smart"));
-    assert!(!show_on_stage("合格", "smart"));
+    assert!(!show_on_stage(0, &default_open_levels(), "smart"), "0 分（待改进）绝不公开");
+    assert!(!show_on_stage(33, &default_open_levels(), "smart"), "33 分（合格）不公开");
     println!("\n✅ 大屏策略：{} 组用例与 JS 一致", fx.stage_policy.len());
+}
+
+/// 档位可配置：三档 / 四档 / 五档都要与 JS 一致
+///
+/// 核心性质：**每档全评时，总评档位与该档一致**（不会出现"四维全良好、总评却合格"）。
+#[test]
+fn levels_match_js_reference() {
+    let fx = load();
+    assert!(!fx.levels.is_empty(), "基准里没有档位用例");
+    for case in &fx.levels {
+        // 档位本身（含 labels 生成的均匀映射）
+        if let Some(labels) = &case.labels {
+            let built = levels_from_labels(labels);
+            assert_eq!(built, case.levels, "[{}] 档位生成一致", case.name);
+        } else {
+            assert_eq!(default_open_levels(), case.levels, "[{}] 默认档位一致", case.name);
+        }
+        for row in &case.rows {
+            let got = open_rate(row.score, &case.levels);
+            assert_eq!(got, row.rate, "[{}] 第 {} 档分数", case.name, row.score);
+            let ev = evaluate_open_full(
+                &default_open_dimensions()
+                    .iter()
+                    .map(|d| (d.key.clone(), row.score))
+                    .collect::<Vec<_>>(),
+                &default_open_dimensions(),
+                &case.levels,
+            );
+            assert_eq!(ev.total, row.total, "[{}] 第 {} 档全评 → 总分", case.name, row.score);
+            assert_eq!(ev.level, row.level, "[{}] 第 {} 档全评 → 总评档位", case.name, row.score);
+            assert_eq!(ev.parts[0].level, row.part_level, "[{}] 第 {} 档维度档位名", case.name, row.score);
+            // 核心性质：全评同一档时，总评必须就是这一档
+            assert_eq!(ev.level, row.part_level, "[{}] 总评与维度档位必须一致", case.name);
+        }
+        println!("  ✔ {} → {} 档", case.name, case.levels.len());
+    }
+    println!("\n✅ 档位可配置：{} 组用例与 JS 一致", fx.levels.len());
 }

@@ -54,23 +54,94 @@ pub fn default_open_dimensions() -> Vec<OpenDimension> {
     ]
 }
 
-/// 四档的文字（1–4）
-pub const OPEN_LEVELS: [&str; 4] = ["待改进", "合格", "良好", "优秀"];
-
-/// 一档 → 文字
-pub fn open_level(score: u8) -> &'static str {
-    match score {
-        1 => OPEN_LEVELS[0],
-        2 => OPEN_LEVELS[1],
-        3 => OPEN_LEVELS[2],
-        _ => OPEN_LEVELS[3],
-    }
+/// 一个档位（档位名 + 它对应的百分制分数）
+///
+/// 档位**可配置**：各校评课表不同 —— 有的四档（优秀/良好/合格/待改进），有的三档，
+/// 有的叫"优良中差"。分数按档位**均匀映射**（第 k 档 → (k-1)/(N-1)×100），
+/// 所以三档/五档都不需要额外配置。
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OpenLevel {
+    pub label: String,
+    /// 该档对应的百分制分数（0–100）
+    pub rate: f64,
 }
 
-/// 一档 → 百分制（1→0 / 2→33 / 3→67 / 4→100）
-pub fn open_rate(score: u8) -> f64 {
-    let s = score.clamp(1, 4) as f64;
-    ((s - 1.0) / 3.0 * 100.0 * 10.0).round() / 10.0
+/// 默认四档
+pub fn default_open_levels() -> Vec<OpenLevel> {
+    vec![
+        // 整数：总分是 round 过的整数，档位分数也取整数，否则 33 会落到 33.3 之下（错档）
+        OpenLevel { label: "待改进".into(), rate: 0.0 },
+        OpenLevel { label: "合格".into(), rate: 33.0 },
+        OpenLevel { label: "良好".into(), rate: 67.0 },
+        OpenLevel { label: "优秀".into(), rate: 100.0 },
+    ]
+}
+
+/// 按档位名生成均匀档位（从低到高）。三档 ["待改进","合格","优秀"] → 0 / 50 / 100。
+pub fn levels_from_labels(labels: &[String]) -> Vec<OpenLevel> {
+    let n = labels.len();
+    if n == 0 {
+        return Vec::new();
+    }
+    if n == 1 {
+        return vec![OpenLevel { label: labels[0].clone(), rate: 100.0 }];
+    }
+    labels
+        .iter()
+        .enumerate()
+        .map(|(i, l)| OpenLevel {
+            label: l.clone(),
+            // 取整数，与总分的取整口径一致
+            rate: ((i as f64) / ((n - 1) as f64) * 100.0).round(),
+        })
+        .collect()
+}
+
+/// 一档（1 起）→ 档位名（越界取两端）
+pub fn open_level(score: u8, levels: &[OpenLevel]) -> String {
+    if levels.is_empty() {
+        return String::new();
+    }
+    let i = (score.max(1) as usize - 1).min(levels.len() - 1);
+    levels[i].label.clone()
+}
+
+/// 一档（1 起）→ 百分制（越界取两端）
+pub fn open_rate(score: u8, levels: &[OpenLevel]) -> f64 {
+    if levels.is_empty() {
+        return 0.0;
+    }
+    let i = (score.max(1) as usize - 1).min(levels.len() - 1);
+    levels[i].rate
+}
+
+/// 总分落在哪一档（**不再硬编码阈值**：取 rate 不超过总分的最高一档）
+pub fn level_for_total(total: i64, levels: &[OpenLevel]) -> String {
+    if levels.is_empty() {
+        return String::new();
+    }
+    let mut best = &levels[0];
+    for l in levels {
+        if (total as f64) + 1e-9 >= l.rate {
+            best = l;
+        }
+    }
+    best.label.clone()
+}
+
+/// 这一档算不算"表扬"（供公开展示策略用：公开表扬、私下改进）
+///
+/// 判据是**上半档**：四档 → 良好/优秀（与之前的硬编码一致）；三档 → 第 2 档及以上；
+/// 五档 → 第 3 档及以上。
+pub fn is_praise(total: i64, levels: &[OpenLevel]) -> bool {
+    let n = levels.len();
+    if n == 0 {
+        return false;
+    }
+    let idx = if n % 2 == 0 { n / 2 } else { (n + 1) / 2 - 1 };
+    (total as f64) + 1e-9 >= levels[idx].rate
 }
 
 /// 单维结果
@@ -114,6 +185,16 @@ pub struct OpenEvaluation {
 /// 为什么允许漏评：公开课现场时间紧，老师可能只想评其中两维（比如只关心"拓展迁移"）。
 /// 若按缺失即 0 分算，总分会被凭空拉低 —— 那和"没数据就扣 15 分"是同一类错误。
 pub fn evaluate_open(scores: &[(String, u8)], dims: &[OpenDimension]) -> OpenEvaluation {
+    // 保持签名不变：内部走默认四档（现有调用方与 parity 完全不受影响）
+    evaluate_open_full(scores, dims, &default_open_levels())
+}
+
+/// 带自定义档位的版本
+pub fn evaluate_open_full(
+    scores: &[(String, u8)],
+    dims: &[OpenDimension],
+    levels: &[OpenLevel],
+) -> OpenEvaluation {
     let mut parts: Vec<OpenPart> = Vec::new();
     let mut weight_used = 0.0;
     let mut weighted = 0.0;
@@ -122,7 +203,7 @@ pub fn evaluate_open(scores: &[(String, u8)], dims: &[OpenDimension]) -> OpenEva
         let Some((_, score)) = scores.iter().find(|(k, _)| k == &d.key) else {
             continue;
         };
-        let rate = open_rate(*score);
+        let rate = open_rate(*score, levels);
         weight_used += d.weight;
         weighted += rate * d.weight;
         parts.push(OpenPart {
@@ -130,7 +211,7 @@ pub fn evaluate_open(scores: &[(String, u8)], dims: &[OpenDimension]) -> OpenEva
             label: d.label.clone(),
             weight: d.weight,
             score: *score,
-            level: open_level(*score).to_string(),
+            level: open_level(*score, levels),
             rate,
             contribution: (rate * d.weight / 100.0 * 10.0).round() / 10.0,
         });
@@ -142,15 +223,10 @@ pub fn evaluate_open(scores: &[(String, u8)], dims: &[OpenDimension]) -> OpenEva
         0
     };
 
-    // 阈值与维度档位**对齐**：每维都是"良好"(3 档 = 67 分) → 总评也该是良好。
-    // 原来按 90/75/60 分档，会出现"四维全良好、总评却是合格"的自相矛盾（测试抓到过）。
-    let level = match total {
-        90..=100 => "优秀",   // 大致对应"四维多为优秀"
-        65..=89 => "良好",    // 四维全 3 档 = 67
-        30..=64 => "合格",    // 四维全 2 档 = 33
-        _ => "待改进",        // 四维全 1 档 = 0
-    }
-    .to_string();
+    // 总评档位 = **总分落在哪一档**（不再硬编码 90/65/30 阈值）。
+    // 默认四档时与之前完全一致：全 3 档 = 67 → 落在"良好"(66.7) → 良好。
+    // 换成三档/五档时自动跟着变，不会出现"四维全良好、总评却是合格"的自相矛盾。
+    let level = level_for_total(total, levels);
 
     // 最强 / 最弱：分差太小就不指（否则会出现"表达最好、表达是短板"）
     let (strongest, weakest) = if parts.len() >= 2 {
@@ -187,12 +263,13 @@ pub fn evaluate_open(scores: &[(String, u8)], dims: &[OpenDimension]) -> OpenEva
 /// 所以默认只在"良好/优秀"时公开；合格/待改进只发给学生自己的设备。
 ///
 /// `policy`：smart（默认）/ always / never
-pub fn show_on_stage(level: &str, policy: &str) -> bool {
+pub fn show_on_stage(total: i64, levels: &[OpenLevel], policy: &str) -> bool {
     match policy {
         "always" => true,
         "never" => false,
         // smart 与任何未知值都按"只公开表扬"处理（安全默认）
-        _ => level == "优秀" || level == "良好",
+        // 判据是上半档，所以换三档/五档也成立（不再认死"良好/优秀"两个名字）
+        _ => is_praise(total, levels),
     }
 }
 
@@ -308,12 +385,59 @@ mod tests {
 
     #[test]
     fn rate_mapping_is_linear() {
-        assert_eq!(open_rate(1), 0.0);
-        assert_eq!(open_rate(2), 33.3);
-        assert_eq!(open_rate(3), 66.7);
-        assert_eq!(open_rate(4), 100.0);
-        assert_eq!(open_level(1), "待改进");
-        assert_eq!(open_level(4), "优秀");
+        let lv = default_open_levels();
+        assert_eq!(open_rate(1, &lv), 0.0);
+        assert_eq!(open_rate(2, &lv), 33.0);
+        assert_eq!(open_rate(3, &lv), 67.0);
+        assert_eq!(open_rate(4, &lv), 100.0);
+        assert_eq!(open_level(1, &lv), "待改进");
+        assert_eq!(open_level(4, &lv), "优秀");
+        // 越界取两端（多档时不会崩）
+        assert_eq!(open_level(9, &lv), "优秀");
+        assert_eq!(open_level(0, &lv), "待改进");
+    }
+
+    #[test]
+    fn custom_level_counts_work() {
+        // 三档：待改进 / 合格 / 优秀 → 0 / 50 / 100
+        let three = levels_from_labels(&["待改进".into(), "合格".into(), "优秀".into()]);
+        assert_eq!(three.len(), 3);
+        assert_eq!(three[0].rate, 0.0);
+        assert_eq!(three[1].rate, 50.0);
+        assert_eq!(three[2].rate, 100.0);
+        // 四档默认是 0/33/67/100（整数，与总分取整口径一致）
+        let d = default_open_levels();
+        assert_eq!(d[1].rate, 33.0);
+        assert_eq!(d[2].rate, 67.0);
+
+        // 五档（优良中差 + 待改进）：均匀映射
+        let five = levels_from_labels(&[
+            "差".into(), "中".into(), "良".into(), "优".into(), "特优".into(),
+        ]);
+        assert_eq!(five.len(), 5);
+        assert_eq!(five[2].rate, 50.0);
+
+        // 三档下评价：全 2 档（合格）= 50 分 → 落在"合格"（50.0）
+        let ev = evaluate_open_full(
+            &[
+                ("basic".to_string(), 2),
+                ("transfer".to_string(), 2),
+            ],
+            &dims(),
+            &three,
+        );
+        assert_eq!(ev.total, 50);
+        assert_eq!(ev.level, "合格", "三档下总分 50 → 合格");
+        assert_eq!(ev.parts[0].level, "合格", "维度档位名也跟着换");
+
+        // 三档下"表扬"判据 = 上半档（第 2 档及以上）
+        assert!(!is_praise(0, &three), "0 分不算表扬");
+        assert!(is_praise(50, &three), "50 分算表扬（上半档）");
+        assert!(is_praise(100, &three));
+        // 四档下与之前的硬编码一致：良好/优秀
+        let four = default_open_levels();
+        assert!(!is_praise(33, &four), "33 分（合格）不公开");
+        assert!(is_praise(67, &four), "67 分（良好）公开");
     }
 
     #[test]
@@ -327,16 +451,16 @@ mod tests {
     #[test]
     fn stage_policy_is_praise_public_criticism_private() {
         // smart（默认）：只公开表扬
-        assert!(show_on_stage("优秀", "smart"));
-        assert!(show_on_stage("良好", "smart"));
-        assert!(!show_on_stage("合格", "smart"), "合格不公开（私下改进）");
-        assert!(!show_on_stage("待改进", "smart"), "待改进更不能公开");
+        assert!(show_on_stage(100, &default_open_levels(), "smart"));
+        assert!(show_on_stage(67, &default_open_levels(), "smart"));
+        assert!(!show_on_stage(33, &default_open_levels(), "smart"), "合格不公开（私下改进）");
+        assert!(!show_on_stage(0, &default_open_levels(), "smart"), "待改进更不能公开");
         // 未知策略按安全默认处理（宁可少公开）
-        assert!(!show_on_stage("待改进", "whatever"));
-        assert!(show_on_stage("优秀", ""));
+        assert!(!show_on_stage(0, &default_open_levels(), "whatever"));
+        assert!(show_on_stage(100, &default_open_levels(), ""));
         // 显式策略
-        assert!(show_on_stage("待改进", "always"), "always：一律公开");
-        assert!(!show_on_stage("优秀", "never"), "never：一律不公开");
+        assert!(show_on_stage(0, &default_open_levels(), "always"), "always：一律公开");
+        assert!(!show_on_stage(100, &default_open_levels(), "never"), "never：一律不公开");
     }
 
 }

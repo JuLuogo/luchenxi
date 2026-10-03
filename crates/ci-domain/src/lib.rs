@@ -44,7 +44,8 @@ pub use question_stats::{
 pub use openclass::{
     show_on_stage,
     default_open_dimensions, evaluate_open, open_comment, open_level, open_rate, OpenDimension,
-    OpenEvaluation, OpenPart, OPEN_LEVELS,
+    default_open_levels, evaluate_open_full, is_praise, level_for_total, levels_from_labels,
+    OpenEvaluation, OpenLevel, OpenPart,
 };
 pub use polish::{polish_prompt, sanitize_polish, POLISH_MAX_CHARS, POLISH_RULES};
 pub use report::{build_report, to_markdown as report_markdown, Checkin, ClassReport, ReportInput, ReportStudent};

@@ -68,15 +68,13 @@ const phase = computed(() => meta.value.phase || 'idle');
 const question = computed(() => meta.value.question || (state.value && state.value.question) || null);
 const teams = computed<any[]>(() => ((state.value && state.value.teams) || []).slice().sort((a, b) => b.score - a.score));
 // 注：原来这里算了一份按积分排序的学生名单（光荣榜用）；2026-10 去掉个人排名后不再需要。
-/** 这次评价能不能公开（策略来自快照；判定规则与 Rust openclass::show_on_stage 同契约） */
-const evalPublic = computed<boolean>(() => {
-  const ev = meta.value.open && meta.value.open.evaluation;
-  if (!ev) return false;
-  const policy = meta.value.openEvalPolicy || 'smart';
-  if (policy === 'always') return true;
-  if (policy === 'never') return false;
-  return ev.level === '优秀' || ev.level === '良好';
-});
+/**
+ * 这次评价能不能公开
+ *
+ * **由教师端用领域层算好后随快照下发**（meta.openEvalPublic）—— 大屏不重写判断规则，
+ * 否则换三档/五档时大屏会与教师端不一致。
+ */
+const evalPublic = computed<boolean>(() => !!meta.value.openEvalPublic);
 
 const teamStats = computed<any[]>(() => (meta.value.teamStats || []).filter((t) => t.teamId !== 'all'));
 const ability = computed(() => meta.value.ability || null);

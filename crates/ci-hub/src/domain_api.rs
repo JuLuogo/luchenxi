@@ -228,6 +228,9 @@ pub struct OpenEvalBody {
     /// 量规（不传用默认四维 30/30/25/15）
     #[serde(default)]
     pub dimensions: Option<Vec<ci_domain::openclass::OpenDimension>>,
+    /// 档位（不传用默认四档 待改进/合格/良好/优秀）—— 各校评课表不同
+    #[serde(default)]
+    pub levels: Option<Vec<ci_domain::openclass::OpenLevel>>,
 }
 
 #[derive(Deserialize)]
@@ -244,7 +247,10 @@ pub async fn open_eval(Json(body): Json<OpenEvalBody>) -> impl IntoResponse {
     let dims = body
         .dimensions
         .unwrap_or_else(ci_domain::openclass::default_open_dimensions);
+    let levels = body
+        .levels
+        .unwrap_or_else(ci_domain::openclass::default_open_levels);
     let scores: Vec<(String, u8)> = body.scores.iter().map(|s| (s.key.clone(), s.score)).collect();
-    let ev = ci_domain::openclass::evaluate_open(&scores, &dims);
+    let ev = ci_domain::openclass::evaluate_open_full(&scores, &dims, &levels);
     Json(json!({ "ok": true, "evaluation": ev }))
 }

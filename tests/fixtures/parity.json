@@ -8961,8 +8961,8 @@
             "weight": 30,
             "score": 3,
             "level": "良好",
-            "rate": 66.7,
-            "contribution": 20
+            "rate": 67,
+            "contribution": 20.1
           },
           {
             "key": "transfer",
@@ -8970,8 +8970,8 @@
             "weight": 30,
             "score": 3,
             "level": "良好",
-            "rate": 66.7,
-            "contribution": 20
+            "rate": 67,
+            "contribution": 20.1
           },
           {
             "key": "expression",
@@ -8979,8 +8979,8 @@
             "weight": 25,
             "score": 3,
             "level": "良好",
-            "rate": 66.7,
-            "contribution": 16.7
+            "rate": 67,
+            "contribution": 16.8
           },
           {
             "key": "attitude",
@@ -8988,8 +8988,8 @@
             "weight": 15,
             "score": 3,
             "level": "良好",
-            "rate": 66.7,
-            "contribution": 10
+            "rate": 67,
+            "contribution": 10.1
           }
         ]
       }
@@ -9046,8 +9046,8 @@
             "weight": 25,
             "score": 3,
             "level": "良好",
-            "rate": 66.7,
-            "contribution": 16.7
+            "rate": 67,
+            "contribution": 16.8
           },
           {
             "key": "attitude",
@@ -9055,8 +9055,8 @@
             "weight": 15,
             "score": 3,
             "level": "良好",
-            "rate": 66.7,
-            "contribution": 10
+            "rate": 67,
+            "contribution": 10.1
           }
         ]
       }
@@ -9124,8 +9124,8 @@
             "weight": 30,
             "score": 3,
             "level": "良好",
-            "rate": 66.7,
-            "contribution": 20
+            "rate": 67,
+            "contribution": 20.1
           }
         ]
       }
@@ -9299,8 +9299,8 @@
             "weight": 25,
             "score": 3,
             "level": "良好",
-            "rate": 66.7,
-            "contribution": 16.7
+            "rate": 67,
+            "contribution": 16.8
           },
           {
             "key": "attitude",
@@ -9308,8 +9308,8 @@
             "weight": 15,
             "score": 3,
             "level": "良好",
-            "rate": 66.7,
-            "contribution": 10
+            "rate": 67,
+            "contribution": 10.1
           }
         ],
         "weightUsed": 100,
@@ -9338,8 +9338,8 @@
             "weight": 30,
             "score": 3,
             "level": "良好",
-            "rate": 66.7,
-            "contribution": 20
+            "rate": 67,
+            "contribution": 20.1
           },
           {
             "key": "transfer",
@@ -9347,8 +9347,8 @@
             "weight": 30,
             "score": 3,
             "level": "良好",
-            "rate": 66.7,
-            "contribution": 20
+            "rate": 67,
+            "contribution": 20.1
           }
         ],
         "weightUsed": 60,
@@ -9388,84 +9388,285 @@
   ],
   "stagePolicy": [
     {
-      "level": "优秀",
-      "policy": "smart",
-      "expect": true
-    },
-    {
-      "level": "优秀",
-      "policy": "always",
-      "expect": true
-    },
-    {
-      "level": "优秀",
-      "policy": "never",
-      "expect": false
-    },
-    {
-      "level": "优秀",
-      "policy": "unknown",
-      "expect": true
-    },
-    {
-      "level": "良好",
-      "policy": "smart",
-      "expect": true
-    },
-    {
-      "level": "良好",
-      "policy": "always",
-      "expect": true
-    },
-    {
-      "level": "良好",
-      "policy": "never",
-      "expect": false
-    },
-    {
-      "level": "良好",
-      "policy": "unknown",
-      "expect": true
-    },
-    {
-      "level": "合格",
+      "total": 0,
       "policy": "smart",
       "expect": false
     },
     {
-      "level": "合格",
+      "total": 0,
       "policy": "always",
       "expect": true
     },
     {
-      "level": "合格",
+      "total": 0,
       "policy": "never",
       "expect": false
     },
     {
-      "level": "合格",
+      "total": 0,
       "policy": "unknown",
       "expect": false
     },
     {
-      "level": "待改进",
+      "total": 33,
       "policy": "smart",
       "expect": false
     },
     {
-      "level": "待改进",
+      "total": 33,
       "policy": "always",
       "expect": true
     },
     {
-      "level": "待改进",
+      "total": 33,
       "policy": "never",
       "expect": false
     },
     {
-      "level": "待改进",
+      "total": 33,
       "policy": "unknown",
       "expect": false
+    },
+    {
+      "total": 67,
+      "policy": "smart",
+      "expect": true
+    },
+    {
+      "total": 67,
+      "policy": "always",
+      "expect": true
+    },
+    {
+      "total": 67,
+      "policy": "never",
+      "expect": false
+    },
+    {
+      "total": 67,
+      "policy": "unknown",
+      "expect": true
+    },
+    {
+      "total": 100,
+      "policy": "smart",
+      "expect": true
+    },
+    {
+      "total": 100,
+      "policy": "always",
+      "expect": true
+    },
+    {
+      "total": 100,
+      "policy": "never",
+      "expect": false
+    },
+    {
+      "total": 100,
+      "policy": "unknown",
+      "expect": true
+    }
+  ],
+  "levels": [
+    {
+      "name": "档位：默认四档",
+      "labels": null,
+      "levels": [
+        {
+          "label": "待改进",
+          "rate": 0
+        },
+        {
+          "label": "合格",
+          "rate": 33
+        },
+        {
+          "label": "良好",
+          "rate": 67
+        },
+        {
+          "label": "优秀",
+          "rate": 100
+        }
+      ],
+      "rows": [
+        {
+          "score": 1,
+          "total": 0,
+          "level": "待改进",
+          "partLevel": "待改进",
+          "rate": 0
+        },
+        {
+          "score": 2,
+          "total": 33,
+          "level": "合格",
+          "partLevel": "合格",
+          "rate": 33
+        },
+        {
+          "score": 3,
+          "total": 67,
+          "level": "良好",
+          "partLevel": "良好",
+          "rate": 67
+        },
+        {
+          "score": 4,
+          "total": 100,
+          "level": "优秀",
+          "partLevel": "优秀",
+          "rate": 100
+        }
+      ]
+    },
+    {
+      "name": "档位：三档（待改进/合格/优秀）",
+      "labels": [
+        "待改进",
+        "合格",
+        "优秀"
+      ],
+      "levels": [
+        {
+          "label": "待改进",
+          "rate": 0
+        },
+        {
+          "label": "合格",
+          "rate": 50
+        },
+        {
+          "label": "优秀",
+          "rate": 100
+        }
+      ],
+      "rows": [
+        {
+          "score": 1,
+          "total": 0,
+          "level": "待改进",
+          "partLevel": "待改进",
+          "rate": 0
+        },
+        {
+          "score": 2,
+          "total": 50,
+          "level": "合格",
+          "partLevel": "合格",
+          "rate": 50
+        },
+        {
+          "score": 3,
+          "total": 100,
+          "level": "优秀",
+          "partLevel": "优秀",
+          "rate": 100
+        }
+      ]
+    },
+    {
+      "name": "档位：五档（优良中差+待改进）",
+      "labels": [
+        "差",
+        "中",
+        "良",
+        "优",
+        "特优"
+      ],
+      "levels": [
+        {
+          "label": "差",
+          "rate": 0
+        },
+        {
+          "label": "中",
+          "rate": 25
+        },
+        {
+          "label": "良",
+          "rate": 50
+        },
+        {
+          "label": "优",
+          "rate": 75
+        },
+        {
+          "label": "特优",
+          "rate": 100
+        }
+      ],
+      "rows": [
+        {
+          "score": 1,
+          "total": 0,
+          "level": "差",
+          "partLevel": "差",
+          "rate": 0
+        },
+        {
+          "score": 2,
+          "total": 25,
+          "level": "中",
+          "partLevel": "中",
+          "rate": 25
+        },
+        {
+          "score": 3,
+          "total": 50,
+          "level": "良",
+          "partLevel": "良",
+          "rate": 50
+        },
+        {
+          "score": 4,
+          "total": 75,
+          "level": "优",
+          "partLevel": "优",
+          "rate": 75
+        },
+        {
+          "score": 5,
+          "total": 100,
+          "level": "特优",
+          "partLevel": "特优",
+          "rate": 100
+        }
+      ]
+    },
+    {
+      "name": "档位：两档（达标/未达标）",
+      "labels": [
+        "未达标",
+        "达标"
+      ],
+      "levels": [
+        {
+          "label": "未达标",
+          "rate": 0
+        },
+        {
+          "label": "达标",
+          "rate": 100
+        }
+      ],
+      "rows": [
+        {
+          "score": 1,
+          "total": 0,
+          "level": "未达标",
+          "partLevel": "未达标",
+          "rate": 0
+        },
+        {
+          "score": 2,
+          "total": 100,
+          "level": "达标",
+          "partLevel": "达标",
+          "rate": 100
+        }
+      ]
     }
   ]
 }

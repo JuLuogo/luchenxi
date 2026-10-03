@@ -63,9 +63,12 @@ pub struct Settings {
     /// 默认 基础 30 / 拓展 30 / 表达 25 / 态度 15。
     #[serde(default = "default_open_dims")]
     pub open_dimensions: Vec<crate::openclass::OpenDimension>,
-    /// 现场评价要不要在大屏上公开：smart（默认，良好/优秀才公开）/ always / never
+    /// 现场评价要不要在大屏上公开：smart（默认，上半档才公开）/ always / never
     #[serde(default = "default_open_eval_stage")]
     pub open_eval_on_stage: String,
+    /// 现场评价的档位（档位名 + 对应分数）—— 各校评课表不同，可配三档/四档/五档
+    #[serde(default = "default_open_lv")]
+    pub open_levels: Vec<crate::openclass::OpenLevel>,
 }
 
 fn default_decay_ratio() -> f64 {
@@ -82,6 +85,10 @@ fn default_cap_minus() -> f64 {
 
 fn default_open_dims() -> Vec<crate::openclass::OpenDimension> {
     crate::openclass::default_open_dimensions()
+}
+
+fn default_open_lv() -> Vec<crate::openclass::OpenLevel> {
+    crate::openclass::default_open_levels()
 }
 
 fn default_open_eval_stage() -> String {
@@ -106,6 +113,7 @@ impl Default for Settings {
             manual_cap_minus: -1.0,
             open_dimensions: default_open_dims(),
             open_eval_on_stage: default_open_eval_stage(),
+            open_levels: default_open_lv(),
         }
     }
 }

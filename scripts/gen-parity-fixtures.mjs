@@ -1204,11 +1204,36 @@ mkPolishCase('润色：一维都没评', []);
  * 公开表扬、私下改进：默认只在良好/优秀时公开 */
 const policyCases = [];
 
-['优秀', '良好', '合格', '待改进'].forEach((level) => {
+// 按"总分 + 档位"判（不再认死档位名，所以换三档/五档也成立）
+[0, 33, 67, 100].forEach((total) => {
   ['smart', 'always', 'never', 'unknown'].forEach((policy) => {
-    policyCases.push({ level, policy, expect: CI.openclass.showOnStage(level, policy) });
+    policyCases.push({ total, policy, expect: CI.openclass.showOnStage(total, null, policy) });
   });
 });
+
+/* ---------- 用例集：档位可配置（三档 / 四档 / 五档）---------- */
+const levelCases = [];
+
+function mkLevelCase(name, labels) {
+  const levels = labels ? CI.openclass.levelsFromLabels(labels) : CI.openclass.defaultLevels();
+  const n = levels.length;
+  // 每个档位都评一遍（全同档），看总分与总评档位
+  const rows = [];
+  for (let s = 1; s <= n; s++) {
+    const ev = CI.openclass.evaluate(
+      CI.openclass.defaultDimensions().map((d) => ({ key: d.key, score: s })),
+      null, levels
+    );
+    rows.push({ score: s, total: ev.total, level: ev.level, partLevel: ev.parts[0].level, rate: ev.parts[0].rate });
+  }
+  levelCases.push({ name, labels: labels || null, levels, rows });
+}
+
+mkLevelCase('档位：默认四档', null);
+mkLevelCase('档位：三档（待改进/合格/优秀）', ['待改进', '合格', '优秀']);
+mkLevelCase('档位：五档（优良中差+待改进）', ['差', '中', '良', '优', '特优']);
+mkLevelCase('档位：两档（达标/未达标）', ['未达标', '达标']);
+
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
@@ -1228,7 +1253,8 @@ const payload = {
   view: viewCases,
   openclass: openCases,
   polish: polishCases,
-  stagePolicy: policyCases
+  stagePolicy: policyCases,
+  levels: levelCases
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
@@ -1241,7 +1267,8 @@ if (CHECK) {
     ' + 多维评价 ' + (compositeCases.participation.length + compositeCases.growth.length + compositeCases.decayed.length + compositeCases.evaluate.length) +
     ' + 选项分布 ' + optionDistCases.length + ' + 学情统计 ' + statsCases.length +
     ' + 学生视图 ' + viewCases.length + ' + 公开课量规 ' + openCases.length +
-    ' + 润色提示词 ' + polishCases.length + ' + 大屏策略 ' + policyCases.length + ' 组）');
+    ' + 润色提示词 ' + polishCases.length + ' + 大屏策略 ' + policyCases.length +
+    ' + 档位 ' + levelCases.length + ' 组）');
     process.exit(0);
   }
   console.error('[stale] parity.json 与 JS 参考实现不一致 —— 运行 node scripts/gen-parity-fixtures.mjs 重新生成');

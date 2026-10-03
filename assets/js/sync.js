@@ -300,8 +300,14 @@
       meta: Object.assign({
         // 公开课现场状态：大屏与学生端据此同步显示（点名放大 / 题干 / 判定 / 四维评价）
         open: (s.classroom && s.classroom.open) ? s.classroom.open : null,
-        // 评价要不要在大屏公开（大屏只拿得到快照，所以策略要随快照下发）
-        openEvalPolicy: (s.settings && s.settings.openEvalOnStage) || 'smart',
+        // 评价要不要在大屏公开：**由教师端用领域层算好随快照下发**，
+        // 这样规则只有一份（CI.openclass.showOnStage），大屏不重写判断。
+        openEvalPublic: (function () {
+          var op = s.classroom && s.classroom.open;
+          if (!op || !op.evaluation) return false;
+          var policy = (s.settings && s.settings.openEvalOnStage) || 'smart';
+          return CI.openclass.showOnStage(op.evaluation.total, (s.settings && s.settings.openLevels) || null, policy);
+        })(),
         quizName: qz ? qz.name : null,
         accepting: !!s.runtime.accepting,
         reveal: revealed,

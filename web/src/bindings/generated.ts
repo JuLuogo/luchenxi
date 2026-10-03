@@ -278,6 +278,19 @@ export type OpenEvaluation = {
 	comment: string,
 };
 
+/**
+ *  一个档位（档位名 + 它对应的百分制分数）
+ * 
+ *  档位**可配置**：各校评课表不同 —— 有的四档（优秀/良好/合格/待改进），有的三档，
+ *  有的叫"优良中差"。分数按档位**均匀映射**（第 k 档 → (k-1)/(N-1)×100），
+ *  所以三档/五档都不需要额外配置。
+ */
+export type OpenLevel = {
+	label: string,
+	/**  该档对应的百分制分数（0–100） */
+	rate: number | null,
+};
+
 /**  单维结果 */
 export type OpenPart = {
 	key: string,
@@ -495,8 +508,10 @@ export type Settings = {
 	 *  默认 基础 30 / 拓展 30 / 表达 25 / 态度 15。
 	 */
 	openDimensions?: OpenDimension[],
-	/**  现场评价要不要在大屏上公开：smart（默认，良好/优秀才公开）/ always / never */
+	/**  现场评价要不要在大屏上公开：smart（默认，上半档才公开）/ always / never */
 	openEvalOnStage?: string,
+	/**  现场评价的档位（档位名 + 对应分数）—— 各校评课表不同，可配三档/四档/五档 */
+	openLevels?: OpenLevel[],
 };
 
 /**

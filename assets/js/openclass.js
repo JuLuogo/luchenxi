@@ -26,18 +26,57 @@
     ];
   }
 
-  /** 四档文字（1–4） */
+  /**
+   * 默认四档（档位**可配置**：各校评课表不同）
+   *
+   * 分数取整数，与总分的取整口径一致 —— 否则 2 档 = 33.3 而总分取整成 33，会错档。
+   */
   var LEVELS = ['待改进', '合格', '良好', '优秀'];
 
-  function levelOf(score) {
-    var s = Math.max(1, Math.min(4, Number(score) || 1));
-    return LEVELS[s - 1];
+  function defaultLevels() {
+    return LEVELS.map(function (label, i) {
+      return { label: label, rate: Math.round((i / (LEVELS.length - 1)) * 100) };
+    });
   }
 
-  /** 一档 → 百分制（1→0 / 2→33.3 / 3→66.7 / 4→100） */
-  function rateOf(score) {
-    var s = Math.max(1, Math.min(4, Number(score) || 1));
-    return Math.round(((s - 1) / 3) * 100 * 10) / 10;
+  /** 按档位名生成均匀档位（从低到高） */
+  function levelsFromLabels(labels) {
+    var list = labels || [];
+    if (!list.length) return [];
+    if (list.length === 1) return [{ label: list[0], rate: 100 }];
+    return list.map(function (label, i) {
+      return { label: label, rate: Math.round((i / (list.length - 1)) * 100) };
+    });
+  }
+
+  function levelOf(score, levels) {
+    var lv = (levels && levels.length) ? levels : defaultLevels();
+    var i = Math.max(1, Number(score) || 1) - 1;
+    return lv[Math.min(i, lv.length - 1)].label;
+  }
+
+  /** 一档 → 百分制（越界取两端） */
+  function rateOf(score, levels) {
+    var lv = (levels && levels.length) ? levels : defaultLevels();
+    var i = Math.max(1, Number(score) || 1) - 1;
+    return lv[Math.min(i, lv.length - 1)].rate;
+  }
+
+  /** 总分落在哪一档（不再硬编码阈值） */
+  function levelForTotal(total, levels) {
+    var lv = (levels && levels.length) ? levels : defaultLevels();
+    var best = lv[0];
+    lv.forEach(function (l) { if (Number(total) + 1e-9 >= l.rate) best = l; });
+    return best.label;
+  }
+
+  /** 这一档算不算"表扬"（上半档）—— 供大屏公开展示策略用 */
+  function isPraise(total, levels) {
+    var lv = (levels && levels.length) ? levels : defaultLevels();
+    var n = lv.length;
+    if (!n) return false;
+    var idx = (n % 2 === 0) ? (n / 2) : ((n + 1) / 2 - 1);
+    return Number(total) + 1e-9 >= lv[idx].rate;
   }
 
   function round1(x) { return Math.round(Number(x) * 10) / 10; }
@@ -47,8 +86,9 @@
    * @param {Array} scores `[{key, score}]`（档位 1–4）；**未给的维度会被剔除并重新归一**
    * @param {Array} dims 量规；省略用默认四维
    */
-  function evaluate(scores, dims) {
+  function evaluate(scores, dims, levels) {
     var list = dims || defaultDimensions();
+    var lv = (levels && levels.length) ? levels : defaultLevels();
     var parts = [];
     var weightUsed = 0;
     var weighted = 0;
@@ -57,21 +97,21 @@
       var hit = null;
       (scores || []).forEach(function (s) { if (s && s.key === d.key) hit = s; });
       if (!hit) return;   // 没评的维度剔除，不按 0 分算
-      var rate = rateOf(hit.score);
+      var rate = rateOf(hit.score, lv);
       weightUsed += d.weight;
       weighted += rate * d.weight;
       parts.push({
         key: d.key, label: d.label, weight: d.weight,
         score: Math.max(1, Math.min(4, Number(hit.score) || 1)),
-        level: levelOf(hit.score), rate: rate,
+        level: levelOf(hit.score, lv), rate: rate,
         contribution: round1((rate * d.weight) / 100)
       });
     });
 
     var total = weightUsed > 0 ? Math.round(weighted / weightUsed) : 0;
 
-    // 阈值与维度档位对齐（四维全"良好"= 67 → 总评也该是良好）
-    var level = total >= 90 ? '优秀' : (total >= 65 ? '良好' : (total >= 30 ? '合格' : '待改进'));
+    // 总评档位 = 总分落在哪一档（不再硬编码阈值；换三档/五档自动跟着变）
+    var level = levelForTotal(total, lv);
 
     // 最强 / 最弱：分差 <8 分就不指（避免"表达最好、表达是短板"式自相矛盾）
     var strongest = null, weakest = null;
@@ -97,10 +137,11 @@
    * 调研里公开"待改进"是有害的（"垫底的学生每次抬头就看见自己名字在最后面"）。
    * 默认只在"良好/优秀"时公开；policy 可为 smart / always / never。
    */
-  function showOnStage(level, policy) {
+  function showOnStage(total, levels, policy) {
     if (policy === 'always') return true;
     if (policy === 'never') return false;
-    return level === '优秀' || level === '良好';   // smart 与未知值都按安全默认
+    // smart 与未知值都按"只公开表扬"（上半档）—— 换三档/五档也成立
+    return isPraise(total, levels);
   }
 
   /**
@@ -141,8 +182,12 @@
   CI.openclass = {
     defaultDimensions: defaultDimensions,
     LEVELS: LEVELS,
+    defaultLevels: defaultLevels,
+    levelsFromLabels: levelsFromLabels,
     levelOf: levelOf,
     rateOf: rateOf,
+    levelForTotal: levelForTotal,
+    isPraise: isPraise,
     evaluate: evaluate,
     comment: comment,
     showOnStage: showOnStage

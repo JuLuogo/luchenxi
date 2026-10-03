@@ -1446,8 +1446,8 @@ group('公开课现场评价量规');
 
   // 档位 ↔ 分数映射
   eq(O.rateOf(1), 0, '1 档 → 0 分');
-  eq(O.rateOf(2), 33.3, '2 档 → 33.3');
-  eq(O.rateOf(3), 66.7, '3 档 → 66.7');
+  eq(O.rateOf(2), 33, '2 档 → 33（整数，与总分取整口径一致）');
+  eq(O.rateOf(3), 67, '3 档 → 67（整数）');
   eq(O.rateOf(4), 100, '4 档 → 100');
   eq(O.levelOf(1), '待改进', '1 档文字');
   eq(O.levelOf(4), '优秀', '4 档文字');
@@ -1571,6 +1571,8 @@ group('公开课量规可配置');
 
   // 换回默认不影响（evaluate 不写状态）
   eq(O.evaluate(O.defaultDimensions().map((d) => ({ key: d.key, score: 4 }))).total, 100, '默认量规仍可用');
+  eq(O.defaultLevels().map((l) => l.rate).join('/'), '0/33/67/100', '默认四档分数是整数');
+  eq(O.levelsFromLabels(['差', '中', '良', '优', '特优']).map((l) => l.rate).join('/'), '0/25/50/75/100', '五档均匀映射');
 })();
 
 /* ================= 26. 公开课评价留痕 ================= */
@@ -1619,16 +1621,21 @@ group('大屏公开展示策略');
 (function () {
   const O = CI.openclass;
   // 默认（smart）：公开表扬、私下改进
-  eq(O.showOnStage('优秀', 'smart'), true, '优秀 → 公开');
-  eq(O.showOnStage('良好', 'smart'), true, '良好 → 公开');
-  eq(O.showOnStage('合格', 'smart'), false, '合格 → 不公开（私下改进）');
-  eq(O.showOnStage('待改进', 'smart'), false, '待改进 → 绝不公开');
+  // 按总分与档位判（不再认死档位名，所以换三档/五档也成立）
+  eq(O.showOnStage(100, null, 'smart'), true, '100 分（优秀）→ 公开');
+  eq(O.showOnStage(67, null, 'smart'), true, '67 分（良好）→ 公开');
+  eq(O.showOnStage(33, null, 'smart'), false, '33 分（合格）→ 不公开（私下改进）');
+  eq(O.showOnStage(0, null, 'smart'), false, '0 分（待改进）→ 绝不公开');
   // 未知策略按安全默认（宁可少公开）
-  eq(O.showOnStage('待改进', 'whatever'), false, '未知策略：待改进不公开');
-  eq(O.showOnStage('优秀', ''), true, '空策略：优秀仍公开');
+  eq(O.showOnStage(0, null, 'whatever'), false, '未知策略：0 分不公开');
+  eq(O.showOnStage(100, null, ''), true, '空策略：100 分仍公开');
   // 显式策略
-  eq(O.showOnStage('待改进', 'always'), true, 'always：一律公开');
-  eq(O.showOnStage('优秀', 'never'), false, 'never：一律不公开');
+  eq(O.showOnStage(0, null, 'always'), true, 'always：一律公开');
+  eq(O.showOnStage(100, null, 'never'), false, 'never：一律不公开');
+  // 换三档后判据自动跟着变（上半档 = 第 2 档及以上）
+  const threeLv = O.levelsFromLabels(['待改进', '合格', '优秀']);
+  eq(O.showOnStage(50, threeLv, 'smart'), true, '三档下 50 分算表扬');
+  eq(O.showOnStage(0, threeLv, 'smart'), false, '三档下 0 分不公开');
   // 默认设置就是 smart
   S.replaceState(S.defaultState());
   eq(S.get().settings.openEvalOnStage, 'smart', '默认策略是 smart');

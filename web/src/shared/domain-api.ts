@@ -406,6 +406,14 @@ export function openDimensions(): { key: string; label: string; weight: number; 
   }[];
 }
 
+/** 读当前档位（课程政策，存在 settings 里） */
+export function openLevels(): { label: string; rate: number }[] {
+  const s = CI.store.get() as { settings?: { openLevels?: unknown } };
+  const d = s.settings?.openLevels;
+  const O = (CI as unknown as { openclass: { defaultLevels(): unknown[] } }).openclass;
+  return (Array.isArray(d) && d.length ? d : O.defaultLevels()) as { label: string; rate: number }[];
+}
+
 export async function fetchOpenEval(scores: { key: string; score: number }[]): Promise<{
   source: StatsSource;
   evaluation: Record<string, unknown> | null;
@@ -416,8 +424,8 @@ export async function fetchOpenEval(scores: { key: string; score: number }[]): P
       const res = await fetch(hubBase() + '/api/domain/open-eval', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // 量规一起发上去：各校评课表不同，端点按传入的量规算
-        body: JSON.stringify({ scores, dimensions: openDimensions() })
+        // 量规与档位一起发上去：各校评课表不同，端点按传入的算
+        body: JSON.stringify({ scores, dimensions: openDimensions(), levels: openLevels() })
       });
       if (res.ok) {
         const j = await res.json();
@@ -425,6 +433,6 @@ export async function fetchOpenEval(scores: { key: string; score: number }[]): P
       }
     } catch { /* 落到回退 */ }
   }
-  const O = (CI as unknown as { openclass: { evaluate(s: unknown, d?: unknown): Record<string, unknown> } }).openclass;
-  return { source: 'js', evaluation: O.evaluate(scores, openDimensions()) };
+  const O = (CI as unknown as { openclass: { evaluate(s: unknown, d?: unknown, l?: unknown): Record<string, unknown> } }).openclass;
+  return { source: 'js', evaluation: O.evaluate(scores, openDimensions(), openLevels()) };
 }
