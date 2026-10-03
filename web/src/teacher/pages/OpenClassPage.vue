@@ -10,7 +10,7 @@
  *   · 逻辑全部走领域层（`CI.rollcall` / `CI.store` / `CI.openclass`）与 Rust 核心端点，
  *     界面里不重算任何规则
  */
-import { computed, ref } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useClassStore } from '../../shared/class-store';
 import { CI } from '../../shared/bridge';
@@ -194,6 +194,31 @@ async function finish() {
   step.value = 1;
 }
 
+/**
+ * 计时：现场提问几乎一定会用到（"给你 30 秒思考"）
+ *
+ * 能力早就有（CI.classroom.setTimer + 大屏显示 + 快照同步），这里只是把它暴露到公开课页。
+ */
+const timerLeft = ref<number | null>(null);
+let timerTick: ReturnType<typeof setInterval> | null = null;
+
+function startTimer(sec: number, label = '思考时间') {
+  CI.classroom.setTimer(sec, label);
+  if (timerTick) clearInterval(timerTick);
+  timerTick = setInterval(() => {
+    const left = (CI.classroom as any).timerLeft();
+    timerLeft.value = left;
+    if (left === null) { clearInterval(timerTick!); timerTick = null; }
+  }, 500);
+  timerLeft.value = sec;
+}
+
+function stopTimer() {
+  CI.classroom.clearTimer();
+  if (timerTick) { clearInterval(timerTick); timerTick = null; }
+  timerLeft.value = null;
+}
+
 /** 本次公开课的评价留痕（历史，一直留着） */
 const records = computed<any[]>(() => {
   void store.rev;
@@ -238,6 +263,8 @@ function clearRecords() {
     .then(() => { (CI.classroom as any).clearOpenRecords(); ElMessage.success('已清空'); })
     .catch(() => {});
 }
+
+onUnmounted(() => { if (timerTick) clearInterval(timerTick); });
 
 function back() {
   if (step.value > 1) step.value = (step.value - 1) as Step;
@@ -293,6 +320,14 @@ function back() {
       <div class="answer">
         正确答案：<b>{{ (question?.answer || '（主观题，无标准答案）') }}</b>
         <span v-if="question?.note" class="why">讲评要点：{{ question.note }}</span>
+      </div>
+      <div class="timer-row">
+        <span class="timer-label">思考时间</span>
+        <el-button size="small" @click="startTimer(30)">30 秒</el-button>
+        <el-button size="small" @click="startTimer(60)">60 秒</el-button>
+        <el-button size="small" @click="startTimer(120)">2 分钟</el-button>
+        <el-button size="small" text @click="stopTimer">停</el-button>
+        <span v-if="timerLeft !== null" class="timer-left">剩 {{ timerLeft }} 秒（大屏同步显示）</span>
       </div>
       <div class="verdict-row">
         <el-button type="success" size="large" :loading="busy" @click="judge('correct')">全对</el-button>
@@ -408,6 +443,9 @@ function back() {
 .answer { background: var(--el-fill-color-light); padding: 10px 12px; border-radius: 6px; margin-bottom: 16px; }
 .why { margin-left: 16px; color: var(--el-text-color-secondary); }
 .verdict-row { display: flex; gap: 16px; }
+.timer-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.timer-label { color: var(--el-text-color-secondary); font-size: 13px; margin-right: 4px; }
+.timer-left { margin-left: 8px; color: var(--el-color-primary); font-weight: 700; }
 .dims { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
 .dim-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
 .anchor { color: var(--el-text-color-secondary); font-size: 12px; }
