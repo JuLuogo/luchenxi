@@ -3,6 +3,7 @@
  * 这些是"领域层与外壳之间"的契约，UI 换成 Vue 后必须一致，否则同步/判分不会工作。
  */
 import { CI } from './bridge';
+import { gradeWithRust } from './domain-api';
 import type { ClassroomState } from '@/bindings/state';
 
 /** 连接与存储的展示状态（顶栏状态条用） */
@@ -107,7 +108,7 @@ export function createRuntime(hooks: RuntimeHooks = {}) {
 
     if (sync) {
       const classroom = CI.classroom as {
-        handleCmd(cmd: unknown): unknown;
+        handleCmd(cmd: unknown, backlog?: boolean, pre?: unknown): unknown;
         setPresence(msg: unknown): void;
         setServerInfo(info: unknown): void;
         loadRemoteState(dump: ClassroomState): void;
@@ -119,7 +120,16 @@ export function createRuntime(hooks: RuntimeHooks = {}) {
           info.connected = /ok|live/.test(cls || '');
           setStatus(text, cls);
         },
-        onCmd: (cmd: unknown) => classroom.handleCmd(cmd),
+        // 异步边界就放在这里（WS 回调本来就可以 await）：先问 Rust 核心要判定，
+        // 拿不到就让 handleCmd 走本地判分 —— 课堂核心循环用上 Rust 口径，
+        // 同时网络抖一下也不会卡住流程。
+        onCmd: async (cmd: unknown) => {
+          let pre: unknown = null;
+          try {
+            pre = await gradeWithRust(cmd as Parameters<typeof gradeWithRust>[0]);
+          } catch { /* 回退本地 */ }
+          return classroom.handleCmd(cmd, false, pre);
+        },
         onPresence: (msg: unknown) => classroom.setPresence(msg),
         onServerInfo: (serverInfo: unknown) => {
           info.serverInfo = serverInfo;

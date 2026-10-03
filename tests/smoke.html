@@ -182,7 +182,7 @@ async function run() {
     // 前端"Rust 优先、回退 JS"的两条路径都要在真实环境里过一遍：
     //   · 打 Rust 枢纽时，端点必须返回可用结果
     //   · 打 Node 枢纽（deprecated）时端点不存在，应走回退 —— 不算失败
-    (async () => {
+    {
       const students = S.get().students.map((x) => ({ id: x.id, name: x.name, active: true, called: 0 }));
       const probe = await fetch('/api/domain/stats', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -191,56 +191,58 @@ async function run() {
       if (!probe.ok) {
         log('领域端点不可用（HTTP ' + probe.status + '）→ 前端会走本地参考实现');
         check(true, '领域端点缺失时前端有回退路径（不报错）');
-        return;
-      }
-      check(true, '领域端点 /api/domain/stats 可用（Rust 核心在跑）');
-      const pickRes = await fetch('/api/domain/pick', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          students,
-          answered: [],
-          settings: { mode: 'even', scope: 'all', exclude_answered: false, recent_exclude: 0, round: 1, round_pool: [], history: [] },
-          opts: { scope: 'all', mode: 'even', has_current_question: false },
-          seed: 20261003
-        })
-      });
-      const pj = await pickRes.json();
-      check(pickRes.ok && pj.ok && pj.pick && !!pj.pick.sid, '领域端点 /api/domain/pick 返回有效学生');
-      check(pj.seed === 20261003, '点名回传随机种子（可复现）');
-      // 同种子必须同结果 —— 这是"可复现"的实际含义
-      const again = await (await fetch('/api/domain/pick', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      } else {
+        check(true, '领域端点 /api/domain/stats 可用（Rust 核心在跑）');
+
+        const readJson = async (url, body) => {
+          const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          const text = await res.text();
+          try { return { ok: res.ok, json: JSON.parse(text) }; }
+          catch (e) { log(url + ' 返回的不是 JSON：' + text.slice(0, 200)); return { ok: false, json: {} }; }
+        };
+
+        /* ① 点名：可复现 */
+        const pickBody = {
           students, answered: [],
           settings: { mode: 'even', scope: 'all', exclude_answered: false, recent_exclude: 0, round: 1, round_pool: [], history: [] },
           opts: { scope: 'all', mode: 'even', has_current_question: false },
           seed: 20261003
-        })
-      })).json();
-      check(again.pick && again.pick.sid === pj.pick.sid, '同种子点出同一个人（可复现）');
-      // 能力评价榜：整份状态进去，全班 + 每人 + 每队出来
-      const abRes = await fetch('/api/domain/ability-board', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: S.get(), quizId: null })
-      });
-      const abText = await abRes.text();
-      let ab = {};
-      try { ab = JSON.parse(abText); } catch (e) { log('ability-board 返回的不是 JSON：' + abText.slice(0, 200)); }
-      check(abRes.ok && ab.ok && ab.board && ab.board.class, '领域端点 /api/domain/ability-board 返回全班画像');
-      check(ab.board.students.length === S.get().students.length, '能力榜覆盖全部学生（' + ab.board.students.length + ' 人）');
-      check(ab.board.teams.length === S.get().teams.length, '能力榜覆盖全部队伍');
-      check(Array.isArray(ab.board.class.axes) && ab.board.class.axes.length === S.get().tiers.length, '画像含全部题型的轴');
-      // 数据范围必须贯穿（JS 版这里漏传过 quizId）
-      const ab2Text = await (await fetch('/api/domain/ability-board', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: S.get(), quizId: S.get().currentQuizId })
-      })).text();
-      let ab2 = {};
-      try { ab2 = JSON.parse(ab2Text); } catch (e) { log('ability-board（带范围）返回的不是 JSON：' + ab2Text.slice(0, 200)); }
-      if (ab2.board && ab.board) {
-        check(ab2.board.class.attempts <= ab.board.class.attempts, '数据范围贯穿到能力榜（本节课 ≤ 全部课次）');
+        };
+        const pk = await readJson('/api/domain/pick', pickBody);
+        check(pk.ok && pk.json.ok && pk.json.pick && !!pk.json.pick.sid, '领域端点 /api/domain/pick 返回有效学生');
+        check(pk.json.seed === 20261003, '点名回传随机种子（可复现）');
+        const pk2 = await readJson('/api/domain/pick', pickBody);
+        check(pk2.json.pick && pk2.json.pick.sid === pk.json.pick.sid, '同种子点出同一个人（可复现）');
+
+        /* ② 能力榜：全班 + 每人 + 每队，范围要贯穿 */
+        const ab = await readJson('/api/domain/ability-board', { state: S.get(), quizId: null });
+        check(ab.ok && ab.json.ok && !!(ab.json.board && ab.json.board.class), '领域端点 /api/domain/ability-board 返回全班画像');
+        if (ab.json.board) {
+          check(ab.json.board.students.length === S.get().students.length, '能力榜覆盖全部学生（' + ab.json.board.students.length + ' 人）');
+          check(ab.json.board.teams.length === S.get().teams.length, '能力榜覆盖全部队伍');
+          check(Array.isArray(ab.json.board.class.axes) && ab.json.board.class.axes.length === S.get().tiers.length, '画像含全部题型的轴');
+        }
+        const ab2 = await readJson('/api/domain/ability-board', { state: S.get(), quizId: S.get().currentQuizId });
+        if (ab2.json.board && ab.json.board) {
+          check(ab2.json.board.class.attempts <= ab.json.board.class.attempts, '数据范围贯穿到能力榜（本节课 ≤ 全部课次）');
+        }
+
+        /* ③ 判分：客观题判得出，主观题返回 graded:false */
+        const qBase = { options: ['1', '2', '3'], answer: 'A', tier: 'basic', points: null };
+        const g1 = await readJson('/api/domain/grade', { question: qBase, submission: { choice: ['A'], text: '', skip: false } });
+        check(g1.ok && g1.json.graded === true && g1.json.result === 'correct', '领域端点 /api/domain/grade 判对');
+        // 主观题 = **没有标准答案**的题（有答案但学生没选，会被判成 skip，不是 graded:false）
+        const qSubj = { options: [], answer: '', tier: 'advanced', points: null };
+        const g2 = await readJson('/api/domain/grade', { question: qSubj, submission: { choice: [], text: '我的证明', skip: false } });
+        check(g2.json.graded === false, '主观题返回 graded:false（前端据此进待确认队列）');
+
+        /* ④ 计分：题型权重 + 抢答加分 */
+        const s1 = await readJson('/api/domain/score', { input: { sid: 's1', qid: 'q1', tier: 'basic', questionTier: 'basic', result: 'correct' } });
+        check(s1.ok && s1.json.snapshot && s1.json.snapshot.points === 3, '领域端点 /api/domain/score 按题型权重给 3 分');
+        const s2 = await readJson('/api/domain/score', { settings: { fastBonus: 1 }, input: { sid: 's1', qid: 'q1', tier: 'basic', questionTier: 'basic', result: 'correct', fast: true } });
+        check(s2.json.snapshot && s2.json.snapshot.points === 4, '计分端点应用抢答加分（3 + 1 = 4）');
       }
-    })().catch((e) => { check(false, '领域端点验证抛错：' + e.message); });
+    }
 
     /* ---------- 11. 服务端与数据库（经枢纽） ---------- */
     // 注意带上房间名：应用用的是 ci_room（本用例是 smoke-vue），不带参数会读到 default 房间

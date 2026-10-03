@@ -709,7 +709,11 @@
       ratio: (opt.ratio !== undefined && opt.ratio !== null)
         ? num(opt.ratio, 0)
         : (result === 'half' ? num(s.settings.halfRatio, 0.5) : RESULT_RATIO[result]),
-      points: computePoints({ result: result, base: base, ratio: opt.ratio, fast: opt.fast, rank: opt.rank }),
+      // points 允许外部传入：Rust 核心（/api/domain/score）算好后直接落库，
+      // 避免"两套计分实现各算一遍"（口径漂移的经典来源）
+      points: (opt.points !== undefined && opt.points !== null)
+        ? num(opt.points, 0)
+        : computePoints({ result: result, base: base, ratio: opt.ratio, fast: opt.fast, rank: opt.rank }),
       source: opt.source || 'quiz',
       note: opt.note || '',
       picked: opt.picked || '',
@@ -897,7 +901,9 @@
     names.forEach(function (n) {
       var stu = {
         id: uid('st'), name: n, teamId: teamId || (s.teams[0] ? s.teams[0].id : null),
-        active: true, joinedAt: Date.now()
+        // 与 addStudent 同一形状：called 一个都不能少 ——
+        // 少了它，"批量加学生"之后的状态发给 Rust 端点会被拒（守卫测试抓到过）
+        active: true, called: 0, joinedAt: Date.now()
       };
       s.students.push(stu);
       added.push(stu);

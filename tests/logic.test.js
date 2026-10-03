@@ -1376,6 +1376,60 @@ group('数据范围贯穿到学生榜');
   eq(cs1.participants, 1, '参与者 1 人');
 })();
 
+/* ================= 22. 判分/计分的 Rust 接缝 ================= */
+group('判分/计分的 Rust 接缝');
+
+(function () {
+  S.replaceState(S.defaultState());
+  const team = S.get().teams[0].id;
+  const a = S.addStudent('甲', team);
+  const sid = typeof a === 'string' ? a : a.id;
+  const q = S.addQuestion({ stem: '1+1=?', tier: 'basic', answer: 'A', options: ['1', '2', '3'] });
+  const qz = S.createQuiz('接缝卷', [q.id]);
+  S.setCurrentQuiz(qz.id);
+
+  // ① recordResult 允许外部传入 points（Rust 计分的结果直接落库）
+  const r1 = S.recordResult({ sid: sid, qid: q.id, tier: 'basic', result: 'correct', quizId: qz.id, points: 99 });
+  eq(r1.points, 99, '外部 points 生效（不再本地算一遍）');
+  const r2 = S.recordResult({ sid: sid, qid: q.id, tier: 'basic', result: 'correct', quizId: qz.id });
+  eq(r2.points, 3, '不传 points 时仍按本地口径算（基础题 3 分）');
+
+  // ② handleCmd 接受"预算好的判定"：有它就用它，没它走本地
+  S.replaceState(S.defaultState());
+  const team2 = S.get().teams[0].id;
+  const b = S.addStudent('乙', team2);
+  const sid2 = typeof b === 'string' ? b : b.id;
+  const q2 = S.addQuestion({ stem: '2+2=?', tier: 'basic', answer: 'A', options: ['1', '4'] });
+  const qz2 = S.createQuiz('接缝卷2', [q2.id]);
+  S.setCurrentQuiz(qz2.id);
+  S.setRuntime({ qid: q2.id, quizId: qz2.id });
+
+  // 用 pre 给一个"本地绝不会算出来"的分数（77），能落库就说明接缝通了
+  const res = CI.classroom.handleCmd(
+    { kind: 'answer', teamId: team2, sid: sid2, qid: q2.id, choice: ['B'] },
+    false,
+    { result: 'correct', ratio: 1, points: 77, expected: 'A' }
+  );
+  eq(res && res.ok, true, 'handleCmd 带 pre 时正常返回');
+  const rec = S.recordsOf(S.get(), { sid: sid2, quizId: qz2.id })[0];
+  eq(rec.points, 77, 'pre.points 落库（Rust 判分口径生效）');
+  eq(rec.result, 'correct', 'pre.result 落库');
+
+  // 不带 pre 时走本地判分（回退路径）
+  S.replaceState(S.defaultState());
+  const team3 = S.get().teams[0].id;
+  const c = S.addStudent('丙', team3);
+  const sid3 = typeof c === 'string' ? c : c.id;
+  const q3 = S.addQuestion({ stem: '3+3=?', tier: 'basic', answer: 'A', options: ['1', '6'] });
+  const qz3 = S.createQuiz('接缝卷3', [q3.id]);
+  S.setCurrentQuiz(qz3.id);
+  S.setRuntime({ qid: q3.id, quizId: qz3.id });
+  CI.classroom.handleCmd({ kind: 'answer', teamId: team3, sid: sid3, qid: q3.id, choice: ['B'] });
+  const rec3 = S.recordsOf(S.get(), { sid: sid3, quizId: qz3.id })[0];
+  eq(rec3.result, 'wrong', '不带 pre 时本地判分仍然正确（回退路径可用）');
+  eq(rec3.points, 0, '答错 0 分');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

@@ -244,7 +244,15 @@
    * 处理学生端命令（由 sync.js 调用）
    * @returns {Object|null} 处理结果摘要，便于测试
    */
-  function handleCmd(cmd, backlog) {
+  /**
+   * 处理一条学生命令
+   *
+   * @param cmd 命令
+   * @param backlog 是否来自离线补发
+   * @param pre **预算好的判定**（Rust 核心给的 result/ratio/points/expected）——
+   *            有它就用它，没有再走本地判分（回退路径，也是测试里的路径）
+   */
+  function handleCmd(cmd, backlog, pre) {
     if (!cmd || !cmd.kind) return null;
     var s = CI.store.get();
     var q = currentQuestion(s);
@@ -283,7 +291,10 @@
       }
 
       var submission = { choice: cmd.choice, text: cmd.text, skip: !!cmd.skip };
-      var graded = question ? CI.grade.auto(question, submission) : null;
+      // Rust 核心预算好了就用它（判分口径唯一）；否则本地判分
+      var graded = (pre && pre.result)
+        ? { result: pre.result, ratio: pre.ratio, expected: pre.expected, points: pre.points }
+        : (question ? CI.grade.auto(question, submission) : null);
       var desc = question ? CI.grade.describeSubmission(question, submission) : (cmd.text || '（空）');
 
       if (!graded) {
@@ -325,11 +336,12 @@
         note: desc,
         by: 'student',
         rank: rank,
-        // 学生选的选项字母（如 "AB"）：大屏据此画"错选分布"
         // 学生选的选项字母（如 "AB"）：大屏据此画"错选分布"（哪个干扰项最吸引人）
         picked: Array.isArray(cmd.choice) ? cmd.choice.join('') : (cmd.choice || ''),
         // 多答案题的部分得分：按命中比例算出来的 ratio（见 grade.js::auto）
-        ratio: graded.ratio
+        ratio: graded.ratio,
+        // 分数也由 Rust 给（没给就本地算）
+        points: graded.points
       });
 
       CI.store.tx('class-answer-feed', function (st) {

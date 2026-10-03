@@ -250,3 +250,89 @@ export async function fetchAbilityBoard(opts: { quizId?: string | null } = {}): 
   const A = CI.analysis as { abilityBoard(s: unknown): DomainAbilityBoard };
   return { source: 'js', board: A.abilityBoard(state), note: probe.note };
 }
+
+/** Rust 核心给出的判定（handleCmd 的 pre 参数） */
+export interface DomainVerdict {
+  result: string;
+  ratio: number;
+  points: number;
+  expected: string | null;
+}
+
+/**
+ * 客观题判分 + 计分：**两步都走 Rust 核心**
+ *
+ *   POST /api/domain/grade → { graded, result, expected }
+ *   POST /api/domain/score → { snapshot: { points, ratio } }
+ *
+ * 主观题（graded=false）、端点不可用、任何异常 → 返回 null，调用方回退本地判分。
+ * 这样"Rust 优先"不会让课堂流程变脆：网络抖一下也只是这一题用本地口径。
+ */
+export async function gradeWithRust(cmd: {
+  qid?: string | null;
+  choice?: string[] | string | null;
+  text?: string | null;
+  skip?: boolean;
+  teamId?: string | null;
+  sid?: string | null;
+}): Promise<DomainVerdict | null> {
+  const probe = await probeDomainApi();
+  if (!probe.ok) return null;
+  const state = CI.store.get() as { runtime?: { quizId?: string | null } };
+  const q = cmd.qid ? (CI.store.question(state, cmd.qid) as Record<string, unknown> | null) : null;
+  if (!q) return null;
+
+  const choice = Array.isArray(cmd.choice) ? cmd.choice : (cmd.choice ? [cmd.choice] : []);
+  try {
+    const gRes = await fetch(hubBase() + '/api/domain/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question: {
+          options: q.options ?? [],
+          answer: q.answer ?? '',
+          tier: q.tier ?? '',
+          points: q.points ?? null
+        },
+        submission: { choice, text: cmd.text ?? '', skip: !!cmd.skip }
+      })
+    });
+    const g = await gRes.json();
+    if (!g || !g.ok || !g.graded) return null;   // 主观题 → 走本地（进待确认队列）
+
+    const rank = buzzRankOf(state, cmd.teamId, q.id as string);
+    const sRes = await fetch(hubBase() + '/api/domain/score', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        input: {
+          sid: cmd.sid ?? 's',
+          qid: q.id ?? null,
+          tier: q.tier ?? null,
+          questionTier: q.tier ?? null,
+          customPoints: q.points ?? null,
+          result: g.result,
+          rank
+        }
+      })
+    });
+    const sc = await sRes.json();
+    if (!sc || !sc.ok || !sc.snapshot) return null;
+    return {
+      result: g.result,
+      ratio: Number(sc.snapshot.ratio) || 0,
+      points: Number(sc.snapshot.points) || 0,
+      expected: g.expected ?? null
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** 本队对该题在抢答榜里的位置（1 起）；没抢过答返回 null */
+function buzzRankOf(state: unknown, teamId?: string | null, qid?: string): number | null {
+  if (!teamId || !qid) return null;
+  const buzz = ((state as { classroom?: { buzz?: { teamId?: string; qid?: string }[] } }).classroom?.buzz) || [];
+  const i = buzz.findIndex((b) => b.teamId === teamId && b.qid === qid);
+  return i < 0 ? null : i + 1;
+}

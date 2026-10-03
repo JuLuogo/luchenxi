@@ -24,8 +24,9 @@ const S = CI.store;
 
 S.replaceState(S.defaultState());
 const team = S.get().teams[0].id;
-const a = S.addStudent('甲', team);
-const sid = typeof a === 'string' ? a : a.id;
+// 故意用**批量**添加：这条路径曾经绕过规范化，漏了 called（守卫没覆盖到就漏了）
+const bulk = S.addStudentsBulk('甲', team);
+const sid = bulk[0].id;
 const q = S.addQuestion({
   stem: '示例题：1+1=?', tier: 'basic', answer: 'A',
   options: ['1', '2', '3'], tags: ['代数'], source: '课本', note: '讲评要点', imageUrl: 'data:image/png;base64,AA'
