@@ -35,7 +35,8 @@
     "screenshots:next": "node tests/shot-next.js",
     "doctor": "node scripts/doctor.mjs",
     "parity:gen": "node scripts/gen-parity-fixtures.mjs",
-    "parity:check": "node scripts/gen-parity-fixtures.mjs --check"
+    "parity:check": "node scripts/gen-parity-fixtures.mjs --check",
+    "test:rules": "node tests/rule-audit.test.js"
   },
   "dependencies": {
     "qrcode": "^1.5.4",

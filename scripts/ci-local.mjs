@@ -311,6 +311,17 @@ if (cargoAvailable) {
       console.log((okTsc ? C.ok + '✔ ' : C.bad + '✘ ') + '前端类型检查（vue-tsc）' + C.x + '\n');
     }
 
+    // 领域层分类守卫：规则模块必须有 Rust 对应物（防"新规则又写回前端"）
+    {
+      const t0r = Date.now();
+      process.stdout.write(C.b + '▶ 领域层分类守卫（规则 vs 客户端固有）' + C.x + '\n');
+      const rr = spawnSync(process.execPath, [path.join(ROOT, 'tests', 'rule-audit.test.js')], { cwd: ROOT, stdio: 'inherit' });
+      const okRule = rr.status === 0;
+      results.push({ title: '领域层分类守卫（规则 vs 客户端固有）', pass: okRule, ms: Date.now() - t0r });
+      if (!okRule) annotate('CI 步骤失败：领域层分类守卫', '有规则模块缺 Rust 实现，或新模块没登记分类表');
+      console.log((okRule ? C.ok + '✔ ' : C.bad + '✘ ') + '领域层分类守卫（规则 vs 客户端固有）' + C.x + '\n');
+    }
+
     // Vue 界面冒烟：客户端从 2026-10 起打包的就是 Vue 产物，必须有端到端覆盖
     //（此前 Vue 界面零覆盖 —— 概览页把 counts(s,r) 误当汇总调用都没人发现）
     {

@@ -363,7 +363,7 @@ ws://<host>:<port>/?room=<房间id>&role=host|stage|team&team=<队伍id>&label=<
 | 下行 | `state`/`leaderboard` → 渲染；`presence` → 顶栏「老师在线」；`ack` → 离线排队提示；`error` → toast | `student.js:87-104` |
 | 视图 | 答题（选项/填空/主观 + 抢答 + 跳过）、本组、我的（个人学情）、排行榜 | `student.js:232-398` |
 | 小组公屏 | `?view=board`：只显示本组大分数、当前题、组员，隐藏底部页签 | `student.js:31`、`student.js:401-422` |
-| 交互 | 双击顶栏换队（`switchTeam`）；单选换选项即替换，多选可累加 | `student.js:515`、`student.js:457-468` |
+| 交互 | 双击顶栏换队（`switchTeam`）；单选换选项即替换，多选可累加 | `student.js`（`switchTeam` / `toggleOption`） |
 | 提交保护 | 同一题本地只提交一次（`submitted`），服务端侧再由教师端 `answeredAlready()` 去重 | `student.js:476-502`、`classroom.js:138-145` |
 
 ### 5.3 大屏 `index.html`（角色 `stage`，只读）
@@ -453,7 +453,7 @@ ws://<host>:<port>/?room=<房间id>&role=host|stage|team&team=<队伍id>&label=<
 | `CI.quizUI` | `render` `renderToolbar` `renderPicker` `renderQuestions` `renderCurrent` `renderRecords` `selectQuiz` `newQuiz` `renameQuiz` `closeQuiz` `deleteQuiz` `addSelected` `addAllTier` `addToCurrent` `setQuestion` `moveQuestion` `removeQuestion` `setStudent` `judge` `batchQuick` `removeRecord` `exportCSV` `currentQuiz` | web/src/teacher/pages/quiz/（Vue 组卷页） |
 | `CI.analysisUI` | `render` `setScope` `generate` `showStudentReport` `closeReport` `copyStudent` `copySummary` `downloadSummary` `exportCSV` `getScope` `getSummary` | web/src/teacher/pages/AnalysisPage.vue（Vue 学情页） |
 | `CI.admin` | `init` `gotoTab` `renderAll` `setSyncStatus` `addTeam` `renameTeam` `removeTeam` `pickIcon` `addStudent` `bulkAdd` `changeScore` `customScore` `quickTier` `zeroStudent` `undoLast` `saveWsHost` `exportBackup` `importBackup` `exportClassCSV` `openLogs` `resetAllScores` `factoryReset` … | web/src/teacher/（Vue 教师端各页面） |
-| `CIStudent`（学生端） | `pickTeam` `switchTeam` `setAnswerer` `toggleOption` `draft` `submit` `buzz` `switchTab` `data` | `student.js:518-526` |
+| `CIStudent`（学生端） | `pickTeam` `switchTeam` `setAnswerer` `toggleOption` `draft` `submit` `buzz` `switchTab` `data` | `student.js`（旧 DOM 渲染已于 2026-10 删除）-526` |
 
 ## 9. 自建客户端示例
 
