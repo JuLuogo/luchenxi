@@ -336,3 +336,81 @@ function buzzRankOf(state: unknown, teamId?: string | null, qid?: string): numbe
   const i = buzz.findIndex((b) => b.teamId === teamId && b.qid === qid);
   return i < 0 ? null : i + 1;
 }
+
+/** 现场判定的计分结果 */
+export interface DomainScore {
+  points: number;
+  ratio: number;
+  base: number;
+}
+
+/**
+ * 老师现场判定的计分：**Rust 优先**（/api/domain/score），失败回退本地口径
+ *
+ * 公开课抽题答题常见形态是**口头作答**：老师听学生说完，点一下"全对 / 对一半 / 不对"。
+ * 这一下要点得动、分要对，所以走与课堂核心循环同一套计分端点。
+ */
+export async function scoreVerdictWithRust(opts: {
+  result: 'correct' | 'half' | 'wrong';
+  tier: string;
+  customPoints?: number | null;
+}): Promise<{ source: StatsSource; score: DomainScore | null }> {
+  const probe = await probeDomainApi();
+  if (probe.ok) {
+    try {
+      const res = await fetch(hubBase() + '/api/domain/score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: {
+            sid: 'open', qid: null,
+            tier: opts.tier, questionTier: opts.tier,
+            customPoints: opts.customPoints ?? null,
+            result: opts.result
+          }
+        })
+      });
+      if (res.ok) {
+        const j = await res.json();
+        if (j && j.ok && j.snapshot) {
+          return {
+            source: 'rust',
+            score: {
+              points: Number(j.snapshot.points) || 0,
+              ratio: Number(j.snapshot.ratio) || 0,
+              base: Number(j.snapshot.base) || 0
+            }
+          };
+        }
+      }
+    } catch { /* 落到回退 */ }
+  }
+  // 回退：本地口径（与 parity 基准同一套规则）
+  const half = (CI.store.get() as { settings?: { halfRatio?: number } }).settings?.halfRatio ?? 0.5;
+  // 回退时由调用方（recordResult）按本地口径算分，这里只表示「没拿到 Rust 分」
+  void half;
+  return { source: 'js', score: null };
+}
+
+/** 公开课现场评价（四维四档 → 总分/档位/评语） */
+export async function fetchOpenEval(scores: { key: string; score: number }[]): Promise<{
+  source: StatsSource;
+  evaluation: Record<string, unknown> | null;
+}> {
+  const probe = await probeDomainApi();
+  if (probe.ok) {
+    try {
+      const res = await fetch(hubBase() + '/api/domain/open-eval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scores })
+      });
+      if (res.ok) {
+        const j = await res.json();
+        if (j && j.ok) return { source: 'rust', evaluation: j.evaluation };
+      }
+    } catch { /* 落到回退 */ }
+  }
+  const O = (CI as unknown as { openclass: { evaluate(s: unknown): Record<string, unknown> } }).openclass;
+  return { source: 'js', evaluation: O.evaluate(scores) };
+}

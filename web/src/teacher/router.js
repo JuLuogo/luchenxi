@@ -32,6 +32,14 @@ export const routes = [
     meta: { title: '课堂协同', icon: 'Connection', group: '教学管理' }
   },
 
+  /* ---------- 公开课（不能出问题的场景：独立成组，一步一屏） ---------- */
+  {
+    path: '/open',
+    name: 'open-class',
+    component: () => import('./pages/OpenClassPage.vue'),
+    meta: { title: '公开课', icon: 'Star', group: '公开课' }
+  },
+
   /* ---------- 题库中心 ---------- */
   {
     path: '/bank',

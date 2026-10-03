@@ -11,6 +11,7 @@
 //!   POST /api/domain/pick    随机点名（带种子，可复现 —— 与 parity 基准同一套算法）
 //!   POST /api/domain/stats   学情统计（学生明细 / 班级汇总 / 学生榜 / 队伍榜，一次拿全）
 //!   POST /api/domain/ability-board  能力评价榜（全班 + 每人 + 每队）
+//!   POST /api/domain/open-eval    公开课现场评价（四维四档 → 总分 / 档位 / 评语）
 //!
 //! 设计取舍：
 //!   · **不做鉴权**：教师机自己局域网内的枢纽，与 /api/state 同级；要防的是误用不是攻击。
@@ -213,4 +214,37 @@ pub struct AbilityBoardBody {
 pub async fn ability_board(Json(body): Json<AbilityBoardBody>) -> impl IntoResponse {
     let board = ci_domain::stats::ability_board(&body.state, body.quiz_id.as_deref());
     Json(json!({ "ok": true, "board": board }))
+}
+
+/* ------------------------------------------------------------------ *
+ * 公开课现场评价
+ * ------------------------------------------------------------------ */
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OpenEvalBody {
+    /// 老师现场评的档位：[{key, score(1-4)}]；未给的维度会被剔除并重新归一
+    pub scores: Vec<OpenScoreIn>,
+    /// 量规（不传用默认四维 30/30/25/15）
+    #[serde(default)]
+    pub dimensions: Option<Vec<ci_domain::openclass::OpenDimension>>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OpenScoreIn {
+    pub key: String,
+    pub score: u8,
+}
+
+/// 公开课现场评价：四维四档 → 加权总分 / 总评档位 / 规则评语
+///
+/// 评语**只由规则生成**（离线可用、不编造）；AI 润色是另一条可选路径，见 docs/15 §3。
+pub async fn open_eval(Json(body): Json<OpenEvalBody>) -> impl IntoResponse {
+    let dims = body
+        .dimensions
+        .unwrap_or_else(ci_domain::openclass::default_open_dimensions);
+    let scores: Vec<(String, u8)> = body.scores.iter().map(|s| (s.key.clone(), s.score)).collect();
+    let ev = ci_domain::openclass::evaluate_open(&scores, &dims);
+    Json(json!({ "ok": true, "evaluation": ev }))
 }

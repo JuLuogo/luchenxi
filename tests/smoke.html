@@ -241,6 +241,17 @@ async function run() {
         check(s1.ok && s1.json.snapshot && s1.json.snapshot.points === 3, '领域端点 /api/domain/score 按题型权重给 3 分');
         const s2 = await readJson('/api/domain/score', { settings: { fastBonus: 1 }, input: { sid: 's1', qid: 'q1', tier: 'basic', questionTier: 'basic', result: 'correct', fast: true } });
         check(s2.json.snapshot && s2.json.snapshot.points === 4, '计分端点应用抢答加分（3 + 1 = 4）');
+
+        /* ⑤ 公开课现场评价：四维四档 → 总分/档位/评语 */
+        const oe = await readJson('/api/domain/open-eval', { scores: [
+          { key: 'basic', score: 4 }, { key: 'transfer', score: 4 },
+          { key: 'expression', score: 4 }, { key: 'attitude', score: 4 }
+        ] });
+        check(oe.ok && oe.json.evaluation && oe.json.evaluation.total === 100, '领域端点 /api/domain/open-eval 四维全优秀 → 100 分');
+        check(oe.json.evaluation.level === '优秀', '公开课总评档位');
+        check(typeof oe.json.evaluation.comment === 'string' && oe.json.evaluation.comment.length > 8, '公开课评语由规则生成（可直接念）');
+        const oe2 = await readJson('/api/domain/open-eval', { scores: [{ key: 'basic', score: 4 }, { key: 'transfer', score: 4 }] });
+        check(oe2.json.evaluation.total === 100, '漏评要重新归一（只评两维且都最高 → 100，不被未评的拖低）');
       }
     }
 
