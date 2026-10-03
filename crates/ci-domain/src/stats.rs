@@ -695,4 +695,161 @@ mod tests {
         assert_eq!(tr[0].avg, 3.0, "人均 3 分");
         assert_eq!(tr[0].attempts, 3, "全队共 3 次作答");
     }
+    #[test]
+    fn ability_board_covers_class_students_and_teams() {
+        let s = state_with_two_quizzes();
+        let board = ability_board(&s, None);
+        assert_eq!(board.class.kind, "class");
+        assert_eq!(board.class.id, "all");
+        assert_eq!(board.class.member_count, 2, "全班 2 人");
+        assert_eq!(board.students.len(), 2, "每人一条");
+        assert_eq!(board.teams.len(), 1, "每队一条");
+        assert_eq!(board.students[0].kind, "student");
+        assert_eq!(board.students[0].team_name, "红队", "学生条目带队伍名");
+        assert_eq!(board.teams[0].kind, "team");
+        assert_eq!(board.teams[0].name, "红队");
+        assert_eq!(board.teams[0].score, 6.0, "队伍分 = 成员分之和");
+        assert!(board.students.iter().all(|x| x.axes.len() == s.tiers.len()), "每人都有全部题型的轴");
+        assert_eq!(board.class.grade.short, "—", "样本不足时评级是「—」");
+        // 数据范围也要贯穿到评价榜（JS 版这里同样漏传过 quizId）
+        assert_eq!(ability_board(&s, Some("z1")).class.attempts, 2, "只看第一节：2 次作答");
+        assert_eq!(ability_board(&s, Some("z2")).class.attempts, 1, "只看第二节：1 次作答（范围生效）");
+    }
+}
+
+/* ============================ 能力评价榜 ============================ */
+
+/// 一条能力画像（对应 JS 的 ability(state, opts) 结果 + kind/id/name 等附加字段）
+///
+/// **顺带修掉一个与 JS 同源的口径问题**：JS 的 `ability(state, {sid})` 调
+/// `studentStats(s, opts.sid)` 时同样没传 quizId，所以评价榜一直覆盖"全部课次"，
+/// 与页面上「数据范围」选择器不一致。这里把 quiz_id 一路传下去。
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
+// 只派生 Serialize：`Grade` 里是 &'static str，无法反序列化（端点只往外发，不往里读）
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AbilityEntry {
+    /// class | student | team
+    pub kind: String,
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub team_name: String,
+    #[serde(default)]
+    pub score: f64,
+    #[serde(default)]
+    pub rolls: u32,
+    #[serde(default)]
+    pub member_count: u32,
+    /// 以下与 `ability::Ability` 同形（不 flatten：specta 对 flatten 支持有限）
+    pub axes: Vec<crate::ability::Axis>,
+    pub overall: i64,
+    pub mastery: i64,
+    pub balance: Option<i64>,
+    pub coverage: i64,
+    pub attempts: u32,
+    pub grade: crate::ability::Grade,
+    #[serde(default)]
+    pub comment: String,
+}
+
+/// 能力评价榜：全班 + 每个学生 + 每支队伍（供雷达切换与综合评价表）
+pub fn ability_board(s: &ClassroomState, quiz_id: Option<&str>) -> AbilityBoard {
+    let min_sample = s.settings.min_sample.max(0) as u32;
+
+    // 用普通函数而不是闭包：闭包在这里会被推断出过严的生命周期
+    fn entry_of(
+        kind: &str,
+        id: &str,
+        name: &str,
+        tiers: &[TierStat],
+        total_attempts: u32,
+        min_sample: u32,
+        extra: (f64, u32, u32, String),
+    ) -> AbilityEntry {
+        let a = ability_of_tiers(tiers, total_attempts, min_sample);
+        AbilityEntry {
+            kind: kind.to_string(),
+            id: id.to_string(),
+            name: name.to_string(),
+            team_name: extra.3,
+            score: extra.0,
+            rolls: extra.1,
+            member_count: extra.2,
+            axes: a.axes,
+            overall: a.overall,
+            mastery: a.mastery,
+            balance: a.balance,
+            coverage: a.coverage,
+            attempts: a.attempts,
+            comment: a.comment,
+            grade: a.grade,
+        }
+    }
+
+    // 全班
+    let cs = class_stats(s, None, quiz_id);
+    let class = entry_of("class", "all", "全班", &cs.tiers, cs.total.attempts, min_sample, (0.0, 0, cs.student_count, String::new()));
+
+    // 每个学生（按榜单顺序）
+    let students: Vec<AbilityEntry> = ranking(s, None, quiz_id)
+        .iter()
+        .filter_map(|r| {
+            let st = student_stats(s, &r.sid, quiz_id)?;
+            let tier_stats: Vec<TierStat> = st
+                    .tiers
+                    .iter()
+                    .map(|t| TierStat {
+                        key: t.key.clone(),
+                        label: t.label.clone(),
+                        color: t.color.clone(),
+                        weight: t.weight,
+                        attempts: t.bucket.attempts,
+                        correct: t.bucket.correct,
+                        credit_rate: t.bucket.credit_rate,
+                        correct_rate: t.bucket.correct_rate,
+                    })
+                    .collect();
+            Some(entry_of(
+                "student",
+                &st.sid,
+                &st.name,
+                &tier_stats,
+                st.total.attempts,
+                min_sample,
+                (st.score, st.rolls, 0, st.team_name.clone()),
+            ))
+        })
+        .collect();
+
+    // 每支队伍
+    let teams: Vec<AbilityEntry> = s
+        .teams
+        .iter()
+        .map(|t| {
+            let ts = class_stats(s, Some(&t.id), quiz_id);
+            let score = round2(
+                s.students
+                    .iter()
+                    .filter(|x| x.active && x.team_id.as_deref() == Some(t.id.as_str()))
+                    .map(|x| s.score_of(&x.id))
+                    .sum::<f64>(),
+            );
+            entry_of("team", &t.id, &t.name, &ts.tiers, ts.total.attempts, min_sample, (score, 0, ts.student_count, String::new()))
+        })
+        .collect();
+
+    AbilityBoard { class, students, teams }
+}
+
+/// 能力评价榜
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
+// 与 AbilityEntry 同理：只往外发
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AbilityBoard {
+    pub class: AbilityEntry,
+    pub students: Vec<AbilityEntry>,
+    pub teams: Vec<AbilityEntry>,
+
 }

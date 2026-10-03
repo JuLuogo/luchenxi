@@ -44,7 +44,8 @@ pub use rollcall::{
     Pick, PickOpts, RollEntry, RollcallSettings, Student, XorShift64,
 };
 pub use stats::{
-    class_stats, ranking, student_stats, team_ranking, ClassStats, FinalBucket, RankRow, StudentStats,
+    ability_board, class_stats, ranking, student_stats, team_ranking, AbilityBoard, AbilityEntry, ClassStats,
+    FinalBucket, RankRow, StudentStats,
     StudentTierRow, TagRow, TeamRankRow,
 };
 pub use scoring::{

@@ -229,6 +229,7 @@ pub fn router(state: HubState) -> Router {
         .route("/api/domain/ability", axum::routing::post(domain_api::ability))
         .route("/api/domain/pick", axum::routing::post(domain_api::pick_handler))
           .route("/api/domain/stats", axum::routing::post(domain_api::stats))
+          .route("/api/domain/ability-board", axum::routing::post(domain_api::ability_board))
         // 二维码：与 Node 版同一路径与查询参数（?text=…）。
         // 返回 SVG（浏览器 <img> 直接渲染），省掉 image/png 依赖。
         .route("/qr.png", get(qr_image))

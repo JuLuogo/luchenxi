@@ -218,6 +218,28 @@ async function run() {
         })
       })).json();
       check(again.pick && again.pick.sid === pj.pick.sid, '同种子点出同一个人（可复现）');
+      // 能力评价榜：整份状态进去，全班 + 每人 + 每队出来
+      const abRes = await fetch('/api/domain/ability-board', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: S.get(), quizId: null })
+      });
+      const abText = await abRes.text();
+      let ab = {};
+      try { ab = JSON.parse(abText); } catch (e) { log('ability-board 返回的不是 JSON：' + abText.slice(0, 200)); }
+      check(abRes.ok && ab.ok && ab.board && ab.board.class, '领域端点 /api/domain/ability-board 返回全班画像');
+      check(ab.board.students.length === S.get().students.length, '能力榜覆盖全部学生（' + ab.board.students.length + ' 人）');
+      check(ab.board.teams.length === S.get().teams.length, '能力榜覆盖全部队伍');
+      check(Array.isArray(ab.board.class.axes) && ab.board.class.axes.length === S.get().tiers.length, '画像含全部题型的轴');
+      // 数据范围必须贯穿（JS 版这里漏传过 quizId）
+      const ab2Text = await (await fetch('/api/domain/ability-board', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: S.get(), quizId: S.get().currentQuizId })
+      })).text();
+      let ab2 = {};
+      try { ab2 = JSON.parse(ab2Text); } catch (e) { log('ability-board（带范围）返回的不是 JSON：' + ab2Text.slice(0, 200)); }
+      if (ab2.board && ab.board) {
+        check(ab2.board.class.attempts <= ab.board.class.attempts, '数据范围贯穿到能力榜（本节课 ≤ 全部课次）');
+      }
     })().catch((e) => { check(false, '领域端点验证抛错：' + e.message); });
 
     /* ---------- 11. 服务端与数据库（经枢纽） ---------- */

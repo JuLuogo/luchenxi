@@ -211,3 +211,42 @@ export async function fetchPick(opts: { seed?: number } = {}): Promise<DomainPic
   const local = (CI.rollcall as { pick(s: unknown, o: unknown): DomainPick | null }).pick(CI.store.get(), {});
   return { source: 'js', pick: local, note: probe.note };
 }
+
+/** 能力评价榜（与 Rust `stats::AbilityBoard` 同形） */
+export interface DomainAbilityBoard {
+  class: Record<string, unknown>;
+  students: Record<string, unknown>[];
+  teams: Record<string, unknown>[];
+}
+
+export interface DomainAbilityResult {
+  source: StatsSource;
+  board: DomainAbilityBoard | null;
+  note?: string;
+}
+
+/**
+ * 能力评价榜：**Rust 优先**（`/api/domain/ability-board`），失败回退本地参考实现
+ *
+ * 顺带修掉一个与 JS 同源的口径问题：JS 的 `ability(state, {sid})` 没把 quizId 传下去，
+ * 所以评价榜一直覆盖"全部课次"，与页面上的「数据范围」选择器不一致。
+ */
+export async function fetchAbilityBoard(opts: { quizId?: string | null } = {}): Promise<DomainAbilityResult> {
+  const state = CI.store.get();
+  const probe = await probeDomainApi();
+  if (probe.ok) {
+    try {
+      const res = await fetch(hubBase() + '/api/domain/ability-board', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state, quizId: opts.quizId ?? null })
+      });
+      if (res.ok) {
+        const j = await res.json();
+        if (j && j.ok) return { source: 'rust', board: j.board as DomainAbilityBoard };
+      }
+    } catch { /* 落到回退分支 */ }
+  }
+  const A = CI.analysis as { abilityBoard(s: unknown): DomainAbilityBoard };
+  return { source: 'js', board: A.abilityBoard(state), note: probe.note };
+}

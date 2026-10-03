@@ -10,6 +10,7 @@
 //!   POST /api/domain/ability 能力评价（雷达轴 / 评级 / 评语）
 //!   POST /api/domain/pick    随机点名（带种子，可复现 —— 与 parity 基准同一套算法）
 //!   POST /api/domain/stats   学情统计（学生明细 / 班级汇总 / 学生榜 / 队伍榜，一次拿全）
+//!   POST /api/domain/ability-board  能力评价榜（全班 + 每人 + 每队）
 //!
 //! 设计取舍：
 //!   · **不做鉴权**：教师机自己局域网内的枢纽，与 /api/state 同级；要防的是误用不是攻击。
@@ -190,4 +191,26 @@ pub async fn stats(Json(body): Json<StatsBody>) -> impl IntoResponse {
         "ranking": ci_domain::stats::ranking(s, team, quiz),
         "teamRanking": ci_domain::stats::team_ranking(s),
     }))
+}
+
+/* ------------------------------------------------------------------ *
+ * 能力评价榜
+ * ------------------------------------------------------------------ */
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AbilityBoardBody {
+    pub state: ci_domain::state::ClassroomState,
+    /// 只看某套试卷（= 本节课）；不传表示全部课次
+    #[serde(default)]
+    pub quiz_id: Option<String>,
+}
+
+/// 能力评价榜：全班 + 每个学生 + 每支队伍
+///
+/// 与已有的 ability 端点的区别：那个是"给定题型统计算一份画像"（纯函数入参），
+/// 这个是"给整份状态，把所有人/队的画像都算出来" —— 页面要的就是后者。
+pub async fn ability_board(Json(body): Json<AbilityBoardBody>) -> impl IntoResponse {
+    let board = ci_domain::stats::ability_board(&body.state, body.quiz_id.as_deref());
+    Json(json!({ "ok": true, "board": board }))
 }

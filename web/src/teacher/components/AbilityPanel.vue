@@ -8,10 +8,11 @@
  *   · 综合分 = 掌握度 × 覆盖系数（没考过的题型不直接算 0，但要打折）
  *   · 评级 = 六边形战士 / 全面发展 / 学有余力 / 偏科尖子 / 稳步提升 / 基础待巩固 / 需要重点辅导 / 样本不足
  */
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useClassStore } from '../../shared/class-store';
 import { CI } from '../../shared/bridge';
+import { fetchAbilityBoard } from '../../shared/domain-api';
 import EChart from './EChart.vue';
 
 const store = useClassStore();
@@ -19,7 +20,15 @@ const store = useClassStore();
 /** 当前查看对象：{ kind: 'class' } | { kind: 'team', id } | { kind: 'student', id } */
 const target = ref({ kind: 'class', id: 'all' });
 
-const board = computed(() => CI.analysis.abilityBoard(store.state));
+// Rust 优先（/api/domain/ability-board），拿到前先用本地实现渲染
+const rustBoard = ref<any>(null);
+async function loadBoard() {
+  const r = await fetchAbilityBoard({ quizId: null });
+  rustBoard.value = r.source === 'rust' ? r.board : null;
+}
+onMounted(loadBoard);
+watch(() => store.rev, () => { loadBoard(); });
+const board = computed<any>(() => rustBoard.value || CI.analysis.abilityBoard(store.state));
 
 const current = computed(() => {
   const t = target.value;
