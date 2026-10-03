@@ -42,7 +42,9 @@ const distReady = has('web/dist/admin.html');
 ok('新版界面已构建（web/dist）', distReady, distReady ? '' : '运行 npm run web:build（或直接用 npm start，会自动构建）');
 
 /* ---------- 3. 静态资源闭包 ---------- */
-['admin.html', 'student.html', 'index.html'].forEach((f) => ok('旧界面文件 ' + f, has(f), ''));
+// 2026-10：界面已统一到 Vue —— 旧版零构建页面必须**已删除**（见 docs/13 §1）
+['admin.html', 'student.html', 'index.html', 'assets/js/admin.js', 'assets/js/bank.js'].forEach((f) =>
+  ok('旧界面文件已删除 ' + f, !has(f), '若又出现了，说明有人把旧界面加回来了'));
 ['assets/js/store.js', 'assets/js/sync.js', 'sync-server.js'].forEach((f) => ok('核心脚本 ' + f, has(f), ''));
 ok('客户端工程（apps/）', has('apps/teacher/src-tauri/Cargo.toml') && has('apps/student/src-tauri/Cargo.toml'),
   '两套 Tauri 工程；出包需要 Rust 工具链 + Android SDK');
@@ -142,7 +144,7 @@ rows.forEach((r) => {
 });
 console.log('  ' + '─'.repeat(72));
 if (!bad.length) {
-  console.log('  ✅ 全部通过：npm start 之后访问 http://localhost:' + PORT + '/next/admin.html');
+  console.log('  ✅ 全部通过：npm start 之后访问 http://localhost:' + PORT + '/（教师端）、/join（学生端）、/stage（大屏）');
 } else {
   console.log('  ❌ ' + bad.length + ' 项需要处理：');
   bad.forEach((r) => console.log('     · ' + r.name + (r.detail ? '  →  ' + r.detail : '')));

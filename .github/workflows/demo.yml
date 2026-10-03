@@ -32,8 +32,8 @@ jobs:
       - name: 记录浏览器路径
         run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> $GITHUB_ENV
 
-      - name: 跑演示（自起枢纽 + 教师端/学生端/大屏）
-        run: node tests/demo.js
+      - name: 给 Vue 界面截图并自检（教师端 / 学生端 / 大屏）
+        run: node tests/shot-next.js
 
       - name: 失败时写 Job Summary
         if: failure()
@@ -42,6 +42,6 @@ jobs:
       - name: 上传截图与实录
         uses: actions/upload-artifact@v7
         with:
-          name: demo-screenshots
+          name: vue-screenshots
           path: docs/demo
           if-no-files-found: error

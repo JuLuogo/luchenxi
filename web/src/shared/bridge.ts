@@ -6,7 +6,7 @@
  * 顺序与 assets/js/*.js 的约定一致，tests/dom-check.js 也在校验这个顺序。
  *
  * 它们内部只在函数被调用时才访问 DOM，因此不加载旧页面也不会报错；
- * 旧的那批 render 函数（已随旧界面删除）。
+ * 旧的那批 render 函数已随旧界面删除（admin.js / quiz.js / analysis-ui.js / bank.js）。
  */
 import type { DomainApi } from '@/bindings/domain';
 

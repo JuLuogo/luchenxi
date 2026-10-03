@@ -60,25 +60,28 @@ group('资源闭包（客户端里能不能找到这些文件）');
 
 Object.keys(APPS).forEach((app) => {
   APPS[app].entry.forEach((html) => {
-    ok(exists(html), app + ' 入口页存在：' + html);
-    const refs = collectRefs(html);
-    ok(refs.length > 0 || app === 'teacher', app + '/' + html + ' 引用 ' + refs.length + ' 个本地资源');
+    // 2026-10：入口页不再是仓库根的文件，而是 **Vue 构建产物**（apps/<app>/ui/ 下，由 sync-ui 生成）
+    const built = 'apps/' + app + '/ui/' + html;
+    ok(exists(built), app + ' 入口页存在（Vue 产物）：' + built);
+    const refs = collectRefs(built);
+    ok(refs.length > 0, app + '/' + html + ' 引用 ' + refs.length + ' 个本地资源');
     refs.forEach((r) => {
       // 不允许越出仓库根（客户端里没有仓库结构）
       ok(r.indexOf('../') < 0, app + ' 引用不得向上越界：' + r);
       ok(r[0] !== '/', app + ' 不得用绝对路径（asset 协议下会 404）：' + r);
-      ok(exists(r), app + ' 引用的文件存在：' + r);
+      ok(exists('apps/' + app + '/ui/' + r), app + ' 引用的文件存在：' + r);
     });
   });
 });
 
-// CSS 里的图片/字体引用
+// CSS 里的图片/字体引用（2026-10：旧版 assets/css 已删，检查 Vue 侧的样式）
 group('CSS 资源');
-['assets/css/app.css', 'assets/css/student.css'].forEach((css) => {
+['web/src/styles/tokens.css', 'web/src/teacher/styles/teacher.css'].forEach((css) => {
+  if (!exists(css)) return;
   const urls = collectCssUrls(css);
   urls.forEach((u) => {
     ok(u.indexOf('../') < 0 && u[0] !== '/', css + ' 里的 url() 用相对路径：' + u);
-    ok(exists(path.join('assets/css', u)) || exists(u), css + ' 引用的资源存在：' + u);
+    ok(exists(path.join(path.dirname(css), u)) || exists(u), css + ' 引用的资源存在：' + u);
   });
   console.log('  · ' + css + ' 外部 url() 数量：' + urls.length);
 });
@@ -144,15 +147,15 @@ ok(/ws:\/\/localhost:' \+ DEFAULT_LOCAL_PORT/.test(syncJs), 'sync.js 在非 http
 ok(/var DEFAULT_LOCAL_PORT\s*=/.test(syncJs), 'DEFAULT_LOCAL_PORT 已声明（不是"用了但没定义"）');
 ok(/var DEFAULT_LOCAL_PORT\s*=[\s\S]{0,80}?8080/.test(syncJs), 'DEFAULT_LOCAL_PORT 默认 8080');
 ok(/CI_DEFAULT_PORT/.test(syncJs), 'DEFAULT_LOCAL_PORT 可被 window.CI_DEFAULT_PORT 覆盖（客户端注入）');
-ok(/storage\.js/.test(read('admin.html')), '教师端加载 storage.js（客户端走 invoke 直连 SQLite）');
+ok(/storage\.js/.test(read('web/src/shared/bridge.ts')), 'Vue 教师端通过 bridge 引入 storage.js（客户端走 invoke 直连 SQLite）');
 ok(/__TAURI/.test(read('assets/js/storage.js')), 'storage.js 识别 Tauri 环境');
 
 // 客户端里进程可能随时被系统回收：必须在关页/切后台时立即落库，不能等防抖
 const storageJs = read('assets/js/storage.js');
-const adminJs = read('assets/js/admin.js');
+const runtimeTs = read('web/src/shared/runtime.ts');
 ok(/flush: flush/.test(storageJs), 'storage.js 暴露 flush()');
-ok(/addEventListener\('beforeunload', flushNow\)/.test(adminJs), '教师端在 beforeunload 时 flush');
-ok(/visibilitychange/.test(adminJs), '教师端在切到后台时 flush');
+ok(/beforeunload/.test(runtimeTs), 'Vue 教师端在 beforeunload 时 flush');
+ok(/visibilitychange/.test(runtimeTs), 'Vue 教师端在切到后台时 flush');
 ok(/retryTimer = setTimeout/.test(storageJs), '写入失败有退避重试');
 ok(/MAX_RETRY/.test(storageJs), '重试有上限（不会无限重试）');
 ok(/r\.json\(\)\.catch\(function \(\) \{ return null; \}\)/.test(storageJs),
@@ -175,11 +178,12 @@ ok(stuJs.indexOf('/health') >= 0, '学生端自检访问 /health（Rust 枢纽�
 ok(stuJs.indexOf('check_hub') >= 0, '客户端里自检走 invoke(check_hub)');
 ok(!/\/api\//.test(stuJs), '学生端不依赖 /api/*（只发命令）');
 
-// 教师端页面不得引用学生端专属脚本之外的东西
-['assets/js/store.js', 'assets/js/storage.js', 'assets/js/sync.js', 'assets/js/classroom.js', 'assets/js/net.js']
-  .forEach((f) => ok(read('admin.html').indexOf(f) >= 0, '教师端加载 ' + f));
-ok(read('student.html').indexOf('assets/js/student.js') >= 0, '学生端只加载 student.js');
-ok(read('student.html').indexOf('assets/js/admin.js') < 0, '学生端不加载教师端脚本');
+// 教师端通过 bridge 引入领域层（用 @domain/* 别名，见 web/vite.config.js）
+['store.js', 'storage.js', 'sync.js', 'classroom.js', 'net.js']
+  .forEach((f) => ok(read('web/src/shared/bridge.ts').indexOf('@domain/' + f) >= 0, 'Vue 教师端通过 bridge 加载 ' + f));
+// 2026-10：旧版 student.html / admin.js 已删除；客户端加载的是 Vue 构建产物
+ok(!fs.existsSync(path.join(ROOT, 'student.html')), '旧版 student.html 已删除');
+ok(!fs.existsSync(path.join(ROOT, 'assets/js/admin.js')), '旧版 admin.js 已删除');
 
 /* ================= 4. 真机才会暴露的两件事 ================= */
 group('真机安全策略（安全上下文 / Android 明文流量）');

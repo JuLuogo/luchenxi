@@ -29,10 +29,6 @@ const WATCH = {
     /function shortStem\(/, /function bulkImportQuestions\(/, /function exportBank\(/, /function updateSettings\(/,
     /^  CI\.store = /, /source: r\.source \|\|/, /VERSION = /
   ],
-  'assets/js/admin.js': [
-    /function init\(/, /function maybeOfferRestore\(/, /function quickTier\(/, /function undoLast\(/,
-    /function renderAll\(/, /CI\.sync\.init\(\{/
-  ],
   'assets/js/student.js': [
     /function submit\(/, /function renderQA\(/, /function pickTeam\(/, /setConn\('on'/
   ],

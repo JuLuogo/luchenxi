@@ -40,7 +40,7 @@ if (!has(path.join(WEB, 'node_modules'))) {
 if (!has(DIST_ENTRY) && !NO_BUILD) {
   console.log('新版界面还没有构建（web/dist 不在版本库里，这是正常的）→ 现在构建一次');
   if (!run('npm', ['run', 'build'], WEB, '构建新版界面（Vite）')) {
-    console.error('\n❌ 新版界面构建失败：可以先只跑旧界面（/admin.html），或查看上面报错。');
+    console.error('\n❌ 界面构建失败（web/dist 没出来）：先排查上面的报错；旧版零构建界面已于 2026-10 删除。');
   }
 }
 

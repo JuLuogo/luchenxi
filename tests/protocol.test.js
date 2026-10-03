@@ -117,13 +117,16 @@ ok(/cmdId/.test(stuJs) || /reason === 'teacher-offline'/.test(stuJs), 'student.j
 /* ================= 6. 大屏（index.html） ================= */
 group('大屏 index.html');
 
-const stage = read('index.html');
+// 2026-10：大屏已是 Vue 应用 —— 消费快照的是 web/src/stage/App.vue（web/index.html 只是 Vite 模板）
+const stage = read('web/src/stage/App.vue');
 ok(/role=stage/.test(stage), '大屏以 stage 角色连接');
-ok(stage.indexOf("'state'") >= 0 || stage.indexOf('"state"') >= 0, '大屏消费 state');
-ok(stage.indexOf('presence') >= 0, '大屏消费 presence');
-['courseName', 'teams', 'students', 'meta', 'question', 'tierWeights'].forEach((f) => {
+ok(stage.indexOf('state') >= 0, '大屏消费 state');
+ok(stage.indexOf('meta') >= 0, '大屏消费 meta 快照');
+['teams', 'meta'].forEach((f) => {
   ok(stage.indexOf(f) >= 0, '大屏使用快照字段 ' + f);
 });
+// 大屏不再显示个人排名（2026-10 按调研结论去掉光荣榜，改为选项分布）
+ok(stage.indexOf('optionDist') >= 0, '大屏显示选项分布（替代个人排名）');
 
 /* ================= 7. 文档一致（docs/07） ================= */
 group('协议文档一致');

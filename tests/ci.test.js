@@ -285,7 +285,7 @@ if (docs['demo.yml']) {
   ok(!!on && ('workflow_dispatch' in on), 'demo.yml 支持手动触发');
   ok(!on.push && !on.pull_request, 'demo.yml 不挂在 push/PR 上（跑浏览器慢，不进推送门禁）');
   const steps = (d.jobs.demo || {}).steps || [];
-  ok(steps.some((s) => /tests\/demo\.js/.test(s.run || '')), 'demo.yml 运行 tests/demo.js');
+  ok(steps.some((s) => /tests\/shot-next\.js/.test(s.run || '')), 'demo.yml 运行 tests/shot-next.js（Vue 界面截图，2026-10 起）');
   const up = steps.find((s) => s.uses && /upload-artifact/.test(s.uses));
   ok(!!up, 'demo.yml 上传产物');
   ok(!!up && up.with && String(up.with.path).indexOf('docs/demo') >= 0, 'demo.yml 上传 docs/demo');
@@ -369,8 +369,19 @@ ok(/::error/.test(rustYml), 'rust.yml 失败时把编译错误写成注解');
 const syncUi = read('scripts/sync-ui.mjs');
 ok(syncUi.indexOf('admin.html') >= 0 && syncUi.indexOf('student.html') >= 0, 'sync-ui 覆盖两套客户端入口页');
 ok(syncUi.indexOf('schema.sql') >= 0, 'sync-ui 复制 SQLite schema 给 Rust 侧');
-['admin.html', 'student.html', 'index.html', 'assets/css/app.css', 'assets/css/student.css']
-  .forEach((f) => ok(exists(f), 'sync-ui 需要的源文件存在：' + f));
+// 2026-10：源已从"仓库根的零构建页面"改成 **Vue 构建产物**（web/dist）
+ok(/web['"],\s*['"]dist/.test(syncUi) || /const DIST/.test(syncUi), 'sync-ui 的来源是 Vue 构建产物 web/dist');
+ok(!/assets\/css/.test(syncUi), 'sync-ui 不再拷旧版 CSS');
+// 旧版零构建界面必须已经删除（否则又会出现"网页版新界面、客户端旧脸"的分裂）
+['admin.html', 'student.html', 'index.html',
+  'assets/js/admin.js', 'assets/js/bank.js', 'assets/js/quiz.js', 'assets/js/analysis-ui.js',
+  'assets/css/app.css', 'assets/css/student.css']
+  .forEach((f) => ok(!exists(f), '旧版界面文件已删除：' + f));
+// 领域层仍必须在（Vue 通过 bridge 复用它们；等 Rust 端口完成才会删）
+['assets/js/store.js', 'assets/js/analysis.js', 'assets/js/classroom.js', 'assets/js/sync.js',
+  'assets/js/grade.js', 'assets/js/rollcall.js', 'assets/js/storage.js', 'assets/js/net.js',
+  'assets/js/import.js', 'assets/js/student.js']
+  .forEach((f) => ok(exists(f), '领域层文件仍在：' + f));
 
 const gi = read('.gitignore');
 ['apps/*/ui/', 'apps/*/src-tauri/target/', 'apps/*/src-tauri/gen/', 'data/', '*.db'].forEach((rule) => {
@@ -399,9 +410,10 @@ if (exists(rustYmlPath)) {
 }
 
 // 脚本里列出的步骤必须都真实存在
+// 2026-10：tests/dom-check.js 已删（它只校验旧版页面；Vue 的同类检查由 tests/ui-vue.test.mjs 承担）
 const ciLocal = read('scripts/ci-local.mjs');
 ['tests/logic.test.js', 'tests/db.test.js', 'tests/storage.test.js', 'tests/net.test.js',
-  'tests/protocol.test.js', 'tests/hub-spec.test.js', 'tests/ci.test.js', 'tests/dom-check.js',
+  'tests/protocol.test.js', 'tests/hub-spec.test.js', 'tests/ci.test.js', 'tests/ui-vue.test.mjs',
   'tests/doc-refs.js', 'tests/run-smoke.js', 'scripts/sync-ui.mjs', 'scripts/gen-protocol.mjs'].forEach((f) => {
   ok(ciLocal.indexOf(f) >= 0, 'ci-local.mjs 覆盖 ' + f);
   ok(exists(f), 'ci-local 引用的文件存在：' + f);

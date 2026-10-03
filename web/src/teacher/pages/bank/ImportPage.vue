@@ -24,7 +24,7 @@ const SAMPLE = [
 const parsed = computed(() => {
   if (!text.value.trim()) return [];
   try {
-    // 用领域层的解析器（CI.bankImport，Rust 侧同契约、有 parity），不再依赖旧版 bankUI
+    // 用领域层的解析器（CI.bankImport，Rust 侧同契约、有 parity）
   return (CI as any).bankImport.parse(text.value, store.tiers);
   } catch (e) {
     return [{ __error: e.message }];

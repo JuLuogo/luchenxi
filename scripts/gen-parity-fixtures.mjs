@@ -36,7 +36,8 @@ function fakeStorage() {
 
 function loadCI() {
   globalThis.localStorage = fakeStorage();
-  for (const f of ['store.js', 'analysis.js', 'grade.js', 'rollcall.js', 'classroom.js', 'bank.js']) {
+  // 2026-10：bank.js 已随旧界面删除；批量导入的解析器在 import.js（领域层）
+  for (const f of ['store.js', 'analysis.js', 'grade.js', 'rollcall.js', 'classroom.js', 'import.js']) {
     require(path.join(ROOT, 'assets', 'js', f));
   }
   return globalThis.CI;

@@ -592,16 +592,6 @@ function handleHttp(req, res) {
   if (urlPath === '/favicon.svg' && hasDistRoot) return sendFile(res, distFile('favicon.svg'));
   if (urlPath.startsWith('/assets/') && hasDistRoot) return sendFile(res, path.join(DIST_DIR, urlPath.replace(/^\/+/, '')));
 
-  /* 旧版零构建页面：临时保留在 /legacy/* 供旧 e2e 使用，下一轮随旧渲染层一起删除 */
-  if (urlPath === '/legacy' || urlPath === '/legacy/' || urlPath === '/legacy/admin.html') return sendFile(res, path.join(ROOT, 'admin.html'));
-  if (urlPath === '/legacy/student.html') return sendFile(res, path.join(ROOT, 'student.html'));
-  if (urlPath === '/legacy/index.html') return sendFile(res, path.join(ROOT, 'index.html'));
-  // 旧页面用**相对路径**引用 assets/，所以 /legacy/assets/* 也要映射回仓库根
-  if (urlPath.startsWith('/legacy/assets/')) {
-    const f = path.join(ROOT, urlPath.replace(/^\/legacy\//, ''));
-    if (f.startsWith(path.join(ROOT, 'assets'))) return sendFile(res, f);
-  }
-
   /**
    * v4 新版界面（Vue 3 + Element Plus / Vant）构建产物。
    * 迁移期挂在 /next/ 下与旧页面并存：

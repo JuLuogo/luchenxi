@@ -165,13 +165,7 @@ async fn serve_static(
                 return file_response(&f).await;
             }
         }
-        // 旧版页面临时保留在 /legacy/*
-        if let Some(rest) = url_path.strip_prefix("/legacy/") {
-            rel = match rest {
-                "" | "admin.html" => "admin.html".to_string(),
-                other => other.to_string(),
-            };
-        }
+        // 旧版零构建页面已于 2026-10 删除（界面统一到 Vue）
     }
 
     let mut target = root.join(&rel);

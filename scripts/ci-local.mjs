@@ -197,7 +197,6 @@ const NODE_TESTS = [
   ['Android 明文流量修补（真机连 ws:// 必需）', 'tests/android-manifest.test.js'],
   ['Rust 依赖体检（版本存在性 + 与代码 API 假设一致）', 'tests/crates.test.js'],
   ['客户端骨架与 CI 流水线自检', 'tests/ci.test.js'],
-  ['静态接线自检', 'tests/dom-check.js'],
   ['文档行号引用审计', 'tests/doc-refs.js', ['--broken']]
 ];
 let nodeOk = true;

@@ -29,7 +29,7 @@ require(path.join(__dirname, '..', 'assets', 'js', 'sync.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'rollcall.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'classroom.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'import.js'));
-require(path.join(__dirname, '..', 'assets', 'js', 'bank.js'));
+// bank.js / quiz.js / analysis-ui.js / admin.js 已随旧界面删除（界面统一到 Vue，见 docs/13）
 
 const CI = globalThis.CI;
 const S = CI.store;
@@ -565,9 +565,13 @@ group('题目保存前自检（防静默判错）');
     '答案覆盖全部选项时给出确认提示');
 
   // 导入路径必须真的调用它（否则告警只是摆设）
-  var bankSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'assets', 'js', 'bank.js'), 'utf8');
-  ok(bankSrc.indexOf('CI.grade.validateQuestion') >= 0, '导入路径调用 validateQuestion');
-  ok(/仍然导入吗/.test(bankSrc), '导入前给出"仍然导入吗"的确认');
+  // 2026-10：旧版 bank.js 已删。批量导入的**解析**在 import.js，**入库**在 store.bulkImportQuestions，
+  // 而"导入前校验 + 仍然导入吗"的确认属于界面层（旧版在 bank.js，Vue 版在 ImportPage.vue）
+  var importSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'assets', 'js', 'import.js'), 'utf8');
+  ok(importSrc.indexOf('function parse') >= 0, '领域层提供批量导入解析器（CI.bankImport.parse）');
+  var importVue = require('fs').readFileSync(require('path').join(__dirname, '..', 'web', 'src', 'teacher', 'pages', 'bank', 'ImportPage.vue'), 'utf8');
+  ok(/validateQuestion/.test(importVue), 'Vue 导入页调用 validateQuestion');
+  ok(/仍然导入/.test(importVue), 'Vue 导入页在导入前给出"仍然导入吗"的确认');
 })();
 
 /* ================= 11. 能力评价（题型雷达 + 评级） ================= */

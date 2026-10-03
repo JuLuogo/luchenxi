@@ -84,7 +84,7 @@ ws://<host>:<port>/?room=<房间id>&role=host|stage|team&team=<队伍id>&label=<
 | `team` | 仅 `team` 角色有意义：队伍 id，用于 presence 与命令归属 |
 | `label` | 显示名（队伍名），只用于 presence 展示 |
 
-三端的 URL 构造位置：教师端 `sync.js:57-64`（空地址 = 与页面同源）、学生端 `student.js:67-72`、大屏 `index.html:113-125`。
+三端的 URL 构造位置：教师端 `sync.js:57-64`（空地址 = 与页面同源）、学生端 `student.js:67-72`、大屏 web/index.html（Vite 模板）。
 
 ## 2. 角色与房间
 
@@ -117,7 +117,7 @@ ws://<host>:<port>/?room=<房间id>&role=host|stage|team&team=<队伍id>&label=<
 }
 ```
 
-- 重启枢纽即自动恢复 `payload` 与 `dump`：大屏与学生端一连上就有数据，教师端则据此提示「是否载入枢纽上的课堂数据」（`sync.js:121-127`、`admin.js:524-534`）。
+- 重启枢纽即自动恢复 `payload` 与 `dump`：大屏与学生端一连上就有数据，教师端则据此提示「是否载入枢纽上的课堂数据」（`sync.js:121-127`、web/src/teacher/（Vue 教师端各页面））。
 - 房间之间完全隔离：状态、命令队列、在线列表互不可见。
 
 ## 3. 报文格式
@@ -228,7 +228,7 @@ ws://<host>:<port>/?room=<房间id>&role=host|stage|team&team=<队伍id>&label=<
 
 - 教师端离线（`room.host` 为空或已关闭）时，`cmd` 进队列 `room.queue`，**上限 60 条**，超出丢最旧的（`sync-server.js:240-243`）。
 - 学生端立即收到 `ack{ok:false, reason:'teacher-offline'}`，界面提示「老师端离线，已排队，稍后自动提交」（`student.js:99-100`）。
-- 教师端重新上线时，服务端一次性发 `cmd-backlog{cmds}`，教师端逐条 `handleCmd(cmd, true)` 并提示「已补收 N 条离线提交」（`sync-server.js:171-175`、`sync.js:144-147`、`admin.js:566-574`）。
+- 教师端重新上线时，服务端一次性发 `cmd-backlog{cmds}`，教师端逐条 `handleCmd(cmd, true)` 并提示「已补收 N 条离线提交」（`sync-server.js:171-175`、`sync.js:144-147`、web/src/teacher/（Vue 教师端各页面））。
 - 队列是**内存态**：枢纽重启即丢（课堂数据本身不受影响，已判定的分数早已进 `store`）。
 
 ### 3.5 错误消息一览
@@ -316,10 +316,10 @@ ws://<host>:<port>/?room=<房间id>&role=host|stage|team&team=<队伍id>&label=<
 ```
 
 - 教师端 `pushDump()` 节流 **15s**，并且**带脏标记补发**：被节流时记下 `dumpDirty` 并预约一次补发（`15s - 已过时间`，最少 1s），保证最后一次变更最终一定落到枢纽 —— 否则换设备恢复出来的是旧数据。`sendNow()` 每次推 `state` 时都会顺带尝试一次 `dump`（`sync.js:300-313`、`sync.js:310-338`）。
-- 连接建立与页面 `beforeunload` 都会走 `push(true)`（即时发送），因此正常关闭标签页前的那次变更也会带上 `dump`（`sync.js:90-95`、`admin.js:586`）。
+- 连接建立与页面 `beforeunload` 都会走 `push(true)`（即时发送），因此正常关闭标签页前的那次变更也会带上 `dump`（`sync.js:90-95`、web/src/teacher/（Vue 教师端各页面））。
 - 想立刻强制推一次（例如自动化测试里不想等 15s）：`CI.sync.pushDump(true)`，见 `tests/smoke-class.html:185-187`。
 - 用途只有一个：**教师端换设备 / 清缓存后恢复课堂**。学生端永远拿不到 `dump`（服务端只发给 host，`sync-server.js:214-228`）。
-- 教师端 `onDump` 回调 → `maybeOfferRestore()`：本机为空时弹窗询问是否载入（`admin.js:524-534`、`classroom.js:315-330`）。
+- 教师端 `onDump` 回调 → `maybeOfferRestore()`：本机为空时弹窗询问是否载入（web/src/teacher/（Vue 教师端各页面）、`classroom.js:315-330`）。
 
 ## 5. 三端客户端行为
 
@@ -331,14 +331,14 @@ ws://<host>:<port>/?room=<房间id>&role=host|stage|team&team=<队伍id>&label=<
 | 房间来源 | `localStorage['ci_room']`，默认 `default` | `sync.js:17`、`sync.js:30-39` |
 | 连接 | `init({onStatus,…})` → `connect()`，回调钩子见下 | `sync.js:71-76` |
 | 重连 | 断开后线性退避 1.5s × 重试次数，上限 15s | `sync.js:177-184` |
-| 推送 | `push()` 400ms 节流推 `state`；`push(true)` 立即发（连接建立、`beforeunload`、收到 `request`） | `sync.js:346-350`、`sync.js:90-95`、`admin.js:557-564`、`admin.js:586` |
+| 推送 | `push()` 400ms 节流推 `state`；`push(true)` 立即发（连接建立、`beforeunload`、收到 `request`） | `sync.js:346-350`、`sync.js:90-95`、web/src/teacher/（Vue 教师端各页面）、web/src/teacher/（Vue 教师端各页面） |
 | 完整数据 | `pushDump()` 15s 节流推 `dump`，被节流时预约补发（脏标记），可用 `pushDump(true)` 强制 | `sync.js:310-338` |
 | 接收 | `welcome` → 记 `rev`、按 `hasState`/`hasDump` 主动拉取；`state` → 只回调**不自动覆盖本地**（教师端是权威） | `sync.js:103-119` |
 | 服务器信息 | `fetchServerInfo()` 拉 `/health`，供「⑦ 课堂协同」显示地址与二维码 | `sync.js:187-198` |
 | 地址生成 | `joinURL()`（学生端入口）、`qrURL()`（二维码图片地址） | `sync.js:201-212` |
 | 快照组装 | `snapshot()` 组装 §4.1 的 payload | `sync.js:197-267` |
 
-回调钩子（`admin.js:566-574` 装配）：
+回调钩子（web/src/teacher/（Vue 教师端各页面） 装配）：
 
 | 钩子 | 时机 | 教师端动作 |
 | --- | --- | --- |
@@ -370,12 +370,12 @@ ws://<host>:<port>/?room=<房间id>&role=host|stage|team&team=<队伍id>&label=<
 
 | 行为 | 说明 | 位置 |
 | --- | --- | --- |
-| 地址 | `?room=&ws=` 参数 → 同源 `location.host`（页面在 HTTP(S) 下时） → `localStorage['ci_ws_host']` → 兜底 `ws.peroe.top` | `index.html:113-125` |
-| 拉取 | 连接后发 `{type:'request'}`；未拿到数据时每 2s 重试，拿到即停 | `index.html:139-156` |
-| 渲染 | 队伍榜（分差进度条）、个人榜、当前题（题干 + 选项 + 公布后的答案）、最近得分滚动条、题型分值提示 | `index.html:180-283` |
-| 抢答榜 | `meta.buzz` 非空时显示抢答卡片（前 6 条：队名 + 作答人 + 时间） | `index.html:259-269` |
-| 在线提示 | 收 `presence` 时显示「实时同步 · N 组在线（教师端离线）」 | `index.html:164-167` |
-| 断线 | 状态条提示「连接断开，重试中…」，2s 后重连 | `index.html:170-175` |
+| 地址 | `?room=&ws=` 参数 → 同源 `location.host`（页面在 HTTP(S) 下时） → `localStorage['ci_ws_host']` → 兜底 `ws.peroe.top` | web/index.html（Vite 模板） |
+| 拉取 | 连接后发 `{type:'request'}`；未拿到数据时每 2s 重试，拿到即停 | web/index.html（Vite 模板） |
+| 渲染 | 队伍榜（分差进度条）、个人榜、当前题（题干 + 选项 + 公布后的答案）、最近得分滚动条、题型分值提示 | web/index.html（Vite 模板） |
+| 抢答榜 | `meta.buzz` 非空时显示抢答卡片（前 6 条：队名 + 作答人 + 时间） | web/index.html（Vite 模板） |
+| 在线提示 | 收 `presence` 时显示「实时同步 · N 组在线（教师端离线）」 | web/index.html（Vite 模板） |
+| 断线 | 状态条提示「连接断开，重试中…」，2s 后重连 | web/index.html（Vite 模板） |
 | 只读 | 除 `request` 外不发任何消息 | — |
 
 ## 6. 服务端实现要点（`sync-server.js`）
@@ -418,7 +418,7 @@ ws://<host>:<port>/?room=<房间id>&role=host|stage|team&team=<队伍id>&label=<
 
 ## 8. 模块 API 索引
 
-> 全部挂在全局 `CI` 下（学生端是独立的 `CIStudent`）；内联事件直接调用，`tests/dom-check.js` 会逐个校验接口真实存在（`tests/dom-check.js:95-124`）。
+> 全部挂在全局 `CI` 下（学生端是独立的 `CIStudent`）；内联事件直接调用，`tests/dom-check.js` 会逐个校验接口真实存在（`tests/ui-vue.test.mjs（Vue 界面冒烟）-124`）。
 > 「位置」列是模块导出对象的行号，改动后可用 `node tests/doc-refs.js` 复核（见 [08 §7.5](08-开发部署与测试.md#75-文档行号审计)）。
 
 ### 8.1 `CI.store`（唯一数据源，`store.js:1200`）
@@ -449,10 +449,10 @@ ws://<host>:<port>/?room=<房间id>&role=host|stage|team&team=<队伍id>&label=<
 | `CI.classroom` | `handleCmd` `metaPayload` `setPresence` `setServerInfo` `resolvePending` `dropPending` `addBuzz` `clearBuzz` `clearFeed` `setAccepting` `setReveal` `isRevealed` **`moveQuestion`** `focusBuzz` `loadRemoteState` `applyRemote` `pickAnswerer` `currentQuestion` `box` `presence` `lastAutoResult` + UI：`render` `toggleAccepting` `toggleReveal` **`restoreFromHub`** `resolve` `drop` `saveRoom` `copyJoin` | `classroom.js:605` |
 | `CI.rollcall` | `candidates` `pick` `applyPick`（纯算法） | `rollcall.js:385` |
 | `CI.rollUI` | `render` `spin` `judge` `quick` `quickFor` `bindKeys` `currentStudent` `isSpinning` | `rollcall.js:386` |
-| `CI.bankUI` | `render` `renderList` `renderToolbar` `renderTierPanel` `openEditor` `closeEditor` `saveEditor` `remove` `toggleKind` `toggleImport` `parseImport` `doImport` `downloadTemplate` `exportJSON` `saveTier` `addTier` `removeTier` `openSettings` `saveSettings` `getFilter` | `bank.js:482` |
-| `CI.quizUI` | `render` `renderToolbar` `renderPicker` `renderQuestions` `renderCurrent` `renderRecords` `selectQuiz` `newQuiz` `renameQuiz` `closeQuiz` `deleteQuiz` `addSelected` `addAllTier` `addToCurrent` `setQuestion` `moveQuestion` `removeQuestion` `setStudent` `judge` `batchQuick` `removeRecord` `exportCSV` `currentQuiz` | `quiz.js:475` |
-| `CI.analysisUI` | `render` `setScope` `generate` `showStudentReport` `closeReport` `copyStudent` `copySummary` `downloadSummary` `exportCSV` `getScope` `getSummary` | `analysis-ui.js:242` |
-| `CI.admin` | `init` `gotoTab` `renderAll` `setSyncStatus` `addTeam` `renameTeam` `removeTeam` `pickIcon` `addStudent` `bulkAdd` `changeScore` `customScore` `quickTier` `zeroStudent` `undoLast` `saveWsHost` `exportBackup` `importBackup` `exportClassCSV` `openLogs` `resetAllScores` `factoryReset` … | `admin.js:593` |
+| `CI.bankUI` | `render` `renderList` `renderToolbar` `renderTierPanel` `openEditor` `closeEditor` `saveEditor` `remove` `toggleKind` `toggleImport` `parseImport` `doImport` `downloadTemplate` `exportJSON` `saveTier` `addTier` `removeTier` `openSettings` `saveSettings` `getFilter` | web/src/teacher/pages/bank/（Vue 题库页） |
+| `CI.quizUI` | `render` `renderToolbar` `renderPicker` `renderQuestions` `renderCurrent` `renderRecords` `selectQuiz` `newQuiz` `renameQuiz` `closeQuiz` `deleteQuiz` `addSelected` `addAllTier` `addToCurrent` `setQuestion` `moveQuestion` `removeQuestion` `setStudent` `judge` `batchQuick` `removeRecord` `exportCSV` `currentQuiz` | web/src/teacher/pages/quiz/（Vue 组卷页） |
+| `CI.analysisUI` | `render` `setScope` `generate` `showStudentReport` `closeReport` `copyStudent` `copySummary` `downloadSummary` `exportCSV` `getScope` `getSummary` | web/src/teacher/pages/AnalysisPage.vue（Vue 学情页） |
+| `CI.admin` | `init` `gotoTab` `renderAll` `setSyncStatus` `addTeam` `renameTeam` `removeTeam` `pickIcon` `addStudent` `bulkAdd` `changeScore` `customScore` `quickTier` `zeroStudent` `undoLast` `saveWsHost` `exportBackup` `importBackup` `exportClassCSV` `openLogs` `resetAllScores` `factoryReset` … | web/src/teacher/（Vue 教师端各页面） |
 | `CIStudent`（学生端） | `pickTeam` `switchTeam` `setAnswerer` `toggleOption` `draft` `submit` `buzz` `switchTab` `data` | `student.js:518-526` |
 
 ## 9. 自建客户端示例
@@ -493,6 +493,6 @@ ws.onmessage = (e) => {
 
 ### 9.3 推给自建服务器（v2 兼容）
 
-教师端页签⑥「大屏同步服务器」可填任意 `ws://` / `wss://` 地址（`admin.js:374-380`）。只要对方实现同一套 `state` / `request` 语义即可 —— 它收到 `state` 后按房间缓存并广播；若你的服务端只会发 `{type:'leaderboard', payload}`，v3 的大屏与学生端**同样能识别**（`index.html:160`、`student.js:90`）。
+教师端页签⑥「大屏同步服务器」可填任意 `ws://` / `wss://` 地址（web/src/teacher/（Vue 教师端各页面））。只要对方实现同一套 `state` / `request` 语义即可 —— 它收到 `state` 后按房间缓存并广播；若你的服务端只会发 `{type:'leaderboard', payload}`，v3 的大屏与学生端**同样能识别**（web/index.html（Vite 模板）、`student.js:90`）。
 
 > 反过来：v2 的老服务端（每 1s 广播 `leaderboard`）也能继续给 v3 页面供数据，但**没有房间、没有命令通道**，学生端无法参与。

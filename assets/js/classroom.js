@@ -620,7 +620,7 @@
           (s.runtime.accepting ? '⏸ 停止接收作答' : '▶ 开始接收作答') + '</button>' +
         '<button class="btn ' + (revealed ? 'btn-minus' : '') + '" onclick="CI.classroom.toggleReveal()">' +
           (revealed ? '隐藏答案' : '公布答案') + '</button>' +
-        '<button class="btn" onclick="CI.admin.gotoTab(\'tab-quiz\')">去组卷 / 选题</button>' +
+        '<button class="btn" onclick="location.hash = \'#/papers\'">去组卷 / 选题</button>' +
         '<button class="btn" onclick="CI.classroom.clearBuzz()">清空抢答榜</button>' +
         '<button class="btn" onclick="CI.classroom.clearFeed()">清空实时流与待确认</button>' +
         '<button class="btn" onclick="CI.classroom.restoreFromHub()" title="教师端换了电脑/清了浏览器数据时，从枢纽拉回最近一次课堂数据">从枢纽恢复课堂数据</button>' +

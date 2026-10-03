@@ -140,9 +140,10 @@ ok(guide.indexOf('EasyTier 官方 App') >= 0 && guide.indexOf('10.144.144.1:8080
 ok(guide.indexOf('同一个 WiFi') >= 0, '组网引导首推局域网直连');
 
 // 教师端页面确实挂了面板容器与脚本
-const adminHtml = fs.readFileSync(path.join(ROOT, 'admin.html'), 'utf8');
-ok(adminHtml.indexOf('id="classNet"') >= 0, 'admin.html 有组网面板容器 classNet');
-ok(adminHtml.indexOf('assets/js/net.js') >= 0, 'admin.html 引入 net.js');
+  // 2026-10：界面已统一到 Vue —— 组网面板在 web/src/teacher/pages/settings/NetworkPage.vue
+  const netPage = fs.readFileSync(path.join(ROOT, 'web', 'src', 'teacher', 'pages', 'settings', 'NetworkPage.vue'), 'utf8');
+  ok(netPage.length > 200, 'Vue 的「设置 · 组网」页存在');
+ok(/net\.js/.test(fs.readFileSync(path.join(ROOT, 'web', 'src', 'shared', 'bridge.ts'), 'utf8')), 'Vue 教师端通过 bridge 引入 net.js');
 
 // 学生端提供手填地址与引导
 const studentHtmlJs = fs.readFileSync(path.join(ROOT, 'assets', 'js', 'student.js'), 'utf8');

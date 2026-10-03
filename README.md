@@ -27,7 +27,7 @@ npm install
 npm start            # 或者直接双击「启动课堂.cmd」（会自动装依赖、起枢纽、开教师端）
 ```
 
-> ⚠️ **务必用 `http://localhost:8080/admin.html` 打开教师端**，不要双击 `admin.html`。
+> ⚠️ **务必用 `http://localhost:8080/` 打开教师端**，不要双击 HTML 文件（界面是 Vue 构建产物，需要 HTTP 环境）。
 > 直接双击是 `file://` 方式，页面拿不到本机地址，会进入**单机模式**（记分/点名/组卷/学情照常，但学生端与大屏接不进来），页面顶部会明确提示。
 > 另外 `启动课堂.cmd` 必须保持**纯 ASCII**：cmd.exe 按系统代码页解析批处理，中文会拆坏命令（现已改为英文提示 + 由枢纽打印中文）。
 
@@ -36,7 +36,7 @@ npm start            # 或者直接双击「启动课堂.cmd」（会自动装�
 
 | 端 | 地址 | 谁用 |
 | --- | --- | --- |
-| 教师端 | <http://localhost:8080/admin.html> | 老师（记分、组卷、点名、课堂控制、学情） |
+| 教师端 | <http://localhost:8080/> | 老师（记分、组卷、点名、课堂控制、学情） |
 | 学生端 | `http://<教师机IP>:8080/join` | 学生手机/平板（扫「⑦ 课堂协同」页的二维码最快） |
 | 教室大屏 | <http://localhost:8080/stage> | 投影/大屏，只读实时榜 |
 
@@ -57,8 +57,10 @@ npm start            # 或者直接双击「启动课堂.cmd」（会自动装�
 ## 目录结构
 
 ```
-admin.html              教师端主控台（7 个页签，角色 = host，唯一写入者）
-student.html            学生小组端（角色 = team：答题 / 抢答 / 看板 / 公屏模式）
+web/                    Vue 3 界面源码（构建到 web/dist，四个入口都由它产出）
+  ├─ index.html           大屏（Vite 模板 → dist/index.html）
+  ├─ admin.html           教师端（Vite 模板 → dist/admin.html）
+  └─ student.html         学生端（Vite 模板 → dist/student.html）
 index.html              教室大屏（角色 = stage，只读）
 sync-server.js          教师机本地枢纽：静态托管 + 房间 + 角色 + 状态缓存 + 命令转发 + 二维码
 启动课堂.cmd             Windows 一键启动（自动装依赖、开页面、起枢纽）

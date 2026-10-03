@@ -11,7 +11,8 @@ const WebSocket = require('ws');
 
 const ROOT = path.join(__dirname, '..');
 // 默认跟着枢纽的默认端口（8080）；也可用参数或 PORT 环境变量覆盖
-const BASE = process.argv[2] || ('http://127.0.0.1:' + (process.env.PORT || 8080) + '/next');
+// 2026-10：界面已统一到 Vue，主路径（/、/join、/stage）就是新界面，/next 只是兼容别名
+const BASE = process.argv[2] || ('http://127.0.0.1:' + (process.env.PORT || 8080));
 const OUT = path.join(ROOT, 'docs', 'screenshots-next');
 const CDP_PORT = 9455;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
