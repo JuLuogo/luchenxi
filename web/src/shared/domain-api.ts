@@ -158,7 +158,9 @@ export async function fetchPick(opts: { seed?: number } = {}): Promise<DomainPic
   // 候选名单：与 JS 的 candidates() 同一来源（启用中的学生）
   const students = (state.students || [])
     .filter((x) => x.active !== false)
-    .map((x) => ({ id: x.id, name: x.name, active: true, called: CI.store.calledCount(x.id) }));
+    // 注意：calledCount(state, sid) 要两个参数 —— 少传 state 会读到 undefined.rollcall
+    // （这是本项目最常见的 bug 类型，已经是第 4 次了；截图脚本的"页面错误"检查抓到的）
+    .map((x) => ({ id: x.id, name: x.name, active: true, called: CI.store.calledCount(state, x.id) }));
 
   // 已作答的人（排除作答者模式用）
   const quizId = state.runtime?.quizId ?? null;
