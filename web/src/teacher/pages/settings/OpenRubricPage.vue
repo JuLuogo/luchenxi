@@ -23,6 +23,36 @@ const rows = ref<Dim[]>(JSON.parse(JSON.stringify(
   (store.settings as any).openDimensions || (CI as any).openclass.defaultDimensions()
 )));
 
+/**
+ * 档位（档位名从低到高）
+ *
+ * 分数按档位**均匀映射**：第 k 档 → (k-1)/(N-1)×100（取整，与总分口径一致）。
+ * 所以三档就是 0/50/100、四档 0/33/67/100、五档 0/25/50/75/100 —— 不用逐档填分数。
+ */
+const levelLabels = ref<string[]>(
+  ((store.settings as any).openLevels || (CI as any).openclass.defaultLevels()).map((l: any) => l.label)
+);
+
+/** 当前档位名对应的分数（预览用） */
+const levelRates = computed<number[]>(() => {
+  const n = levelLabels.value.length;
+  if (n === 0) return [];
+  if (n === 1) return [100];
+  return levelLabels.value.map((_, i) => Math.round((i / (n - 1)) * 100));
+});
+
+function addLevel() {
+  levelLabels.value.push('');
+}
+function delLevel(i: number) {
+  if (levelLabels.value.length <= 2) { ElMessage.warning('至少保留两档'); return; }
+  levelLabels.value.splice(i, 1);
+}
+function resetLevels() {
+  levelLabels.value = (CI as any).openclass.defaultLevels().map((l: any) => l.label);
+  ElMessage.info('已恢复默认四档');
+}
+
 /** 大屏公开展示策略（smart / always / never） */
 const policy = ref<string>((store.settings as any).openEvalOnStage || 'smart');
 
@@ -40,7 +70,10 @@ function save() {
     weight: Number(d.weight) || 0,
     anchor: d.anchor.trim()
   }));
-  CI.store.updateSettings({ openDimensions: clean, openEvalOnStage: policy.value } as any);
+  const labels = levelLabels.value.map((s) => s.trim()).filter(Boolean);
+  if (labels.length < 2) { ElMessage.warning('至少两档，且档位名不能为空'); return; }
+  const levels = (CI as any).openclass.levelsFromLabels(labels);
+  CI.store.updateSettings({ openDimensions: clean, openEvalOnStage: policy.value, openLevels: levels } as any);
   ElMessage.success('已保存（权重不必和为 100，会自动按有效维度归一）');
 }
 
@@ -59,9 +92,14 @@ function delRow(i: number) {
 }
 
 function previewComment() {
+  const levels = (CI as any).openclass.levelsFromLabels(
+    levelLabels.value.map((s) => s.trim()).filter(Boolean)
+  );
+  const n = levels.length;
   const ev = (CI as any).openclass.evaluate(
-    rows.value.map((d, i) => ({ key: d.key, score: i === 0 ? 4 : 3 })),
-    rows.value
+    rows.value.map((d, i) => ({ key: d.key, score: i === 0 ? n : Math.max(1, n - 1) })),
+    rows.value,
+    levels
   );
   ElMessageBox.alert(
     '<b>' + ev.total + ' 分 · ' + ev.level + '</b><br/><br/>「' + ev.comment + '」',
@@ -95,6 +133,28 @@ function previewComment() {
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="levels">
+      <div class="levels-head">
+        <b>档位</b>
+        <span class="sub">从低到高；分数按档位均匀映射（三档 0/50/100，四档 0/33/67/100，五档 0/25/50/75/100）</span>
+        <div class="levels-actions">
+          <el-button size="small" @click="addLevel">加一档</el-button>
+          <el-button size="small" @click="resetLevels">恢复默认四档</el-button>
+        </div>
+      </div>
+      <div class="levels-row">
+        <div v-for="(_, i) in levelLabels" :key="i" class="level-item">
+          <el-input v-model="levelLabels[i]" :placeholder="'第 ' + (i + 1) + ' 档名称'" style="width: 130px" />
+          <span class="level-rate">{{ levelRates[i] }} 分</span>
+          <el-button text type="danger" size="small" @click="delLevel(i)">删</el-button>
+        </div>
+      </div>
+      <div class="levels-hint">
+        例：三档填「待改进 / 合格 / 优秀」；五档填「差 / 中 / 良 / 优 / 特优」。
+        <b>档位名会出现在公开课评价页、大屏、学生端与导出的 CSV 里。</b>
+      </div>
+    </div>
 
     <div class="actions">
       <el-button @click="addRow">加一维</el-button>
@@ -138,6 +198,14 @@ function previewComment() {
 .sum { margin-left: auto; color: var(--el-text-color-secondary); font-size: 13px; }
 .sum.bad { color: var(--el-color-danger); }
 .note-body { font-size: 13px; line-height: 1.7; }
+.levels { margin-bottom: 18px; }
+.levels-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.levels-head .sub { color: var(--el-text-color-secondary); font-size: 12px; }
+.levels-actions { margin-left: auto; }
+.levels-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.level-item { display: flex; align-items: center; gap: 6px; }
+.level-rate { color: var(--el-text-color-secondary); font-size: 12px; width: 44px; }
+.levels-hint { color: var(--el-text-color-secondary); font-size: 12px; margin-top: 8px; line-height: 1.7; }
 .policy { margin-bottom: 16px; }
 .policy-group { margin: 8px 0; }
 .policy-hint { color: var(--el-text-color-secondary); font-size: 13px; line-height: 1.7; }
