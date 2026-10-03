@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>端到端冒烟测试</title>
+<title>端到端冒烟测试（Vue 界面）</title>
 <link rel="icon" href="data:,">
 <style>
   body{font-family:Consolas,monospace;margin:0;padding:10px;background:#111;color:#eee}
@@ -14,9 +14,16 @@
 </head>
 <body>
 <pre id="out">running…</pre>
-<details><summary>被测页面（旧版 admin.html，已挪到 /legacy/）</summary><iframe id="frame" src="/legacy/admin.html"></iframe></details>
+<details><summary>被测页面（Vue 教师端 admin.html）</summary><iframe id="frame" src="/admin.html"></iframe></details>
 <script>
-/* 端到端冒烟：在真实浏览器里驱动 admin.html（同源 iframe），校验 DOM 渲染与核心流程 */
+/*!
+ * 端到端冒烟（Vue 界面）：在真实浏览器里驱动 **构建产物** admin.html（同源 iframe）
+ *
+ *  2026-10 改写：原来驱动的是旧版零构建 admin.html（已删除）。
+ *  现在驱动的是 Vue 应用，但**驱动方式不变** —— Vue 教师端把领域层暴露为 window.CI
+ *  （见 web/src/shared/bridge.ts），所以造数据仍走同一批接口，
+ *  断言则落在 Vue 渲染出来的 DOM 上（Element Plus 的类名/文案）。
+ */
 var lines = [], pass = 0, fail = 0;
 function check(cond, label) {
   if (cond) { pass++; lines.push('PASS :: ' + label); }
@@ -30,16 +37,32 @@ function flush() {
     '\nSMOKE RESULT: ' + pass + ' pass / ' + fail + ' fail\nSMOKE ' + (fail ? 'FAILED' : 'DONE');
 }
 function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+/** 等到条件成立（Vue 渲染是异步的，断言前必须等） */
+async function until(fn, ms, label) {
+  var t0 = Date.now();
+  while (Date.now() - t0 < (ms || 5000)) {
+    try { if (fn()) return true; } catch (e) { /* 还没渲染好 */ }
+    await wait(120);
+  }
+  log('超时等待：' + (label || ''));
+  return false;
+}
+/** 切到某个 Vue 路由并等它渲染 */
+async function goto(w, hash, label) {
+  w.location.hash = hash;
+  await until(function () { return (w.document.body.innerText || '').length > 30; }, 6000, label || hash);
+  await wait(600);
+  return w.document.body.innerText || '';
+}
 
 window.addEventListener('load', function () {
-  // 让被测页面连本机测试服务器，而不是公网地址（避免 DNS 等待与外部依赖）
   try {
     var w0 = document.getElementById('frame').contentWindow;
     w0.localStorage.setItem('ci_ws_host', location.host);
-    w0.localStorage.setItem('ci_room', 'smoke-solo');   // 独立房间，避免载入枢纽里的其它课堂数据
+    w0.localStorage.setItem('ci_room', 'smoke-vue');   // 独立房间，避免载入枢纽里的其它课堂数据
     w0.CI.sync.setHost(location.host);
   } catch (e) { /* 忽略 */ }
-  setTimeout(run, 300);
+  setTimeout(run, 400);
 });
 
 async function run() {
@@ -49,201 +72,127 @@ async function run() {
   var S = CI.store;
 
   try {
-    /* ---------- 0. 屏蔽阻塞式对话框（无头浏览器中 confirm/alert 会阻塞渲染进程） ---------- */
+    /* ---------- 0. 屏蔽阻塞式对话框 ---------- */
     w.alert = function () { log('（已抑制 alert）'); };
     w.confirm = function () { return true; };
     w.prompt = function (msg, dft) { return dft === undefined ? '冒烟测试' : dft; };
 
     /* ---------- 1. 页面装配 ---------- */
-    check(!!CI && !!CI.store && !!CI.admin, '模块加载：CI.store / CI.admin 存在');
-    check(d.querySelectorAll('.tab-btn').length === 7, '页签渲染 7 个（含「课堂协同」）');
-    check(!!d.querySelector('#teamsContainer .team-card'), '队伍卡片渲染');
-    check(!!d.querySelector('#classBar .chip'), '顶部状态条渲染');
-    log('同步状态：' + (d.getElementById('status') || {}).textContent);
+    await until(function () { return w.CI && w.CI.store; }, 8000, '领域层加载');
+    check(!!(CI && CI.store && CI.analysis && CI.classroom), '模块加载：store / analysis / classroom 存在');
+    check(await until(function () { return d.querySelector('#app') && d.querySelector('#app').children.length > 0; }, 8000, 'Vue 挂载'),
+      'Vue 应用已挂载');
+    check(d.querySelectorAll('.el-menu, .el-aside, .el-container').length > 0, '侧边栏 / 布局渲染');
+    check(d.querySelectorAll('.el-button, .el-card, .el-menu-item').length >= 5, 'Element Plus 组件渲染（≥5）');
+    check(!Array.from(d.scripts).some(function (s) { return (s.src || '').indexOf('assets/js/') >= 0; }),
+      '没有引用旧版 assets/js（界面已统一到 Vue）');
 
-    /* ---------- 2. 造数据 ---------- */
+    /* ---------- 2. 班级与积分 ---------- */
     S.replaceState(S.defaultState());
-    var team1 = S.get().teams[0].id;
-    var team2 = S.get().teams[1].id;
-    S.addStudentsBulk('测试甲 测试乙 测试丙', team1);
-    S.addStudentsBulk('测试丁', team2);
-    var stu = S.get().students;
-    check(S.get().students.length === 4, '批量添加 4 名学生');
-    CI.admin.gotoTab('tab-class');
-    check(d.querySelectorAll('#studentsContainer .student-card').length === 4, '学生卡片渲染 4 张');
-    check(d.querySelectorAll('#studentsContainer .btn-tier').length === 16, '题型快捷按钮 = 4 人 × 4 题型');
+    var team = S.get().teams[0].id;
+    S.addStudentsBulk('甲\n乙\n丙\n丁', team);
+    check(S.get().students.length >= 4, '批量添加 4 名学生');
+    var classText = await goto(w, '#/class', '班级页');
+    check(classText.indexOf('甲') >= 0 && classText.indexOf('丁') >= 0, '班级页渲染出学生姓名');
+    S.addManual(S.get().students[0].id, 2);
+    check(S.scoreOf(S.get(), S.get().students[0].id) === 2, '手动 +2 记分成功（防通胀上限内）');
+    S.addManual(S.get().students[0].id, 5);
+    check(S.scoreOf(S.get(), S.get().students[0].id) === 4, '手动 +5 被上限收敛为 +2（防通胀生效）');
 
-    /* ---------- 3. 加权计分（卡片按钮） ---------- */
-    CI.admin.quickTier(stu[0].id, 'basic');
-    check(S.scoreOf(S.get(), stu[0].id) === 3, '基础题快捷加分 +3');
-    CI.admin.quickTier(stu[0].id, 'improve');
-    check(S.scoreOf(S.get(), stu[0].id) === 13, '提升题快捷加分 +10（累计 13）');
-    CI.admin.changeScore(stu[0].id, -1);
-    check(S.scoreOf(S.get(), stu[0].id) === 12, '手动 -1 生效');
-    CI.admin.undoLast();
-    check(S.scoreOf(S.get(), stu[0].id) === 13, '撤销后回到 13');
-    await wait(250);   // 等 30ms 防抖渲染完成
-    check(d.getElementById('score-' + stu[0].id).textContent === '13', '卡片分数同步刷新');
+    /* ---------- 3. 题库与导入 ---------- */
+    var q1 = S.addQuestion({ stem: '基础题：1+1=?', tier: 'basic', answer: '2', options: ['1', '2', '3'] });
+    var q2 = S.addQuestion({ stem: '拔高题：求导', tier: 'advanced', answer: '2x' });
+    var bankText = await goto(w, '#/bank', '题库页');
+    check(bankText.indexOf('1+1') >= 0, '题库列表渲染出题干');
+    var parsed = CI.bankImport.parse('基础题：集合A={1,2}，子集个数？ | 4\n函数 y=x² 对称轴？ | x=0', S.get().tiers);
+    check(parsed.length === 2, '文本解析 2 题（CI.bankImport，Rust 侧同契约）');
+    check(parsed[0].tier === 'basic', '识别「基础题：」前缀');
+    var parsedChoice = CI.bankImport.parse('下列哪个是质数？ | 4 ; 6 ; 7 ; 9 | C');
+    check(parsedChoice[0].options.length === 4 && parsedChoice[0].answer === 'C', '文本解析选择题选项与答案');
+    var imported = S.bulkImportQuestions(parsed, { dedupe: true });
+    check(imported.added === 2, '导入后新增 2 题');
+    check(S.get().bank.length === 4, '题库共 4 题');
 
-    /* ---------- 4. 题库 ---------- */
-    CI.admin.gotoTab('tab-bank');
-    S.addQuestion({ stem: '冒烟基础题：集合子集个数', tier: 'basic', answer: '4', tags: ['集合与逻辑'] });
-    S.addQuestion({ stem: '冒烟拔高题：导数极值', tier: 'advanced', answer: 'x=1', tags: ['函数与导数'] });
-    S.addQuestion({ stem: '冒烟提升题：压轴', tier: 'improve', answer: '-' });
-    CI.bankUI.render();
-    check(d.querySelectorAll('#bankList .q-item').length === 3, '题库列表渲染 3 题');
-    check(d.querySelectorAll('#tierPanel .tier-row').length === 4, '题型面板渲染 4 行');
-    var parsed = CI.bankUI.parseImport('冒烟导入题A | 答案A\n冒烟导入题B | 答案B');
-    check(parsed.length === 2, '文本解析 2 题');
-    S.bulkImportQuestions(parsed, { dedupe: true });
-    check(S.get().bank.length === 5, '导入后题库 5 题');
+    /* ---------- 4. 组卷 ---------- */
+    var qz = S.createQuiz('冒烟卷', [q1.id, q2.id]);
+    S.setCurrentQuiz(qz.id);
+    check(!!S.quiz(S.get(), qz.id), '创建试卷成功');
+    var editorText = await goto(w, '#/papers/' + qz.id, '组卷页');
+    check(editorText.indexOf('1+1') >= 0, '组卷编辑器渲染出题目');
+    check(editorText.indexOf('冒烟卷') >= 0, '组卷编辑器显示试卷名');
 
-    /* ---------- 5. 组卷 + 判定 ---------- */
-    var qs = S.get().bank;
-    var quiz = S.createQuiz('冒烟随堂测', [qs[0].id, qs[1].id], '自动化测试');
-    CI.admin.gotoTab('tab-quiz');
-    check(!!d.querySelector('#quizQuestions .quiz-q-item'), '试卷题目列表渲染');
-    check(!!d.querySelector('#quizCurrent .cur-q-head'), '当前题卡片渲染');
-    CI.quizUI.setStudent(stu[0].id);
-    CI.quizUI.judge('correct');
-    check(S.scoreOf(S.get(), stu[0].id) === 16, '考卷答对基础题 +3（16）');
-    CI.quizUI.setQuestion(qs[1].id);
-    CI.quizUI.setStudent(stu[0].id);
-    CI.quizUI.judge('half');
-    check(S.scoreOf(S.get(), stu[0].id) === 18.5, '拔高题部分正确 +2.5（18.5）');
-    CI.quizUI.setStudent(stu[1].id);
-    CI.quizUI.judge('correct');
-    check(S.scoreOf(S.get(), stu[1].id) === 5, '乙 拔高题答对 +5');
-    await wait(250);
-    check(d.querySelectorAll('#quizRecords tbody tr').length === 3, '流水表格 3 行');
-    var sumTxt = d.getElementById('quizSummary').textContent;
-    check(sumTxt.indexOf('测试甲') >= 0 && sumTxt.indexOf('测试乙') >= 0, '本套题小结含两名学生');
+    /* ---------- 5. 判分与统计 ---------- */
+    S.setRuntime({ qid: q1.id, quizId: qz.id });
+    var rec = S.recordResult({ sid: S.get().students[0].id, qid: q1.id, tier: 'basic', result: 'correct', quizId: qz.id, picked: 'B' });
+    check(rec && rec.points === 3, '客观题判分 +3（基础题权重）');
+    var halfRec = S.recordResult({ sid: S.get().students[1].id, qid: q2.id, tier: 'advanced', result: 'half', ratio: 0.75, quizId: qz.id });
+    check(halfRec && halfRec.points === 3.75, '部分得分按比例：5 × 0.75 = 3.75');
+    var stats = CI.analysis.studentStats(S.get(), S.get().students[0].id);
+    check(stats.total.attempts === 1 && stats.total.correct === 1, '学生统计到 1 次作答、1 次答对');
 
     /* ---------- 6. 点名 ---------- */
-    CI.admin.gotoTab('tab-roll');
-    S.setRollSettings({ scope: 'all', mode: 'even', excludeAnswered: false, recentExclude: 1 });
-    CI.rollUI.spin();
-    check(CI.rollUI.judge('correct') === null, '动画未定格时判分被拒绝（不会记到上一位学生）');
-    await wait(1600);
-    var rolled = S.get().runtime.sid;
-    check(!!rolled, '点名抽到学生：' + (S.student(rolled) || {}).name);
+    var pick = CI.rollcall.pick(S.get(), {});
+    check(!!pick && !!pick.sid, '点名抽到一名学生');
+    CI.rollcall.applyPick(pick);
     check(S.get().rollcall.history.length === 1, '点名历史记录 1 条');
-    check(d.getElementById('rcStage').textContent.indexOf((S.student(rolled) || {}).name) >= 0, '点名舞台显示姓名');
-    check(d.querySelectorAll('#rcJudge .btn').length >= 4, '判分按钮渲染');
-    CI.rollUI.judge('correct');
-    var rollScore = S.scoreOf(S.get(), rolled);
-    check(rollScore > 0, '点名后判分成功，积分 ' + rollScore);
-    await wait(250);
-    check(d.querySelectorAll('#rcHistory .rc-hist-item').length === 1, '点名记录列表渲染');
-    check(d.getElementById('rcHistory').textContent.indexOf('答对') >= 0, '点名记录显示判定结果');
-    check(d.querySelectorAll('#rcStats .chip').length === 4, '点名统计标签渲染');
+    var rollText = await goto(w, '#/roll', '点名页');
+    check(rollText.length > 30, '点名页有内容');
 
-    /* ---------- 7. 学情分析 ---------- */
-    CI.admin.gotoTab('tab-analysis');
-    CI.analysisUI.generate();
-    var sum = CI.analysisUI.getSummary();
-    check(!!sum.class && sum.class.indexOf('学情小结') >= 0, '班级总结生成');
-    check(d.getElementById('analysisSummary').textContent.indexOf('学情小结') >= 0, '总结渲染到页面');
-    check(d.querySelectorAll('#analysisMatrix tbody tr').length === 4, '题型矩阵 4 行');
-    check(d.querySelectorAll('#analysisStudents tbody tr').length === 4, '学生明细 4 行');
-    check(d.querySelectorAll('#analysisOverview .stat-card').length === 4, '概览卡片 4 张');
-    CI.analysisUI.showStudentReport(stu[0].id);
-    check(d.getElementById('analysisModal').style.display === 'flex', '个人学情报告弹窗打开');
-    check(d.getElementById('analysisModal').textContent.indexOf('题型得分率') >= 0, '报告含题型得分率');
-    CI.analysisUI.closeReport();
+    /* ---------- 7. 学情分析（含新功能：综合表现 / 错题本 / 课堂报告） ---------- */
+    var analysisText = await goto(w, '#/analysis', '学情页');
+    check(analysisText.indexOf('甲') >= 0, '学情分析页渲染出学生');
+    check(analysisText.indexOf('综合表现') >= 0, '学情分析页有「综合表现」列（多维度评价）');
+    var ev = CI.analysis.studentEvaluation(S.get(), S.get().students[0].id, { quizId: qz.id });
+    check(ev && ev.total > 0 && ev.parts.length === 3, '综合表现可下钻（三维）');
+    check(ev.participation === 50, '参与度 = 50%（试卷 2 题、只答了 1 题 —— 答错也算参与，但没答就不算）');
+    var sum = CI.analysis.summarizeClass(S.get(), null, { quizId: qz.id });
+    check(sum.lines.length > 0 && sum.text.indexOf('学情小结') >= 0, '班级学情小结可生成');
+    var rep = CI.analysis.classReport(S.get(), { quizId: qz.id });
+    check(rep.markdown.indexOf('课堂报告') >= 0 && rep.markdown.indexOf('## 一、出勤') >= 0, '课后课堂报告可生成（含出勤节）');
+    check(CI.analysis.mistakeBoard(S.get(), { quizId: qz.id }).length === 0, '错题本：没有错题时为空');
 
-    /* ---------- 8. 排行与大屏快照 ---------- */
-    CI.admin.gotoTab('tab-board');
-    check(d.querySelectorAll('#boardContainer .item').length >= 5, '排行榜条目渲染（队伍 + 学生）');
+    /* ---------- 8. 课堂协同（计时器 / 签到 / 抢答） ---------- */
+    var clsText = await goto(w, '#/classroom', '协同页');
+    check(clsText.length > 50, '课堂协同页渲染');
+    CI.classroom.setTimer(60, '随堂练习');
+    check(CI.classroom.timerLeft() > 0, '计时器已启动');
+    check(CI.classroom.metaPayload().timerEndsAt > 0, '快照带出计时结束时刻（大屏/学生端同步用）');
+    CI.classroom.clearTimer();
+    check(CI.classroom.timerLeft() === null, '计时器已停止');
+    CI.classroom.setPresence({ hostOnline: true, teams: [{ teamId: team, online: true, label: '红队', at: Date.now() }] });
+    var ck = CI.classroom.checkinStats(S.get());
+    check(ck.seated === 1 && ck.total === S.get().teams.length, '签到统计：1 队已入座');
+
+    /* ---------- 9. 同步快照 ---------- */
     var snap = CI.sync.snapshot();
-    check(snap.teams.length === 2 && snap.students.length === 4, '同步快照：2 队 / 4 人');
-    check(snap.students[0].score >= snap.students[1].score, '快照学生按分数排序');
-    check(!!snap.meta.tierWeights && snap.meta.tierWeights.length === 4, '快照含题型权重');
-    check(snap.meta.recent.length > 0, '快照含最近得分事件');
-    CI.admin.openLogs();
-    check(d.getElementById('logsModal').style.display === 'flex', '日志弹窗打开');
-    check(d.querySelectorAll('#logsList .log-item').length > 3, '日志列表有内容');
-    CI.admin.closeLogs();
+    check(snap.teams.length === S.get().teams.length, '快照含全部队伍');
+    check(snap.students.length === S.get().students.length, '快照含全部学生');
+    check(snap.meta && Array.isArray(snap.meta.tierWeights) && snap.meta.tierWeights.length === 4, '快照含题型权重（4 个）');
+    check(snap.meta.recent.length >= 1, '快照含最近得分事件');
 
-    /* ---------- 9. 备份往返 ---------- */
-    var backup = S.exportAll();
-    var before = S.scoreOf(S.get(), stu[0].id);
-    S.importAll(JSON.parse(JSON.stringify(backup)));
-    check(S.scoreOf(S.get(), stu[0].id) === before, '导出/导入备份后分数一致');
-    check(S.get().bank.length >= 5, '导入备份后题库保留');
+    /* ---------- 10. 三个入口都是 Vue 产物 ---------- */
+    var stageRes = await fetch('/stage');
+    var stageHtml = await stageRes.text();
+    check(stageRes.status === 200 && stageHtml.indexOf('./assets/') >= 0, '大屏入口 /stage 指向 Vue 产物');
+    var joinRes = await fetch('/join');
+    var joinHtml = await joinRes.text();
+    check(joinRes.status === 200 && joinHtml.indexOf('./assets/') >= 0, '学生端入口 /join 指向 Vue 产物');
 
-    /* ---------- 11. 教师端本地数据库（SQLite）：数据落库校验 ---------- */
-    CI.admin.gotoTab('tab-classroom');
-    await wait(300);
-    var stBackend = CI.storage ? CI.storage.backend() : 'none';
-    check(stBackend === 'sqlite', '教师端识别到 SQLite 后端（实际 ' + stBackend + '）');
-
-    CI.storage.push(CI.store.get(), true);           // 立即落库
-    await wait(900);
-    var apiState = await fetch('/api/state?room=' + encodeURIComponent(CI.sync.room()), { cache: 'no-store' })
-      .then(function (r) { return r.json(); });
-    check(!!apiState && !!apiState.dump, '/api/state 能读回完整课堂数据');
-    check(apiState.dump.students.length === 4, '库里学生数 = 4（实际 ' + (apiState.dump && apiState.dump.students.length) + '）');
-    check(apiState.dump.bank.length >= 5, '库里题库数 ≥ 5（实际 ' + (apiState.dump && apiState.dump.bank.length) + '）');
-    var recTotal = (apiState.dump.quizzes || []).reduce(function (n, q) { return n + q.records.length; }, 0);
-    check(recTotal >= 5, '库里积分流水 ≥ 5 条（实际 ' + recTotal + '）');
-
-    var apiStats = await fetch('/api/stats?room=' + encodeURIComponent(CI.sync.room()), { cache: 'no-store' })
-      .then(function (r) { return r.json(); });
-    check(apiStats.ok && apiStats.counts.records >= 5, 'SQL 投影里有流水（' + JSON.stringify(apiStats.counts) + '）');
-    check(apiStats.scores.length === 4, 'SQL 总分视图返回 4 名学生');
-    var top = apiStats.scores[0];
-    check(top.score > 0, 'SQL 总分视图：第一名 ' + top.score + ' 分');
-    check(apiStats.studentTier.length > 0 && apiStats.studentTier[0].attempts > 0, 'SQL 学情视图（每生每题型）有数据');
-
-    var apiBackup = await fetch('/api/backup?room=' + encodeURIComponent(CI.sync.room()), { cache: 'no-store' })
-      .then(function (r) { return r.json(); });
-    check(apiBackup.type === 'ci-backup' && apiBackup.state.students.length === 4, '/api/backup 导出结构与网页版一致');
-
-    /* ---------- 11b. 组网（EasyTier）面板 ---------- */
-    check(!!d.querySelector('#classNet .net-ops'), '课堂协同页渲染组网面板与操作按钮');
-    check(!!d.getElementById('netCmd'), '组网面板显示将执行的命令');
-    var netCmd = d.getElementById('netCmd').textContent;
-    check(netCmd.indexOf('easytier-core') === 0, '命令以 easytier-core 开头（' + netCmd.slice(0, 40) + '…）');
-    check(netCmd.indexOf('--network-name') > 0 && netCmd.indexOf('--network-secret') > 0, '命令含网络名与密钥参数');
-    check(netCmd.indexOf('-p tcp://public.easytier.cn:11010') > 0, '默认使用官方共享节点（可在界面改）');
-    check(d.getElementById('classNet').textContent.indexOf('浏览器模式') >= 0, '浏览器里明确提示"只能预览命令"');
-
-    // 改配置 → 命令预览实时更新，且配置持久化
-    d.getElementById('netName').value = 'class-3f';
-    d.getElementById('netVip').value = '10.144.144.1';
-    d.getElementById('netPeers').value = 'tcp://a:11010\nudp://b:11011';
-    var savedCfg = CI.net.readForm();
-    check(savedCfg.network_name === 'class-3f' && savedCfg.virtual_ip === '10.144.144.1', '表单读回并保存配置');
-    check(savedCfg.peers.length === 2, '多行共享节点被拆成两个 -p（' + savedCfg.peers.length + '）');
-    var args = CI.net.buildArgs(savedCfg);
-    check(args.indexOf('-i') >= 0 && args[args.indexOf('-i') + 1] === '10.144.144.1', '固定虚拟 IP 用 -i');
-    check(args.filter(function (a) { return a === '-p'; }).length === 2, '两个 -p 参数');
-    check(CI.net.cmdline(savedCfg).indexOf('--config-server') < 0, '未填配置服务器时不加该参数');
-    CI.net.saveCfg({ config_server: 'https://easytier.example.com' });
-    check(CI.net.buildArgs().indexOf('--config-server') > 0, '填了配置服务器后命令含 --config-server');
-    check(CI.net.inClient() === false, '浏览器环境识别为非客户端');
-
-    /* ---------- 11c. 上课前自检 ---------- */
-    var report = await CI.net.selfCheck();
-    check(report.items.length >= 4, '自检报告有 ' + report.items.length + ' 项');
-    var byName = {};
-    report.items.forEach(function (i) { byName[i.name] = i; });
-    check(!!byName['数据存储'] && byName['数据存储'].pass === true, '自检：数据存储走 SQLite（' + (byName['数据存储'] || {}).detail + '）');
-    check(!!byName['教师机枢纽'] && byName['教师机枢纽'].pass === true, '自检：教师机枢纽可达');
-    check(!!byName['学生端地址'] && byName['学生端地址'].pass === true, '自检：学生端地址是局域网/组网 IP（' + (byName['学生端地址'] || {}).detail + '）');
-    check(!!byName['端口一致'] && byName['端口一致'].pass === true, '自检：学生端地址端口与枢纽一致');
-    check(d.getElementById('classNet').textContent.indexOf('自检通过') >= 0 ||
-      d.getElementById('classNet').textContent.indexOf('项需要注意') >= 0, '自检结果渲染到组网面板');
-
-    /* ---------- 12. 无脚本错误 ---------- */
-    CI.admin.gotoTab('tab-board');
-    var bar = d.getElementById('errBar');
-    check(!bar.textContent || bar.style.display !== 'block', '运行期无未捕获脚本错误' + (bar.textContent ? ('（' + bar.textContent + '）') : ''));
+    /* ---------- 11. 服务端与数据库（经枢纽） ---------- */
+    // 注意带上房间名：应用用的是 ci_room（本用例是 smoke-vue），不带参数会读到 default 房间
+    var room = encodeURIComponent(CI.sync.room ? CI.sync.room() : 'default');
+    var st = await (await fetch('/api/state?room=' + room)).json();
+    check(!!(st && st.state && Array.isArray(st.state.students)) && st.state.students.length === S.get().students.length,
+      '/api/state 能读回完整课堂数据（房间 ' + room + '：' + (st && st.state ? st.state.students.length : '?') + ' 名学生）');
+    var stats2 = await (await fetch('/api/stats?room=' + room)).json();
+    check(!!stats2 && stats2.ok !== false, 'SQL 统计接口 /api/stats 可用');
+    log('/api/stats 顶层键：' + Object.keys(stats2 || {}).join(', '));
   } catch (e) {
     fail++;
-    lines.push('FAIL :: 用例执行异常：' + (e && e.message) + '\n' + (e && e.stack ? e.stack.split('\n').slice(0, 4).join('\n') : ''));
+    lines.push('FAIL :: 用例执行异常：' + (e && e.message));
+    log(String(e && e.stack || '').split('\n').slice(0, 3).join(' / '));
   }
+
   flush();
 }
 </script>

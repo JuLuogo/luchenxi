@@ -6,7 +6,7 @@
  * 顺序与 assets/js/*.js 的约定一致，tests/dom-check.js 也在校验这个顺序。
  *
  * 它们内部只在函数被调用时才访问 DOM，因此不加载旧页面也不会报错；
- * 旧的那批 render 函数（CI.bankUI.render 等）保留但不再使用。
+ * 旧的那批 render 函数（已随旧界面删除）。
  */
 import type { DomainApi } from '@/bindings/domain';
 
@@ -18,12 +18,12 @@ import '@domain/sync.js';
 import '@domain/classroom.js';
 import '@domain/net.js';
 import '@domain/rollcall.js';
-import '@domain/bank.js';
+import '@domain/import.js';
 /*
  * 说明（2026-10）：这里原来还按旧页面的顺序 import 了 quiz.js / analysis-ui.js。
  * Vue 界面**一处都没用到**它们 —— 它们只提供 CI.quizUI / CI.analysisUI 那批旧 render 函数，
  * 所以去掉了（少两个模块的副作用加载，也为将来删掉旧渲染层铺路）。
- * bank.js 必须保留：Vue 的批量导入页用 CI.bankUI.parseImport（同一套解析规则，已被测试覆盖）。
+ * 批量导入的解析规则在 import.js（bankImport），已从旧版 bank.js 下沉出来。
  */
 
 /** 领域层命名空间（store / grade / classroom / sync / net / analysis / rollcall …） */

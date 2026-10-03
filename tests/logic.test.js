@@ -28,6 +28,7 @@ require(path.join(__dirname, '..', 'assets', 'js', 'grade.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'sync.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'rollcall.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'classroom.js'));
+require(path.join(__dirname, '..', 'assets', 'js', 'import.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'bank.js'));
 
 const CI = globalThis.CI;
@@ -196,14 +197,14 @@ eq(dump.type, 'ci-question-bank', '导出格式标记');
 eq(dump.questions.length, 2, '导出题目数');
 eq(dump.questions[0].tierLabel, '基础题', '导出含中文题型名');
 
-const parsed = CI.bankUI.parseImport('基础题：集合A={1,2}，子集个数？ | 4\n函数 y=x² 对称轴？ | x=0');
+const parsed = CI.bankImport.parse('基础题：集合A={1,2}，子集个数？ | 4\n函数 y=x² 对称轴？ | x=0', S.get().tiers);
 eq(parsed.length, 2, '文本导入解析 2 行');
 eq(parsed[0].tier, 'basic', '识别「基础题：」前缀');
 eq(parsed[0].answer, '4', '识别 | 分隔的答案');
-eq(CI.bankUI.parseImport('[{"stem":"JSON题","tier":"improve"}]').length, 1, 'JSON 数组导入');
+eq(CI.bankImport.parse('[{"stem":"JSON题","tier":"improve"}]').length, 1, 'JSON 数组导入');
 
 // 选择题的文本写法：题干 | 选项1 ; 选项2 ; 选项3 | 答案
-const parsedChoice = CI.bankUI.parseImport('下列哪个是质数？ | 4 ; 6 ; 7 ; 9 | C');
+const parsedChoice = CI.bankImport.parse('下列哪个是质数？ | 4 ; 6 ; 7 ; 9 | C');
 eq(parsedChoice[0].options, ['4', '6', '7', '9'], '文本导入识别选择题选项');
 eq(parsedChoice[0].answer, 'C', '文本导入识别选择题答案');
 
@@ -512,7 +513,7 @@ eq(dupNoQuiz.reason, 'duplicate', '没有当前试卷时也判重（快捷记分
 eq(S.scoreOf(S.get(), cStuB.id), beforeNoQuiz, '重复提交没有重复加分');
 
 // 选择题文本导入支持三个以上答案字母
-const multi3 = CI.bankUI.parseImport('多选题：以下哪些是质数？ | 2 ; 3 ; 4 ; 5 | ABD');
+const multi3 = CI.bankImport.parse('多选题：以下哪些是质数？ | 2 ; 3 ; 4 ; 5 | ABD');
 eq(multi3[0].options.length, 4, '三答案选择题：选项解析');
 eq(multi3[0].answer, 'ABD', '三答案选择题：答案字母 ABC 形式被识别');
 eq(CI.grade.auto({ options: ['2', '3', '4', '5'], answer: 'ABD' }, { choice: ['A', 'B', 'D'] }).result, 'correct',

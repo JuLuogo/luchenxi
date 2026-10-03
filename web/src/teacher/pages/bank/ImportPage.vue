@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 题库中心 · 批量导入
- * 解析器直接用 CI.bankUI.parseImport（与旧版同一套规则，已被测试覆盖），
+ * 解析器用领域层的 CI.bankImport.parse（Rust 侧 bank_import.rs 同契约、有 parity），
  * 导入前用 CI.grade.validateQuestion 列出判分风险并让老师确认。
  */
 import { computed, ref } from 'vue';
@@ -24,7 +24,8 @@ const SAMPLE = [
 const parsed = computed(() => {
   if (!text.value.trim()) return [];
   try {
-    return CI.bankUI.parseImport(text.value);
+    // 用领域层的解析器（CI.bankImport，Rust 侧同契约、有 parity），不再依赖旧版 bankUI
+  return (CI as any).bankImport.parse(text.value, store.tiers);
   } catch (e) {
     return [{ __error: e.message }];
   }

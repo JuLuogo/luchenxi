@@ -238,7 +238,7 @@ function step(title, detail) {
         S.addQuestion({ stem: '基础题：集合 {1,2,3} 的子集个数是？', tier: 'basic', answer: 'B', options: ['6', '8', '9'], tags: ['集合与逻辑'] });
         S.addQuestion({ stem: '拔高题：函数 f(x)=x³-3x 的极小值点是？', tier: 'advanced', answer: 'x=1', tags: ['函数与导数'] });
         S.addQuestion({ stem: '提升题：请说明你的解题思路（口述或写下来）', tier: 'improve', answer: '', tags: ['综合'] });
-        CI.bankUI.render();
+        // 旧版题库页的渲染入口已随旧界面删除（这里原来调 CI.bankUI.render()）
         CI.quizUI.newQuiz();
         var qs = S.get().bank.map(function (q) { return q.id; });
         qs.forEach(function (id) { CI.quizUI.addToCurrent(id); });

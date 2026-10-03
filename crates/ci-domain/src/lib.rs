@@ -12,6 +12,7 @@
 //! 依赖方向：ci-domain ← ci-hub ← ci-core ← apps/
 
 pub mod ability;
+pub mod bank_import;
 pub mod classroom;
 pub mod composite;
 pub mod draw;
@@ -27,6 +28,7 @@ pub use ability::{
     ability_comment, ability_of_tiers, grade_by_key, pct, Ability, Axis, Bucket, Grade, TierStat,
     GRADES,
 };
+pub use bank_import::{parse_import, ImportQuestion};
 pub use composite::{
     decayed_rate, evaluate, growth_score, participation_rate, EvalPart, EvalWeights, Evaluation,
 };

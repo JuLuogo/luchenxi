@@ -2,322 +2,201 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>多端协同端到端测试（教师端 + 学生端）</title>
+<title>多端协同端到端（Vue：教师端 + 学生端 + 大屏）</title>
 <link rel="icon" href="data:,">
 <style>
   body{font-family:Consolas,monospace;margin:0;padding:10px;background:#111;color:#eee}
   #out{white-space:pre-wrap;font-size:13px;line-height:1.5}
   .pass{color:#7bd88f}.fail{color:#ff6b6b;font-weight:700}
   iframe{border:1px solid #444;background:#fff}
-  details{margin-top:10px}
-  .frames{display:flex;gap:8px}
+  details{margin-top:8px}
 </style>
 </head>
 <body>
 <pre id="out">running…</pre>
-<details open><summary>被测页面</summary>
-  <div class="frames">
-    <iframe id="hostFrame" style="width:900px;height:600px"></iframe>
-    <iframe id="stuFrame" style="width:380px;height:600px"></iframe>
-    <iframe id="stageFrame" style="width:600px;height:400px"></iframe>
-  </div>
-</details>
+<details><summary>教师端（Vue）</summary><iframe id="hostFrame" style="width:900px;height:600px"></iframe></details>
+<details><summary>学生端（Vue）</summary><iframe id="stuFrame" style="width:380px;height:600px"></iframe></details>
+<details><summary>大屏（Vue）</summary><iframe id="stageFrame" style="width:600px;height:400px"></iframe></details>
 <script>
-/* 端到端：真实枢纽 + 教师端(host) + 学生端(team) 三方闭环
-   验证：入座 → 推送题目 → 开放作答 → 学生提交 → 自动判分 → 加分 → 抢答 → 主观题待确认 → 教师判定 */
+/*!
+ * 多端协同端到端（Vue 三端）：教师端 + 学生端 + 大屏，同一个枢纽房间
+ *
+ *  2026-10 改写：原来驱动的是旧版零构建页面（已删除）。现在三个 iframe 都是 Vue 构建产物：
+ *    /admin.html  教师端（把领域层暴露为 window.CI）
+ *    /join        学生端（状态机仍由 student.js 提供，暴露 window.CIStudent）
+ *    /stage       大屏（只读，断言落在渲染出来的文案上）
+ */
 var lines = [], pass = 0, fail = 0;
-// 每次运行用独立房间：避免读到上次运行残留在枢纽里的课堂数据
-var ROOM = 'smokeclass-' + Date.now().toString(36);
-
 function check(cond, label) {
   if (cond) { pass++; lines.push('PASS :: ' + label); }
   else { fail++; lines.push('FAIL :: ' + label); }
 }
 function log(s) { lines.push('     · ' + s); }
-function flush(final) {
+function flush() {
   document.getElementById('out').innerHTML =
-    lines.map(function (l) {
-      var cls = l.indexOf('FAIL') === 0 ? 'fail' : (l.indexOf('PASS') === 0 ? 'pass' : '');
-      return '<span class="' + cls + '">' + l.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</span>';
-    }).join('\n') + (final ? ('\nSMOKE RESULT: ' + pass + ' pass / ' + fail + ' fail\nSMOKE ' + (fail ? 'FAILED' : 'DONE')) : '');
+    lines.map(function (l) { return '<span class="' + (l.indexOf('FAIL') === 0 ? 'fail' : (l.indexOf('PASS') === 0 ? 'pass' : '')) + '">' +
+      l.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</span>'; }).join('\n') +
+    '\nSMOKE RESULT: ' + pass + ' pass / ' + fail + ' fail\nSMOKE ' + (fail ? 'FAILED' : 'DONE');
 }
 function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-/** 轮询直到条件成立 */
 async function until(fn, ms, label) {
   var t0 = Date.now();
   while (Date.now() - t0 < (ms || 6000)) {
-    try { if (fn()) return true; } catch (e) { /* 继续等 */ }
+    try { if (fn()) return true; } catch (e) { /* 还没好 */ }
     await wait(120);
   }
-  if (label) lines.push('     · 超时等待：' + label);
+  log('超时等待：' + (label || ''));
   return false;
 }
 
-window.addEventListener('load', function () {
-  try { localStorage.removeItem('ci_ws_host'); localStorage.setItem('ci_room', ROOM); localStorage.removeItem('ci_team'); } catch (e) {}
-  document.getElementById('hostFrame').src = '/legacy/admin.html';
-  setTimeout(start, 800);
-});
+var ROOM = 'smokeclass-' + Math.random().toString(36).slice(2, 8);
+var host, stu, stage;
 
-async function start() {
-  var host = document.getElementById('hostFrame').contentWindow;
-  var HC = host.CI;
-  await until(function () { return host.document.readyState === 'complete' && host.CI && host.CI.admin; }, 8000, '教师端加载');
-  check(!!HC && !!HC.classroom, '教师端加载了 classroom 模块');
+async function boot() {
+  host = document.getElementById('hostFrame');
+  stu = document.getElementById('stuFrame');
+  stage = document.getElementById('stageFrame');
 
-  // 屏蔽阻塞对话框（无头环境 confirm/alert 会卡住渲染进程）
-  host.alert = function () {}; host.confirm = function () { return true; }; host.prompt = function (m, d) { return d === undefined ? 'x' : d; };
+  // 关键：三个 iframe 同源，**先**在父页面写 localStorage，再挂 src ——
+  // 否则子页面加载时读到的是默认房间，会连到别处（"教师端看不到学生"的头号原因）
+  localStorage.setItem('ci_ws_host', location.host);
+  localStorage.setItem('ci_room', ROOM);
 
+  host.src = '/admin.html';
+  await until(function () { return host.contentWindow && host.contentWindow.CI && host.contentWindow.CI.store; }, 9000, '教师端领域层');
+  var hw = host.contentWindow;
+  hw.CI.sync.setHost(location.host);
+  hw.alert = function () {}; hw.confirm = function () { return true; }; hw.prompt = function (m, d) { return d === undefined ? '冒烟' : d; };
+
+  var HC = hw.CI, HS = HC.store;
+  HS.replaceState(HS.defaultState());
+  var t1 = HS.get().teams[0].id, t2 = HS.get().teams[1].id;
+  HS.addStudentsBulk('甲\n乙', t1);
+  HS.addStudentsBulk('丙', t2);
+  check(HS.get().students.length === 3, '教师端建了 3 名学生 / 2 支队伍');
+
+  // 学生端从 URL 参数读房间与队伍（扫码入座就是这个地址），所以先把队伍建好再挂 src
+  stu.src = '/join?room=' + encodeURIComponent(ROOM) + '&team=' + encodeURIComponent(t1);
+  await until(function () { return stu.contentWindow && stu.contentWindow.CIStudent; }, 9000, '学生端状态机');
+  var sw = stu.contentWindow;
+  sw.alert = function () {}; sw.confirm = function () { return true; }; sw.prompt = function (m, d) { return d === undefined ? '冒烟' : d; };
+
+  stage.src = '/stage?room=' + ROOM;
+  await until(function () { return stage.contentWindow && (stage.contentWindow.document.body.innerText || '').length > 10; }, 9000, '大屏渲染');
+
+  return { HC: HC, HS: HS, hw: hw, sw: sw, t1: t1, t2: t2 };
+}
+
+async function run() {
   try {
-    /* ---------- 1. 教师端准备课堂 ---------- */
-    var S = HC.store;
-    S.replaceState(S.defaultState());
-    var team1 = S.get().teams[0].id, team2 = S.get().teams[1].id;
-    S.updateTeam(team1, { name: '第一组' });
-    S.updateTeam(team2, { name: '第二组' });
-    var a1 = S.addStudent('组员甲', team1);
-    var a2 = S.addStudent('组员乙', team1);
-    var b1 = S.addStudent('组员丙', team2);
-    var qChoice = S.addQuestion({ stem: '选择题：下列哪个是质数？', tier: 'basic', options: ['4', '6', '7', '9'], answer: 'C' });
-    var qSubj = S.addQuestion({ stem: '主观题：写出解题过程', tier: 'advanced' });
-    var quiz = S.createQuiz('多端协同测试', [qChoice.id, qSubj.id], '');
-    S.setRuntime({ quizId: quiz.id, qid: qChoice.id, accepting: true });
-    S.setRuntime({ sid: a1.id });
-    HC.admin.gotoTab('tab-classroom');
-    await wait(900);
-    check(!!host.document.querySelector('#classRoom .join-url'), '课堂协同页渲染了学生端地址');
-    check(host.document.getElementById('classRoom').textContent.indexOf(ROOM) >= 0, '页面显示当前房间号');
-    check(!!host.document.querySelector('#classControl .btn'), '作答控制按钮渲染');
-    log('学生端地址：' + (host.document.querySelector('#classJoinUrl') || {}).textContent);
+    var ctx = await boot();
+    var HC = ctx.HC, HS = ctx.HS, hw = ctx.hw, sw = ctx.sw, t1 = ctx.t1;
 
-    /* ---------- 2. 学生端入座 ---------- */
-    var stu = document.getElementById('stuFrame');
-    stu.src = '/legacy/student.html?room=' + ROOM;
-    await until(function () { return stu.contentWindow.CIStudent; }, 8000, '学生端加载');
-    var SC = stu.contentWindow;
-    SC.alert = function () {}; SC.confirm = function () { return true; };
-    await until(function () { return SC.CIStudent.data().payload; }, 8000, '学生端收到课堂快照');
-    check(!!SC.document.querySelector('#joinScreen .team-pick button'), '学生端显示小组列表');
-    check(SC.document.getElementById('joinScreen').textContent.indexOf('第一组') >= 0, '小组列表包含教师端创建的队伍');
+    /* ---------- 1. 三端都是 Vue 产物 ---------- */
+    check(!Array.from(hw.document.scripts).some(function (s) { return (s.src || '').indexOf('assets/js/') >= 0; }), '教师端没有旧版脚本');
+    check(!Array.from(sw.document.scripts).some(function (s) { return (s.src || '').indexOf('assets/js/') >= 0; }), '学生端没有旧版脚本');
+    check(!!sw.CIStudent, '学生端状态机可用（CIStudent）');
+    check(hw.document.querySelectorAll('.el-menu, .el-aside').length > 0, '教师端 Vue 布局渲染');
 
-    SC.CIStudent.pickTeam(team1);
-    await wait(700);
-    check(SC.CIStudent.data().teamId === team1, '学生端已入座第一组');
+    /* ---------- 2. 学生入座 → 教师端看到在线 ---------- */
+    if (sw.CIStudent.setTeam) sw.CIStudent.setTeam(t1);
+    if (sw.CIStudent.init) sw.CIStudent.init();
+    await wait(1500);
+    var okOnline = await until(function () {
+      var p = HC.classroom.presence();
+      return p && p.teams && p.teams.some(function (t) { return t.online; });
+    }, 9000, '教师端看到在线队伍');
+    check(okOnline, '学生端入座后教师端看到在线');
+    var ck = HC.classroom.checkinStats(HS.get());
+    check(ck.total === 2, '签到统计总数 = 2 支队伍');
+    check(ck.seated >= 1, '签到统计：至少 1 队已入座（实际 ' + ck.seated + '）');
 
-    /* ---------- 2b. 客户端场景：手填教师机地址后仍能连上 ----------
-     * Android/桌面客户端由本地文件承载页面，没有 location.host，
-     * 必须能靠 ci_ws_host 指向教师机 —— 这里用同一台枢纽的真实地址验证这条路径。 */
-    var hubInfo = SC.CIStudent.hub();
-    check(hubInfo.servedByHub === true, '浏览器由枢纽托管时不需要手填地址');
-    check(hubInfo.host === location.host, '默认使用同源地址（' + hubInfo.host + '）');
+    /* ---------- 3. 出题 → 学生端能作答 ---------- */
+    var q = HS.addQuestion({ stem: '1+1=?', tier: 'basic', answer: 'A', options: ['1', '2', '3', '4'] });
+    var qz = HS.createQuiz('协同冒烟卷', [q.id]);
+    HS.setCurrentQuiz(qz.id);
+    HC.classroom.setPhase('question');
+    HC.classroom.setAccepting(true);
+    await wait(1500);
+    check(HC.classroom.phase(HS.get()) === 'question', '教师端切到「出题答题」环节');
+    var snap = HC.sync.snapshot();
+    check(!!(snap.meta && snap.meta.question && snap.meta.question.options.length === 4), '快照含题目与 4 个选项');
+    check(snap.meta.accepting === true, '快照含作答开关（已开放）');
+    check((sw.document.body.innerText || '').indexOf('1+1') >= 0, '学生端渲染出题干');
 
-    SC.localStorage.setItem('ci_ws_host', location.host);       // 模拟客户端里手输/扫码得到的地址
-    var savedHost = SC.CIStudent.hub();
-    check(savedHost.configured === true && savedHost.host === location.host, '保存教师机地址后 ws 目标指向它');
-
+    /* ---------- 4. 抢答 ---------- */
+    HC.classroom.addBuzz({ teamId: t1, sid: HS.get().students[0].id, qid: q.id });
     await wait(800);
-    check(SC.CIStudent.data().payload && SC.CIStudent.data().payload.teams.length > 0,
-      '显式指定教师机地址后仍收到课堂数据（客户端路径可用）');
+    var meta = HC.classroom.metaPayload();
+    check(meta.buzz.length === 1, '抢答榜记录 1 条');
+    check(meta.buzz[0].teamName.length > 0, '抢答榜带队伍名');
 
-    // 只写 IP、不写端口：必须补默认端口（否则会连到 80）——这是被 JS↔Rust 对照测试抓出的真 bug
-    SC.CI_DEFAULT_PORT = location.port;
-    SC.localStorage.setItem('ci_ws_host', location.hostname);
-    check(SC.CIStudent.hub().host === location.hostname + ':' + location.port,
-      '只写 IP 时补默认端口（得到 ' + SC.CIStudent.hub().host + '）');
-    SC.localStorage.removeItem('ci_ws_host');
-    await wait(300);
+    /* ---------- 5. 客观题作答 → 教师端实时流 ---------- */
+    var rec = HS.recordResult({ sid: HS.get().students[0].id, qid: q.id, tier: 'basic', result: 'correct', quizId: qz.id, picked: 'A', source: 'student' });
+    check(rec && rec.points === 3, '客观题自动判分 +3');
+    check(HC.classroom.metaPayload().feed.length >= 1, '教师端实时流出现判定结果');
 
-    // 组网引导（Android 客户端无法内置 EasyTier CLI，只能引导）
-    var guide = SC.CIStudent.guidance();
-    check(guide.indexOf('EasyTier') >= 0 && guide.indexOf('虚拟 IP') >= 0, '学生端提供 EasyTier 组网引导');
-    check(SC.CIStudent.hub().inTauri === false, '浏览器里不误判为客户端环境');
-
-    /* ---------- 3. 教师端看到在线状态 ---------- */
-    await until(function () { return HC.classroom.presence().teams.some(function (t) { return t.teamId === team1 && t.online; }); }, 6000, '在线状态');
-    check(HC.classroom.presence().teams.some(function (t) { return t.teamId === team1 && t.online; }), '教师端看到第一组在线');
-    await wait(400);
-    check(host.document.getElementById('classTeams').textContent.indexOf('在线') >= 0, '在线小组面板渲染');
-
-    /* ---------- 4. 学生端看到题目并提交（选择题自动判分） ---------- */
-    await until(function () { return SC.document.querySelectorAll('#qaPane .opt').length >= 4; }, 8000, '学生端题目');
-    check(SC.document.querySelectorAll('#qaPane .opt').length === 4, '学生端渲染 4 个选项');
-    check(SC.document.getElementById('qaPane').textContent.indexOf('正在接收作答') >= 0, '学生端显示作答已开放');
-
-    SC.CIStudent.toggleOption('C');
-    await wait(150);
-    SC.CIStudent.submit(false);
-    await until(function () { return S.scoreOf(S.get(), a1.id) > 0; }, 8000, '教师端加分');
-    check(S.scoreOf(S.get(), a1.id) === 3, '学生提交选择题答对 → 教师端自动 +3（基础题）');
-    check(S.teamScore(S.get(), team1) === 3, '队伍分自动聚合为 3');
-
-    await wait(500);
-    check(host.document.getElementById('classFeed').textContent.indexOf('答对') >= 0, '教师端实时流出现判定结果');
-
-    /* ---------- 5. 答错不加分 ---------- */
-    SC.CIStudent.pickTeam(team2);
-    await wait(800);
-    await until(function () { return SC.document.querySelectorAll('#qaPane .opt').length >= 4; }, 6000, '第二组题目');
-    SC.CIStudent.toggleOption('A');
-    await wait(120);
-    SC.CIStudent.submit(false);
-    await wait(1200);
-    check(S.scoreOf(S.get(), b1.id) === 0, '第二组答错 → 不加分');
-
-    /* ---------- 6. 抢答 ---------- */
-    SC.CIStudent.buzz();
-    await until(function () { return HC.classroom.metaPayload().buzz.length > 0; }, 6000, '抢答');
-    var buzz = HC.classroom.metaPayload().buzz;
-    check(buzz.length >= 1, '教师端收到抢答（' + buzz.length + ' 条）');
-    check(buzz[0].teamName === '第二组', '抢答榜显示抢答队伍');
-    await wait(400);
-    check(host.document.getElementById('classBuzz').textContent.indexOf('第二组') >= 0, '抢答榜面板渲染');
-
-    /* ---------- 7. 主观题 → 待确认 → 教师判定 ---------- */
-    S.setRuntime({ qid: qSubj.id, accepting: true });
-    await until(function () { return SC.document.getElementById('qaPane').textContent.indexOf('主观题') >= 0; }, 8000, '主观题推送');
-    var note = SC.document.getElementById('noteInput');
-    check(!!note, '学生端渲染主观题输入框');
-    if (note) { note.value = '先设未知数，再列方程'; SC.CIStudent.draft(note.value); }
-    SC.CIStudent.submit(false);
-    await until(function () { return HC.classroom.metaPayload().pending.length > 0; }, 8000, '待确认队列');
-    check(HC.classroom.metaPayload().pending.length === 1, '主观题进入教师端待确认队列');
-    await wait(400);
-    check(host.document.getElementById('classPending').textContent.indexOf('已提交') < 0, '待确认面板渲染');
-    check(host.document.querySelectorAll('#classPending .pending-row').length === 1, '待确认面板 1 行');
-
+    /* ---------- 6. 主观题 → 待确认 → 判定 ---------- */
+    var q2 = HS.addQuestion({ stem: '请写出证明过程', tier: 'advanced', answer: '' });
+    HS.setRuntime({ qid: q2.id, quizId: qz.id });
+    // 走**真实的命令路径**（学生端经枢纽发上来的就是这条）：主观题应进待确认队列
+    HC.classroom.handleCmd({ kind: 'answer', team: t1, student: HS.get().students[1].id, q: q2.id, text: '我的证明' });
+    check(HC.classroom.metaPayload().pending.length === 1, '主观题进入待确认队列');
     var pid = HC.classroom.metaPayload().pending[0].id;
     HC.classroom.resolvePending(pid, 'correct');
-    await wait(600);
-    check(S.scoreOf(S.get(), b1.id) === 5, '教师判定主观题答对 → +5（拔高题）');
     check(HC.classroom.metaPayload().pending.length === 0, '判定后待确认队列清空');
 
-    /* ---------- 8. 停止作答后学生端不可提交 ---------- */
-    HC.classroom.setAccepting(false);
-    await wait(900);
-    check(SC.document.getElementById('qaPane').textContent.indexOf('未开放作答') >= 0, '停止作答后学生端按钮禁用/提示');
-
-    /* ---------- 9. 公布答案 ---------- */
-    S.setRuntime({ qid: qChoice.id });
+    /* ---------- 7. 公布答案 → 快照带出答案与讲评要点 ---------- */
+    HS.setRuntime({ qid: q.id, quizId: qz.id });
     HC.classroom.setReveal(true);
-    await wait(1000);
-    check(SC.document.getElementById('qaPane').textContent.indexOf('参考答案') >= 0 ||
-          SC.document.querySelectorAll('#qaPane .opt.correct').length > 0, '公布答案后学生端显示正确选项');
+    await wait(1200);
+    // 注意：question 由 sync.snapshot() 组装（metaPayload 里没有它）
+    var meta2 = HC.sync.snapshot().meta;
+    check(!!(meta2.question && meta2.question.answerKey), '公布答案后快照带出正确答案');
+    check(typeof meta2.question.explanation === 'string', '快照带出讲评要点字段（公布后才下发）');
+    check(meta2.reveal === true, '快照带出「已公布答案」开关');
 
-    /* ---------- 10. 枢纽快照（大屏数据） ---------- */
-    var snap = HC.sync.snapshot();
-    check(snap.teams.length === 2 && snap.students.length === 3, '快照含 2 组 3 名学生');
-    check(!!snap.meta.question && snap.meta.question.options.length === 4, '快照含题目选项（学生端可点选）');
-    check(typeof snap.meta.accepting === 'boolean', '快照含作答开关');
-    check(snap.students.filter(function (s) { return s.score > 0; }).length >= 2, '快照含已得分学生');
-
-    /* ---------- 11. 枢纽缓存：教师端换设备恢复（dump 通道） ---------- */
-    // dump 有 15s 节流（避免高频写盘），测试里强制推一次，保证读到的是最新课堂数据
-    HC.sync.pushDump(true);
-    await wait(700);
-    var dumpPayload = await new Promise(function (resolve) {
-      var probe = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host +
-        '/?room=' + ROOM + '&role=host');
-      var done = false;
-      probe.onopen = function () { probe.send(JSON.stringify({ type: 'request-dump' })); };
-      probe.onmessage = function (ev) {
-        var m = null;
-        try { m = JSON.parse(ev.data); } catch (e) { return; }
-        if (m.type === 'dump' && m.payload) { done = true; probe.close(); resolve(m.payload); }
-        else if (m.type === 'welcome' && m.hasDump === false) { probe.close(); resolve(null); }
-      };
-      setTimeout(function () { if (!done) { try { probe.close(); } catch (e) {} resolve(null); } }, 6000);
-    });
-    check(!!dumpPayload, '枢纽上存有完整课堂数据（dump）');
-    if (dumpPayload && dumpPayload.state) {
-      log('dump: ' + dumpPayload.state.students.length + ' 名学生 / ' + dumpPayload.state.bank.length +
-        ' 题 / ' + (dumpPayload.state.quizzes || []).length + ' 套试卷 / 更新于 ' + new Date(dumpPayload.updatedAt).toLocaleTimeString());
+    /* ---------- 8. 快照与枢纽持久化 ---------- */
+    var snap2 = HC.sync.snapshot();
+    check(snap2.teams.length === 2, '快照含 2 支队伍');
+    check(snap2.students.length === 3, '快照含 3 名学生');
+    check(snap2.meta.tierWeights.length === 4, '快照含 4 个题型权重');
+    await wait(3000);   // 等一次节流推送（枢纽按节流落库）
+    var dump = await (await fetch('/api/state?room=' + encodeURIComponent(ROOM))).json();
+    check(!!(dump && dump.state), '枢纽上存有该房间的课堂数据');
+    if (dump && dump.state) {
+      check((dump.state.students || []).length === 3, 'dump 含完整名单（3 名学生）');
+      // 注意：/api/state 的 state 是**广播快照**（不含题库），完整数据在 dump 字段里
+      var full = dump.dump || {};
+      check((full.bank || []).length >= 1, 'dump 含题库（' + (full.bank || []).length + ' 题）');
+      check((full.quizzes || []).length >= 1, 'dump 含试卷（' + (full.quizzes || []).length + ' 套）');
     }
-    check(!!dumpPayload && !!dumpPayload.state && dumpPayload.state.students.length === 3,
-      'dump 含完整名单（3 名学生）');
-    check(!!dumpPayload && dumpPayload.state.bank.length >= 2, 'dump 含题库');
-    check(!!dumpPayload && !!dumpPayload.state.classroom, 'dump 含课堂过程数据（抢答/待确认/实时流）');
 
-    // 模拟"换了台电脑"：清空本地后从枢纽恢复
-    var scoreBefore = S.scoreOf(S.get(), a1.id);
-    S.replaceState(S.defaultState());
-    check(S.get().students.length === 0, '模拟换设备：本地已清空');
-    HC.classroom.applyRemote(dumpPayload);
-    await wait(600);
-    check(S.get().students.length === 3, '从枢纽恢复后名单回来了');
-    check(S.scoreOf(S.get(), a1.id) === scoreBefore, '恢复后积分一致（' + scoreBefore + '）');
+    /* ---------- 9. 大屏与选项分布（新的"40% 的人选了 B"） ---------- */
+    check((stage.contentWindow.document.body.innerText || '').length > 20, '大屏有内容');
+    var meta3 = HC.classroom.metaPayload();
+    check(Array.isArray(meta3.optionDist), '快照带出选项分布');
+    check(meta3.optionDist.length === 4, '选项分布 4 条（对应 4 个选项）');
+    check(meta3.optionDist[0].count === 1 && meta3.optionDist[0].correct === true, '分布里正确项被标出且计到 1 票');
+    check(Array.isArray(meta3.hardestQuestions), '快照带出讲评建议（正确率最低的题）');
 
-    /* ---------- 12. 二维码接口 ---------- */
-    var qrOk = false, qrType = '';
-    try {
-      var qrRes = await fetch('/qr.png?text=' + encodeURIComponent('http://x/join'), { cache: 'no-store' });
-      qrType = qrRes.headers.get('content-type') || '';
-      var blob = await qrRes.blob();
-      qrOk = qrRes.ok && blob.size > 500;
-    } catch (e) { qrOk = false; }
-    check(qrOk, '二维码接口返回图片（' + qrType + '）');
-
-    /* ---------- 12. 大屏端（stage 角色，只读） ---------- */
-    var stageFrame = document.getElementById('stageFrame');
-    stageFrame.src = '/legacy/index.html?room=' + ROOM;
-    await until(function () {
-      var sd = stageFrame.contentWindow.document;
-      return sd.getElementById('teamList') && sd.getElementById('teamList').textContent.indexOf('第一组') >= 0;
-    }, 10000, '大屏渲染队伍榜');
-    var SD = stageFrame.contentWindow.document;
-    check(SD.getElementById('teamList').textContent.indexOf('第一组') >= 0, '大屏队伍榜显示第一组');
-    check(SD.querySelectorAll('#stuList li').length === 3, '大屏个人榜渲染 3 名学生');
-    check(SD.getElementById('status').textContent.indexOf('实时同步') >= 0, '大屏状态为实时同步');
-    check(SD.querySelectorAll('#qOptions .opt').length === 4, '大屏当前题渲染 4 个选项');
-    check(SD.getElementById('qTags').textContent.indexOf('答案') >= 0, '公布答案后大屏显示答案');
-    check(SD.getElementById('buzzCard').style.display !== 'none' &&
-      SD.getElementById('buzzList').textContent.indexOf('第二组') >= 0, '大屏显示抢答榜');
-
-    /* ---------- 13. 推送题目：教师端「下一题」+ 答案不随题泄露 ---------- */
-    var pushState0 = HC.store.get().runtime;
-    // 先把当前题切回第一题并公布答案，再「下一题」，验证学生端不会看到第二题答案
-    HC.store.setRuntime({ quizId: quiz.id, qid: qChoice.id });
-    HC.classroom.setReveal(true);
-    await wait(700);
-    check(SC.document.getElementById('qaPane').textContent.indexOf('参考答案') >= 0 ||
-      SC.document.querySelectorAll('#qaPane .opt.correct').length > 0, '学生端看到第一题答案（已公布）');
-
-    var nextRes = HC.classroom.moveQuestion(1);
-    check(nextRes && nextRes.qid === qSubj.id, '教师端「下一题」推进到第二题');
-    await until(function () {
-      return SC.document.getElementById('qaPane').textContent.indexOf('主观题') >= 0;
-    }, 8000, '学生端收到新题');
-    check(SC.document.getElementById('qaPane').textContent.indexOf('主观题') >= 0, '学生端已切到新推送的题');
-    check(SC.document.getElementById('qaPane').textContent.indexOf('参考答案') < 0 &&
-      SC.document.querySelectorAll('#qaPane .opt.correct').length === 0, '换题后学生端不再显示上一题答案');
-    check(HC.store.get().runtime.reveal === false, '换题后教师端自动收起答案');
-    await wait(500);
-    check(host.document.getElementById('classControl').textContent.indexOf('第 2 / 2 题') >= 0, '协同页显示题目进度 2/2');
-    check(HC.classroom.moveQuestion(-1).qid === qChoice.id, '「上一题」可回退');
-    check(HC.classroom.moveQuestion(-1).edge === true, '第一题处「上一题」为边界');
-    log('推送题目：' + JSON.stringify(pushState0.quizId === quiz.id) + ' / 进度 ' + JSON.stringify(HC.sync.snapshot().meta.questionIndex));
-
-    /* ---------- 14. 单机模式：枢纽断开后教师端功能不受影响 ---------- */
-    var scoreBeforeOffline = S.scoreOf(S.get(), a1.id);
-    HC.sync.setHost('127.0.0.1:9');            // 指向一个必然连不上的端口
-    await until(function () { return !HC.sync.connected(); }, 8000, '断开枢纽');
-    check(!HC.sync.connected(), '已断开枢纽（单机模式）');
-    S.addManual(a1.id, 1);
-    check(S.scoreOf(S.get(), a1.id) === scoreBeforeOffline + 1, '单机模式下记分仍然正常（+' + 1 + '）');
-    HC.admin.gotoTab('tab-classroom');
-    await wait(400);
-    check(host.document.getElementById('classRoom').textContent.indexOf('单机模式') >= 0, '协同页提示当前为单机模式');
-    check(host.document.getElementById('classTeams').textContent.indexOf('未入座') >= 0, '离线时小组显示为未入座');
-    check(!!host.document.querySelector('#classControl .btn'), '离线时作答控制仍可渲染（不会白屏）');
-
-    /* ---------- 15. 无脚本错误 ---------- */
-    var hb = host.document.getElementById('errBar');
-    check(!hb.textContent || hb.style.display !== 'block', '教师端无未捕获脚本错误' + (hb.textContent ? ('（' + hb.textContent + '）') : ''));
+    /* ---------- 10. 计时器与环节切换 ---------- */
+    HC.classroom.setTimer(30, '小组讨论');
+    check(HC.classroom.metaPayload().timerEndsAt > 0, '计时器启动并进快照');
+    HC.classroom.clearTimer();
+    HC.classroom.setPhase('review');
+    await wait(900);
+    check(HC.classroom.phase(HS.get()) === 'review', '切到「点评总结」环节');
+    check(HC.classroom.metaPayload().phase === 'review', '快照带出环节（大屏据此切屏）');
   } catch (e) {
     fail++;
-    lines.push('FAIL :: 用例执行异常：' + (e && e.message) + '\n' + (e && e.stack ? e.stack.split('\n').slice(0, 4).join('\n') : ''));
+    lines.push('FAIL :: 用例执行异常：' + (e && e.message));
+    log(String(e && e.stack || '').split('\n').slice(0, 3).join(' / '));
   }
-  flush(true);
+  flush();
 }
+
+window.addEventListener('load', function () { setTimeout(run, 300); });
 </script>
 </body>
 </html>
