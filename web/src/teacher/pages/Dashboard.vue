@@ -11,7 +11,18 @@ import { CI } from '../../shared/bridge';
 const store = useClassStore();
 const router = useRouter();
 
-const counts = computed(() => CI.analysis.counts(store.state));
+/**
+ * 概览页的计数
+ *
+ * 注意：`CI.analysis.counts(s, r)` 是**逐条流水的判定函数**（"该流水是否计入统计"），不是汇总。
+ * 这里原来误写成 `CI.analysis.counts(store.state)` —— r 成了 undefined，一进首页就抛
+ * `Cannot read properties of undefined (reading 'tier')`。因为 Vue 界面此前**没有任何冒烟测试**，
+ * 这个错一直没被发现（2026-10 补了 tests/ui-vue.test.mjs 作为守卫）。
+ */
+const counts = computed(() => ({
+  students: store.students.length,
+  records: CI.store.allRecords(store.state).length
+}));
 const ranking = computed(() => CI.analysis.ranking(store.state).slice(0, 5));
 const teamRank = computed(() => CI.analysis.teamRanking(store.state).slice(0, 4));
 const pendingCount = computed(() => {

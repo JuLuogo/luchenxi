@@ -79,10 +79,21 @@
   /** 是否与页面同源（教师机用 http://localhost:8080/admin.html 打开时为真；file:// 不算同源） */
   function sameOrigin() { return !host() && !!(root.location && root.location.host); }
 
-  /** 页面是否由 http(s) 提供（file:// 双击打开时为假） */
+  /**
+   * 页面是否由 http(s) 提供一个**真实可回连的源**（file:// 双击打开时为假）。
+   *
+   * Tauri v2 在 Windows 上把打包好的前端挂在 `http://tauri.localhost` 下：协议确实是 http、
+   * host 也非空，但它**不是**枢纽 —— 照字面判定为"同源"会让客户端去连
+   * `ws://tauri.localhost/?room=…`，而内置枢纽其实在 `localhost:8080`，
+   * 结果是打包后的教师端永远停在"与枢纽断开（单机模式）"：本机记分正常，
+   * 学生端与大屏却收不到任何数据。所以这里要把 Tauri 的伪源排除掉，
+   * 让它走下面的 `http://localhost:<DEFAULT_LOCAL_PORT>` 兜底。
+   */
   function servedOverHttp() {
     var loc = root.location;
-    return !!(loc && loc.host && /^https?:$/.test(loc.protocol || ''));
+    if (!loc || !loc.host || !/^https?:$/.test(loc.protocol || '')) return false;
+    if (/^tauri\.localhost$/i.test(loc.host)) return false;   // 客户端 asset 协议（Tauri v2）
+    return true;
   }
 
   /** 枢纽的 HTTP 基地址（用于 /health 与 /qr.png）；返回空串表示同源 */

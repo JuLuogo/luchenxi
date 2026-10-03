@@ -10,6 +10,7 @@
     "windows": [
       {
         "title": "课堂积分 · 教师端",
+        "url": "admin.html",
         "width": 1440,
         "height": 900,
         "minWidth": 1024,

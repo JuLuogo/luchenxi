@@ -115,6 +115,14 @@
   function servedByHub() {
     var loc = root.location;
     if (!loc || !loc.host || !/^https?:$/.test(loc.protocol || '')) return false;
+    /**
+     * Tauri v2 把打包好的前端挂在 `http://tauri.localhost` 下：协议是 http、host 也非空，
+     * 但它**不是**教师机的枢纽 —— 真正的枢纽在教师机的 `IP:8080` 上。
+     * 若按字面判成"由枢纽托管"，安卓 App 里就会**隐藏"填教师机地址"输入框**，
+     * 学生既连不上、也没有任何入口去改地址，只能永远卡在"等待老师端推送名单…"。
+     * 所以这里必须把客户端的伪源排除掉。
+     */
+    if (/^tauri\.localhost$/i.test(loc.host)) return false;
     return !hubHostRaw();
   }
 

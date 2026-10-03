@@ -312,6 +312,20 @@ if (cargoAvailable) {
       console.log((okTsc ? C.ok + '✔ ' : C.bad + '✘ ') + '前端类型检查（vue-tsc）' + C.x + '\n');
     }
 
+    // Vue 界面冒烟：客户端从 2026-10 起打包的就是 Vue 产物，必须有端到端覆盖
+    //（此前 Vue 界面零覆盖 —— 概览页把 counts(s,r) 误当汇总调用都没人发现）
+    {
+      const t0v = Date.now();
+      process.stdout.write(C.b + '▶ Vue 界面冒烟（三入口 + 一条流程）' + C.x + '\n');
+      const rv = spawnSync(process.execPath, [path.join(ROOT, 'tests', 'ui-vue.test.mjs')], {
+        cwd: ROOT, stdio: 'inherit'
+      });
+      const okVue = rv.status === 0;
+      results.push({ title: 'Vue 界面冒烟（三入口 + 一条流程）', pass: okVue, ms: Date.now() - t0v });
+      if (!okVue) annotate('CI 步骤失败：Vue 界面冒烟', '页面报错或未渲染，详见上方输出（node tests/ui-vue.test.mjs）');
+      console.log((okVue ? C.ok + '✔ ' : C.bad + '✘ ') + 'Vue 界面冒烟（三入口 + 一条流程）' + C.x + '\n');
+    }
+
     // 绑定一致性：Rust 改了字段但没重新生成 → 前端会按老结构读（P2 里 scores/ips 就是这么翻车的）
     const t0c = Date.now();
     process.stdout.write(C.b + '▶ 前端类型绑定与 Rust 一致（specta）' + C.x + '\n');

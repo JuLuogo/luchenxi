@@ -107,6 +107,23 @@ pub async fn run(opts: ServerOptions) -> Result<(), String> {
     axum::serve(listener, app).await.map_err(|e| e.to_string())
 }
 
+/// 读文件并回响应（静态服务的公共部分）
+async fn file_response(target: &std::path::Path) -> axum::response::Response {
+    use axum::body::Body;
+    use axum::http::{header, StatusCode};
+    match tokio::fs::read(target).await {
+        Ok(bytes) => axum::response::Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, mime_of(target))
+            .body(Body::from(bytes))
+            .unwrap(),
+        Err(_) => axum::response::Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .body(Body::from("404 Not Found"))
+            .unwrap(),
+    }
+}
+
 /// 静态文件服务（与 sync-server.js 的策略一致）
 async fn serve_static(
     root: PathBuf,
@@ -125,8 +142,39 @@ async fn serve_static(
             .unwrap();
     }
 
-    let rel = url_path.trim_start_matches('/');
-    let mut target = root.join(rel);
+    /* 主路径 → Vue 构建产物（与 sync-server.js 同一套映射，2026-10 起界面统一到 Vue） */
+    let dist = root.join("web").join("dist");
+    let dist_ready = dist.join("admin.html").exists();
+    let mut rel = url_path.trim_start_matches('/').to_string();
+
+    if dist_ready {
+        let alias = match url_path.as_str() {
+            "/" | "/admin" | "/admin.html" => Some("admin.html"),
+            "/join" | "/s" | "/student" => Some("student.html"),
+            "/stage" | "/big" | "/screen" => Some("index.html"),
+            "/favicon.svg" => Some("favicon.svg"),
+            _ => None,
+        };
+        if let Some(name) = alias {
+            let f = dist.join(name);
+            return file_response(&f).await;
+        }
+        if let Some(rest) = url_path.strip_prefix("/assets/") {
+            let f = dist.join("assets").join(rest);
+            if f.starts_with(&dist) {
+                return file_response(&f).await;
+            }
+        }
+        // 旧版页面临时保留在 /legacy/*
+        if let Some(rest) = url_path.strip_prefix("/legacy/") {
+            rel = match rest {
+                "" | "admin.html" => "admin.html".to_string(),
+                other => other.to_string(),
+            };
+        }
+    }
+
+    let mut target = root.join(&rel);
     if target.is_dir() {
         target = target.join("index.html");
     }

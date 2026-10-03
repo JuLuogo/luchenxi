@@ -569,10 +569,38 @@ function handleHttp(req, res) {
     return;
   }
 
-  // 短路径
-  if (urlPath === '/' || urlPath === '/admin' || urlPath === '/admin.html') return sendFile(res, path.join(ROOT, 'admin.html'));
-  if (urlPath === '/join' || urlPath === '/s' || urlPath === '/student') return sendFile(res, path.join(ROOT, 'student.html'));
-  if (urlPath === '/stage' || urlPath === '/big' || urlPath === '/screen') return sendFile(res, path.join(ROOT, 'index.html'));
+  /* ------------------------------------------------------------------ *
+   * 主路径 → **Vue 构建产物**（2026-10 起界面已统一到 Vue）
+   *
+   * 入口文件名沿用旧约定（admin.html / student.html / index.html），
+   * 所以 URL 一个都没变：/ 、/join 、/stage 与以前完全一样。
+   * ------------------------------------------------------------------ */
+  const DIST_DIR = path.join(ROOT, 'web', 'dist');
+  const distFile = (name) => path.join(DIST_DIR, name);
+  const hasDistRoot = fs.existsSync(distFile('admin.html'));
+
+  if (urlPath === '/' || urlPath === '/admin' || urlPath === '/admin.html') {
+    return sendFile(res, hasDistRoot ? distFile('admin.html') : path.join(ROOT, 'admin.html'));
+  }
+  if (urlPath === '/join' || urlPath === '/s' || urlPath === '/student') {
+    return sendFile(res, hasDistRoot ? distFile('student.html') : path.join(ROOT, 'student.html'));
+  }
+  if (urlPath === '/stage' || urlPath === '/big' || urlPath === '/screen') {
+    return sendFile(res, hasDistRoot ? distFile('index.html') : path.join(ROOT, 'index.html'));
+  }
+  // Vite 产物里的静态资源（相对路径引用，落在同目录）
+  if (urlPath === '/favicon.svg' && hasDistRoot) return sendFile(res, distFile('favicon.svg'));
+  if (urlPath.startsWith('/assets/') && hasDistRoot) return sendFile(res, path.join(DIST_DIR, urlPath.replace(/^\/+/, '')));
+
+  /* 旧版零构建页面：临时保留在 /legacy/* 供旧 e2e 使用，下一轮随旧渲染层一起删除 */
+  if (urlPath === '/legacy' || urlPath === '/legacy/' || urlPath === '/legacy/admin.html') return sendFile(res, path.join(ROOT, 'admin.html'));
+  if (urlPath === '/legacy/student.html') return sendFile(res, path.join(ROOT, 'student.html'));
+  if (urlPath === '/legacy/index.html') return sendFile(res, path.join(ROOT, 'index.html'));
+  // 旧页面用**相对路径**引用 assets/，所以 /legacy/assets/* 也要映射回仓库根
+  if (urlPath.startsWith('/legacy/assets/')) {
+    const f = path.join(ROOT, urlPath.replace(/^\/legacy\//, ''));
+    if (f.startsWith(path.join(ROOT, 'assets'))) return sendFile(res, f);
+  }
 
   /**
    * v4 新版界面（Vue 3 + Element Plus / Vant）构建产物。

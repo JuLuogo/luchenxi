@@ -23,6 +23,7 @@
     "gen:protocol": "node scripts/gen-protocol.mjs",
     "test:docs": "node tests/doc-refs.js --broken",
     "test:e2e": "node tests/run-smoke.js",
+    "test:ui-vue": "node tests/ui-vue.test.mjs",
     "test:e2e:class": "node tests/run-smoke.js http://127.0.0.1:8123/tests/smoke-class.html",
     "screenshots": "node tests/shot.js",
     "probe": "node tests/probe.js",

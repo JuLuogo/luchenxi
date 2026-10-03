@@ -1,36 +1,66 @@
 /*!
- * scripts/sync-ui.mjs — 把仓库根目录的「网页版前端」同步到各客户端的 ui/ 目录
+ * scripts/sync-ui.mjs — 把 **Vue 构建产物**（web/dist）同步到各客户端的 ui/ 目录
  *
- *  为什么这样做：网页版（admin.html / student.html / index.html + assets/）是零构建、可直接双击运行的
- *  单一来源；客户端（Tauri）只是把它"套壳"，因此构建前把同一份文件拷进 apps/<app>/ui/，
- *  由 tauri.conf.json 的 frontendDist 指向它。这样界面只有一份，改一次两边都生效。
+ *  为什么改（2026-10）：客户端原来拷的是仓库根目录那套**零构建旧界面**
+ *  （admin.html / student.html / index.html + assets/），于是"新界面只在网页版生效、
+ *  客户端还是旧脸" —— 这正是要消除的双界面分裂。
  *
- * 用法：
- *   node scripts/sync-ui.mjs            # teacher + student
- *   node scripts/sync-ui.mjs teacher     # 只同步教师端
+ *  现在唯一来源是 `web/dist`（Vue 3 + Vite 构建），它有三个入口，**文件名与旧约定一致**
+ *  （admin.html / student.html / index.html），且 Vite 的 `base: './'` 让资源引用是相对路径
+ *  —— Tauri 的自定义协议（tauri://localhost）下也能直接加载，不需要改任何配置。
+ *
+ *  用法：
+ *    node scripts/sync-ui.mjs            # teacher + student
+ *    node scripts/sync-ui.mjs teacher     # 只同步教师端
+ *    node scripts/sync-ui.mjs --build     # 先构建 Vue 再同步（CI 用这个）
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const DIST = path.join(ROOT, 'web', 'dist');
 
-/** 每个客户端需要哪些前端文件 */
+/** 每个客户端需要哪些前端文件（都来自 web/dist） */
 const APPS = {
   teacher: {
-    html: ['admin.html', 'index.html'],   // 教师端 + 内置大屏页
-    assets: ['assets/css/app.css', 'assets/js'],
+    // 教师端 + 内置大屏页（index.html 就是大屏）
+    html: ['admin.html', 'index.html'],
     out: 'apps/teacher/ui'
   },
   student: {
     html: ['student.html'],
-    assets: ['assets/css/student.css', 'assets/js/student.js'],
     out: 'apps/student/ui'
   }
 };
 
+const args = process.argv.slice(2);
+const doBuild = args.includes('--build');
+const want = args.find((a) => !a.startsWith('-'));
+
+/* ---------- 可选：先构建 Vue ---------- */
+if (doBuild) {
+  console.log('▶ 构建 Vue 界面（npm --prefix web run build）');
+  const r = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['--prefix', 'web', 'run', 'build'], {
+    cwd: ROOT,
+    stdio: 'inherit',
+    shell: process.platform === 'win32'
+  });
+  if (r.status !== 0) {
+    console.error('✘ Vue 构建失败，未同步');
+    process.exit(1);
+  }
+}
+
+/* ---------- 构建产物必须在 ---------- */
+if (!fs.existsSync(DIST)) {
+  console.error('✘ 找不到 web/dist —— 先跑 `npm --prefix web run build`（或加 --build 参数）');
+  process.exit(1);
+}
+
 function copyFile(rel, destRoot) {
-  const src = path.join(ROOT, rel);
+  const src = path.join(DIST, rel);
   const dest = path.join(destRoot, rel);
   if (!fs.existsSync(src)) { console.warn('  ! 缺失 ' + rel); return 0; }
   fs.mkdirSync(path.dirname(dest), { recursive: true });
@@ -39,7 +69,7 @@ function copyFile(rel, destRoot) {
 }
 
 function copyDir(rel, destRoot) {
-  const src = path.join(ROOT, rel);
+  const src = path.join(DIST, rel);
   if (!fs.existsSync(src)) { console.warn('  ! 缺失目录 ' + rel); return 0; }
   let n = 0;
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
@@ -50,7 +80,6 @@ function copyDir(rel, destRoot) {
   return n;
 }
 
-const want = process.argv[2];
 const names = want ? [want] : Object.keys(APPS);
 let total = 0;
 
@@ -60,22 +89,35 @@ for (const name of names) {
   const out = path.join(ROOT, cfg.out);
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(out, { recursive: true });
+
   let n = 0;
+  // 入口 html
   cfg.html.forEach((f) => { n += copyFile(f, out); });
-  cfg.assets.forEach((a) => {
-    const abs = path.join(ROOT, a);
-    n += fs.statSync(abs).isDirectory() ? copyDir(a, out) : copyFile(a, out);
-  });
+  // 资源（Vite 产物：assets/ 目录 + favicon）
+  n += copyDir('assets', out);
+  n += copyFile('favicon.svg', out);
+
+  // 入口自检：确认拷进来的 html 真的引用了 assets（否则说明构建产物不对）
+  for (const f of cfg.html) {
+    const p = path.join(out, f);
+    if (!fs.existsSync(p)) continue;
+    const html = fs.readFileSync(p, 'utf8');
+    if (!html.includes('./assets/')) {
+      console.error('✘ ' + cfg.out + '/' + f + ' 没有引用 ./assets/ —— 构建产物不对');
+      process.exit(1);
+    }
+  }
+
   // Rust 侧需要同一份建表脚本（include_str! 只能引用 crate 目录内的文件）
   const rustSrc = path.join(ROOT, 'apps', name, 'src-tauri', 'src');
   if (fs.existsSync(rustSrc)) {
     fs.copyFileSync(path.join(ROOT, 'packages', 'db', 'schema.sql'), path.join(ROOT, 'apps', name, 'src-tauri', 'schema.sql'));
-  // v5：建表脚本的消费方是 crates/ci-store（include_str! 相对 crate 根）
-  fs.mkdirSync(path.join(ROOT, 'crates', 'ci-store'), { recursive: true });
-  fs.copyFileSync(path.join(ROOT, 'packages', 'db', 'schema.sql'), path.join(ROOT, 'crates', 'ci-store', 'schema.sql'));
+    // v5：建表脚本的消费方是 crates/ci-store（include_str! 相对 crate 根）
+    fs.mkdirSync(path.join(ROOT, 'crates', 'ci-store'), { recursive: true });
+    fs.copyFileSync(path.join(ROOT, 'packages', 'db', 'schema.sql'), path.join(ROOT, 'crates', 'ci-store', 'schema.sql'));
     n++;
   }
-  console.log('✔ ' + name + ' → ' + cfg.out + '（' + n + ' 个文件）');
+  console.log('✔ ' + name + ' → ' + cfg.out + '（' + n + ' 个文件，来源 web/dist）');
   total += n;
 }
 console.log('共同步 ' + total + ' 个文件');

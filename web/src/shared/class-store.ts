@@ -48,7 +48,9 @@ export const useClassStore = defineStore('class', () => {
   const runtime = computed(() => state.value.runtime || ({} as ClassroomState['runtime']));
   const logs = computed(() => (state.value.logs || []).slice(-200).reverse());
 
-  const currentQuiz = computed(() => CI.store.quiz(state.value));
+  // 必须显式带上 currentQuizId：CI.store.quiz(s) 只传 state 时 id 为 undefined，
+  // 会一直返回 null（表现为「当前试卷」永远显示"未选择"、课堂协同进度恒为 0/0）。
+  const currentQuiz = computed(() => CI.store.quiz(state.value, state.value.currentQuizId));
   const currentQuestion = computed(() => CI.store.question(state.value, runtime.value.qid));
   const currentStudent = computed(() => CI.store.student(state.value, runtime.value.sid));
 

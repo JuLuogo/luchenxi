@@ -111,7 +111,13 @@ const overall = computed(() => {
 /* ---------- 小结与导出 ---------- */
 const summaryText = ref('');
 function genClassSummary() {
-  summaryText.value = (CI.analysis.summarizeClass(store.state, scope.value, scopeOpts.value) as any).join('\n');
+  // 注意：CI.analysis.summarizeClass() 返回的是**对象**（{title, lines, text, stats}），
+  // 不是字符串数组。早期这里直接 .join('\n') 会抛 TypeError，
+  // 结果整段处理函数中断 —— 老师点「生成班级小结」既没有文字也没有任何提示。
+  const res: any = CI.analysis.summarizeClass(store.state, scope.value, scopeOpts.value);
+  summaryText.value = res == null
+    ? ''
+    : (typeof res === 'string' ? res : (res.text || (Array.isArray(res.lines) ? res.lines.join('\n') : '')));
   ElMessage.success('已生成班级小结');
 }
 function genStudentSummary() {

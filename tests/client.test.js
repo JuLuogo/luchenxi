@@ -91,10 +91,24 @@ Object.keys(APPS).forEach((app) => {
     ok(syncUi.indexOf("'" + html + "'") >= 0, 'sync-ui 配置包含入口页 ' + html);
   });
 });
-ok(/assets\/js/.test(syncUi), 'sync-ui 复制 assets/js 目录');
-ok(/assets\/css\/app\.css/.test(syncUi), 'sync-ui 复制 app.css');
-ok(/assets\/css\/student\.css/.test(syncUi), 'sync-ui 复制 student.css');
+ok(/web\/dist|DIST/.test(syncUi), 'sync-ui 的来源是 Vue 构建产物 web/dist（不再是旧版 assets/）');
+ok(/favicon\.svg/.test(syncUi), 'sync-ui 带上 favicon');
+ok(/没有引用 \.\/assets\//.test(syncUi), 'sync-ui 有入口自检：拷进来的 html 必须引用 ./assets/');
+ok(!/assets\/css\/app\.css/.test(syncUi), 'sync-ui 不再拷旧版 app.css（界面已统一到 Vue）');
+ok(!/assets\/css\/student\.css/.test(syncUi), 'sync-ui 不再拷旧版 student.css');
 ok(/schema\.sql/.test(syncUi), 'sync-ui 同时把 SQLite schema 给 Rust 侧');
+
+/* 关键契约：客户端打包的必须是 Vue 产物，而不是旧版零构建页面
+   —— 否则又回到"网页版是新界面、客户端还是旧脸"的分裂状态 */
+Object.keys(APPS).forEach((app) => {
+  const uiDir = path.join(ROOT, 'apps', app, 'ui');
+  if (!fs.existsSync(uiDir)) return;
+  APPS[app].entry.forEach((html) => {
+    const text = fs.readFileSync(path.join(uiDir, html), 'utf8');
+    ok(text.includes('./assets/'), app + '/' + html + ' 引用 Vite 产物（./assets/）');
+    ok(!/assets\/js\/store\.js/.test(text), app + '/' + html + ' 不再引用旧版 assets/js/store.js');
+  });
+});
 
 // 生成后（若存在）再核对一遍实际闭包
 Object.keys(APPS).forEach((app) => {

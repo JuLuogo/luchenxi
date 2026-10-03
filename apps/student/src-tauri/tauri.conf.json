@@ -10,6 +10,7 @@
     "windows": [
       {
         "title": "课堂小组端",
+        "url": "student.html",
         "width": 420,
         "height": 860,
         "resizable": true,

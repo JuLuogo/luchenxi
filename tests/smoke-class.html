@@ -55,7 +55,7 @@ async function until(fn, ms, label) {
 
 window.addEventListener('load', function () {
   try { localStorage.removeItem('ci_ws_host'); localStorage.setItem('ci_room', ROOM); localStorage.removeItem('ci_team'); } catch (e) {}
-  document.getElementById('hostFrame').src = '../admin.html';
+  document.getElementById('hostFrame').src = '/legacy/admin.html';
   setTimeout(start, 800);
 });
 
@@ -92,7 +92,7 @@ async function start() {
 
     /* ---------- 2. 学生端入座 ---------- */
     var stu = document.getElementById('stuFrame');
-    stu.src = '../student.html?room=' + ROOM;
+    stu.src = '/legacy/student.html?room=' + ROOM;
     await until(function () { return stu.contentWindow.CIStudent; }, 8000, '学生端加载');
     var SC = stu.contentWindow;
     SC.alert = function () {}; SC.confirm = function () { return true; };
@@ -258,7 +258,7 @@ async function start() {
 
     /* ---------- 12. 大屏端（stage 角色，只读） ---------- */
     var stageFrame = document.getElementById('stageFrame');
-    stageFrame.src = '../index.html?room=' + ROOM;
+    stageFrame.src = '/legacy/index.html?room=' + ROOM;
     await until(function () {
       var sd = stageFrame.contentWindow.document;
       return sd.getElementById('teamList') && sd.getElementById('teamList').textContent.indexOf('第一组') >= 0;

@@ -1,0 +1,217 @@
+[
+  {
+    "group": "stage",
+    "file": "01-待机-扫码入座.png",
+    "caption": "待机：超大二维码 + 房间号，学生扫码直接进班"
+  },
+  {
+    "group": "stage",
+    "file": "02-随机点名.png",
+    "caption": "随机点名：大屏放大显示被点到的同学与所属队伍"
+  },
+  {
+    "group": "stage",
+    "file": "03-出题作答.png",
+    "caption": "出题作答：超大题干 + Kahoot 式四色选项块，投影可读"
+  },
+  {
+    "group": "stage",
+    "file": "04-队伍实时榜.png",
+    "caption": "队伍榜按积分实时排序（1 秒内同步），右侧显示作答进度"
+  },
+  {
+    "group": "stage",
+    "file": "05-答案已公布.png",
+    "caption": "公布答案后大屏高亮正确选项"
+  },
+  {
+    "group": "stage",
+    "file": "06-倒计时.png",
+    "caption": "课堂节奏：老师发起后大屏显示倒计时，最后 10 秒变红"
+  },
+  {
+    "group": "stage",
+    "file": "07-点评总结-能力雷达.png",
+    "caption": "点评总结：各队答对情况 + 能力雷达 + 讲评建议（正确率最低的题）"
+  },
+  {
+    "group": "student",
+    "file": "01-入座选组.png",
+    "caption": "学生用手机打开教师机地址 → 选择自己小组入座（无需注册登录）"
+  },
+  {
+    "group": "student",
+    "file": "02-已入座-答题页.png",
+    "caption": "入座后进入答题页：本组积分、其他队答对情况、当前题与选项"
+  },
+  {
+    "group": "student",
+    "file": "03-答题-已选选项.png",
+    "caption": "点选项即选中（选择题），确认后点「提交答案」"
+  },
+  {
+    "group": "student",
+    "file": "04-已提交.png",
+    "caption": "提交后显示「已提交」，同一题重复提交会被忽略（防重复计分）"
+  },
+  {
+    "group": "student",
+    "file": "05-抢答-界面无变化.png",
+    "caption": "点「⚡ 抢答」后学生端界面没有任何变化（本轮发现：既不置灰也无提示）"
+  },
+  {
+    "group": "student",
+    "file": "05-抢答.png",
+    "caption": "点「⚡ 抢答」后弹出「已抢答！」提示，教师端抢答榜立刻出现本队"
+  },
+  {
+    "group": "student",
+    "file": "06-答案已公布.png",
+    "caption": "老师公布答案后，学生端显示正确答案（主观题还会给讲评要点）"
+  },
+  {
+    "group": "student",
+    "file": "07-我们组.png",
+    "caption": "「我们组」页：选谁作答（老师点名时按这个报）+ 组内每人得分"
+  },
+  {
+    "group": "student",
+    "file": "08-小组公屏.png",
+    "caption": "?view=board 小组公屏：放大显示，适合平板挂在墙上"
+  },
+  {
+    "group": "student",
+    "file": "09-主观题作答.png",
+    "caption": "主观题（口述/书写）在手机端录入，提交后进入教师端「待确认」由老师判定"
+  },
+  {
+    "group": "student",
+    "file": "10-填空题作答.png",
+    "caption": "填空题：归一化比对，答对自动加分"
+  },
+  {
+    "group": "student",
+    "file": "11-连不上教师机-引导.png",
+    "caption": "连不上时的自助指引：同一 WiFi、地址写法、防火墙、组网"
+  },
+  {
+    "group": "student",
+    "file": "12-未入座-填教师机地址.png",
+    "caption": "未入座时也能手输教师机地址（只写 IP 会自动补 :8080）；下面三个按钮用于保存 / 测试 / 排障"
+  },
+  {
+    "group": "teacher",
+    "file": "01-概览.png",
+    "caption": "概览：课程总览、快捷入口、课堂状态"
+  },
+  {
+    "group": "teacher",
+    "file": "02-班级与积分.png",
+    "caption": "班级与积分：队伍卡片 + 学生名单 + 快捷加分"
+  },
+  {
+    "group": "teacher",
+    "file": "03-班级-批量添加学生.png",
+    "caption": "批量添加学生：粘贴名单（空格/逗号/换行分隔）并选队伍"
+  },
+  {
+    "group": "teacher",
+    "file": "04-班级-学生明细.png",
+    "caption": "点「明细」查看某个学生的逐条记分流水"
+  },
+  {
+    "group": "teacher",
+    "file": "05-随机点名.png",
+    "caption": "随机点名：姓名滚动后定人，右侧直接判分（1/2/3/4）"
+  },
+  {
+    "group": "teacher",
+    "file": "06-题库-题目列表.png",
+    "caption": "题库中心 · 题目列表：搜索、筛选、题型与标签"
+  },
+  {
+    "group": "teacher",
+    "file": "07-题库-新建题目.png",
+    "caption": "新建题目：题干、题型、作答方式、选项、答案、标签"
+  },
+  {
+    "group": "teacher",
+    "file": "08-题库-批量导入.png",
+    "caption": "批量导入：粘贴文本（题干 | 选项 ; 选项 | 答案）→ 实时预览 → 导入"
+  },
+  {
+    "group": "teacher",
+    "file": "09-题库-题型与权重.png",
+    "caption": "题型与权重：基础 +3 / 拔高 +5 / 扩展 +8 / 提升 +10，可改可增"
+  },
+  {
+    "group": "teacher",
+    "file": "10-题库-标签管理.png",
+    "caption": "标签管理：知识点标签与题量统计"
+  },
+  {
+    "group": "teacher",
+    "file": "11-试卷列表.png",
+    "caption": "试卷中心：套卷列表、题量、总分、设为当前"
+  },
+  {
+    "group": "teacher",
+    "file": "12-组卷编辑器.png",
+    "caption": "组卷编辑器：左侧题库勾选加入，右侧试卷题目可排序/移除"
+  },
+  {
+    "group": "teacher",
+    "file": "13-学情分析.png",
+    "caption": "学情分析：题型维度统计 + 每题正确率 + 学生掌握度"
+  },
+  {
+    "group": "teacher",
+    "file": "14-学情分析-班级小结.png",
+    "caption": "一键生成班级小结（可复制/下载），自动点出薄弱与优势题型"
+  },
+  {
+    "group": "teacher",
+    "file": "15-排行榜与导出.png",
+    "caption": "排行榜与导出：个人榜 + 队伍榜 + CSV/JSON 导出"
+  },
+  {
+    "group": "teacher",
+    "file": "16-设置-存储与备份.png",
+    "caption": "存储与备份：显示 SQLite 后端、库文件位置、记录数，可导出/导入"
+  },
+  {
+    "group": "teacher",
+    "file": "17-设置-组网.png",
+    "caption": "组网（EasyTier）：跨网段上课用，含「上课前自检」"
+  },
+  {
+    "group": "teacher",
+    "file": "18-设置-房间与大屏.png",
+    "caption": "房间与大屏：房间号、大屏地址、学生端地址与二维码"
+  },
+  {
+    "group": "teacher",
+    "file": "19-设置-关于与文档.png",
+    "caption": "关于与文档：外壳/存储后端/协议版本/数据版本"
+  },
+  {
+    "group": "teacher",
+    "file": "20-快捷键面板.png",
+    "caption": "按 ? 呼出快捷键面板（Alt+1~6 跳页，点名页 1/2/3/4 判分）"
+  },
+  {
+    "group": "teacher",
+    "file": "21-课堂协同.png",
+    "caption": "课堂协同：环节切换、接收作答、二维码入座、在线小组、实时流"
+  },
+  {
+    "group": "teacher",
+    "file": "22-课堂协同-出题与倒计时.png",
+    "caption": "设为当前题并「开始接收作答」，可一键发起 30 秒 / 1 分钟 / 2 分钟倒计时"
+  },
+  {
+    "group": "teacher",
+    "file": "23-课堂协同-抢答榜.png",
+    "caption": "反证：学生点抢答后，教师端抢答榜立刻出现该队（服务端是好的，缺的只是学生端反馈）"
+  }
+]
