@@ -180,7 +180,9 @@
       },
       // classroom 同理：契约的一部分，懒创建会让请求缺字段
       // open 是公开课现场状态（大屏/学生端要同步看到），默认没有
-      classroom: { buzz: [], pending: [], feed: [], open: null }
+      classroom: { buzz: [], pending: [], feed: [], open: null },
+      // 公开课评价留痕（历史，一直留着；与 classroom.open 的"当前这一次"不同）
+      openRecords: []
     };
   }
 

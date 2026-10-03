@@ -1573,6 +1573,46 @@ group('公开课量规可配置');
   eq(O.evaluate(O.defaultDimensions().map((d) => ({ key: d.key, score: 4 }))).total, 100, '默认量规仍可用');
 })();
 
+/* ================= 26. 公开课评价留痕 ================= */
+group('公开课评价留痕');
+
+(function () {
+  S.replaceState(S.defaultState());
+  eq(S.get().openRecords.length, 0, '初始没有留痕');
+
+  const ev = CI.openclass.evaluate([
+    { key: 'basic', score: 4 }, { key: 'transfer', score: 3 },
+    { key: 'expression', score: 4 }, { key: 'attitude', score: 4 }
+  ]);
+  const rec = CI.classroom.pushOpenRecord({
+    sid: 's1', name: '张三', qid: 'q1', stem: '示例题', verdict: 'correct', evaluation: ev
+  });
+  eq(S.get().openRecords.length, 1, '追加一条留痕');
+  eq(rec.name, '张三', '记录带姓名');
+  eq(rec.verdict, 'correct', '记录带判定');
+  eq(rec.evaluation.total, ev.total, '记录带完整评价（总分）');
+  eq(rec.evaluation.parts.length, 4, '记录带四维明细');
+  ok(rec.at > 0, '记录带时间戳');
+
+  // 现场状态清空后，留痕仍在 —— 这正是要留痕的原因
+  CI.classroom.setOpenState({ step: 'eval', sid: 's1', name: '张三', evaluation: ev });
+  CI.classroom.clearOpenState();
+  eq(S.get().classroom.open, null, '现场状态已清空');
+  eq(S.get().openRecords.length, 1, '留痕不受现场状态清空影响');
+
+  // 多个人、多条
+  CI.classroom.pushOpenRecord({ sid: 's2', name: '李四', verdict: 'half', evaluation: null });
+  eq(S.get().openRecords.length, 2, '追加第二条');
+  eq(S.get().openRecords[1].evaluation, null, '没评价也能留痕（只有判定）');
+
+  // 题干快照：题目之后被删也能看懂这条记录
+  eq(S.get().openRecords[0].stem, '示例题', '留痕带题干快照');
+
+  // 清空
+  CI.classroom.clearOpenRecords();
+  eq(S.get().openRecords.length, 0, '可以清空留痕');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

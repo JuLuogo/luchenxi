@@ -308,6 +308,31 @@ pub struct ClassroomBox {
     pub open: Option<OpenClassState>,
 }
 
+/// 一条公开课评价留痕
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
+pub struct OpenRecord {
+    #[serde(default)]
+    pub sid: String,
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub qid: Option<String>,
+    /// 题干快照（题目之后被删也能看懂这条记录）
+    #[serde(default)]
+    pub stem: String,
+    /// correct | half | wrong（没判定时为空）
+    #[serde(default)]
+    pub verdict: String,
+    /// 现场评价（四维四档的结果）
+    #[serde(default)]
+    pub evaluation: Option<crate::openclass::OpenEvaluation>,
+    #[serde(default)]
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
+    pub at: i64,
+}
+
 /// 公开课现场状态（一次现场问答 + 评价）
 ///
 /// 刻意只放"大屏与学生端要看到的东西"：被点到的学生、当前题、判定结果、四维评价。
@@ -360,6 +385,11 @@ pub struct ClassroomState {
     /// 运行时上下文（本地记忆，不参与同步）
     pub runtime: Runtime,
     pub classroom: ClassroomBox,
+    /// 公开课评价留痕（每次"完成，请下一位"追加一条）—— 公开课结束后要能回看与导出。
+    /// 与 classroom.open 的区别：open 是**当前正在进行的这一次**（会被清空），
+    /// openRecords 是**历史**，一直留着。
+    #[serde(default)]
+    pub open_records: Vec<OpenRecord>,
 }
 
 impl Default for ClassroomState {
@@ -388,6 +418,7 @@ impl Default for ClassroomState {
             logs: Vec::new(),
             runtime: Runtime::default(),
             classroom: ClassroomBox::default(),
+            open_records: Vec::new(),
         }
     }
 }

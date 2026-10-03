@@ -485,6 +485,31 @@
     return CI.store.get().classroom.open;
   }
 
+  /**
+   * 追加一条公开课评价留痕
+   *
+   * 为什么要有它：`classroom.open` 是"当前正在进行的这一次"，完成就清空；
+   * 而公开课结束后要看记录、要做评课讨论、可能要导出 —— 那些得靠历史。
+   */
+  function pushOpenRecord(rec) {
+    if (!rec) return null;
+    return CI.store.tx('class-open-record', function (st) {
+      if (!Array.isArray(st.openRecords)) st.openRecords = [];
+      var item = {
+        sid: rec.sid || '', name: rec.name || '', qid: rec.qid || null,
+        stem: rec.stem || '', verdict: rec.verdict || '',
+        evaluation: rec.evaluation || null, at: rec.at || Date.now()
+      };
+      st.openRecords.push(item);
+      return item;
+    }, { type: '公开课评价', detail: function (st, it) { return (it.name || '') + ' · ' + (it.evaluation ? it.evaluation.total + ' 分 ' + it.evaluation.level : '（未评价）'); } });
+  }
+
+  /** 清空公开课留痕（换班/换课时用） */
+  function clearOpenRecords() {
+    CI.store.tx('class-open-records-clear', function (st) { st.openRecords = []; }, { type: '清空公开课记录' });
+  }
+
   /** 结束公开课（清掉现场状态，大屏回到常规画面） */
   function clearOpenState() {
     CI.store.tx('class-open-clear', function (st) {
@@ -882,6 +907,7 @@
     /* 课堂节奏：计时器 + 签到统计 */
     setTimer: setTimer, clearTimer: clearTimer, timerLeft: timerLeft, formatLeft: formatLeft,
     setOpenState: setOpenState, clearOpenState: clearOpenState,
+    pushOpenRecord: pushOpenRecord, clearOpenRecords: clearOpenRecords,
     studentView: studentView,
     checkinStats: checkinStats,
     focusBuzz: focusBuzz, loadRemoteState: loadRemoteState, applyRemote: applyRemote,

@@ -147,6 +147,12 @@ export type ClassroomState = {
 	/**  运行时上下文（本地记忆，不参与同步） */
 	runtime: Runtime,
 	classroom: ClassroomBox,
+	/**
+	 *  公开课评价留痕（每次"完成，请下一位"追加一条）—— 公开课结束后要能回看与导出。
+	 *  与 classroom.open 的区别：open 是**当前正在进行的这一次**（会被清空），
+	 *  openRecords 是**历史**，一直留着。
+	 */
+	openRecords?: OpenRecord[],
 };
 
 /**  命令处理结果（对应 JS handleCmd 的返回值，外加要落库的副作用） */
@@ -282,6 +288,20 @@ export type OpenPart = {
 	rate: number | null,
 	/**  这一维对总分的贡献 */
 	contribution: number | null,
+};
+
+/**  一条公开课评价留痕 */
+export type OpenRecord = {
+	sid?: string,
+	name?: string,
+	qid?: string | null,
+	/**  题干快照（题目之后被删也能看懂这条记录） */
+	stem?: string,
+	/**  correct | half | wrong（没判定时为空） */
+	verdict?: string,
+	/**  现场评价（四维四档的结果） */
+	evaluation?: OpenEvaluation | null,
+	at?: number,
 };
 
 /**  待确认提交（主观题由老师判定） */

@@ -11,7 +11,7 @@
  *     界面里不重算任何规则
  */
 import { computed, ref } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { useClassStore } from '../../shared/class-store';
 import { CI } from '../../shared/bridge';
 import { fetchPick, scoreVerdictWithRust, fetchOpenEval, openDimensions } from '../../shared/domain-api';
@@ -174,6 +174,15 @@ async function refreshEval() {
 async function finish() {
   if (!evaluation.value) { ElMessage.warning('至少评一个维度再完成'); return; }
   CI.store.log?.('公开课评价', (picked.value?.name || '') + ' · ' + evaluation.value.total + ' 分 ' + evaluation.value.level);
+  // 先留痕（历史），再清现场状态（当前这一次）
+  (CI.classroom as any).pushOpenRecord({
+    sid: picked.value?.sid || '',
+    name: picked.value?.name || '',
+    qid: question.value?.id || null,
+    stem: question.value?.stem || '',
+    verdict: verdict.value,
+    evaluation: evaluation.value
+  });
   (CI.classroom as any).clearOpenState();
   ElMessage.success('已记录评价，可以请下一位同学了');
   // 进入下一位：保留量规，清空本轮
@@ -183,6 +192,51 @@ async function finish() {
   scores.value = {};
   evaluation.value = null;
   step.value = 1;
+}
+
+/** 本次公开课的评价留痕（历史，一直留着） */
+const records = computed<any[]>(() => {
+  void store.rev;
+  const list = (store.state as any).openRecords;
+  return Array.isArray(list) ? list.slice().reverse() : [];
+});
+
+/** 导出 CSV：公开课结束后做评课讨论用 */
+function exportCsv() {
+  const list = records.value.slice().reverse();
+  if (!list.length) { ElMessage.warning('还没有记录'); return; }
+  const dims = openDimensions();
+  const head = ['姓名', '判定', ...dims.map((d) => d.label), '总分', '总评', '评语', '时间'];
+  const rows = list.map((r) => {
+    const ev = r.evaluation || {};
+    const byKey: Record<string, string> = {};
+    (ev.parts || []).forEach((p: any) => { byKey[p.key] = p.level; });
+    return [
+      r.name || '',
+      r.verdict === 'correct' ? '全对' : (r.verdict === 'half' ? '对一半' : (r.verdict === 'wrong' ? '不对' : '未判定')),
+      ...dims.map((d) => byKey[d.key] || ''),
+      ev.total === undefined ? '' : String(ev.total),
+      ev.level || '',
+      ev.comment || '',
+      new Date(r.at || Date.now()).toLocaleString('zh-CN')
+    ];
+  });
+  const csv = [head, ...rows]
+    .map((cols) => cols.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(','))
+    .join('\r\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '公开课评价_' + new Date().toLocaleDateString('zh-CN').replace(/\//g, '-') + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  ElMessage.success('已导出 ' + list.length + ' 条');
+}
+
+function clearRecords() {
+  ElMessageBox.confirm('清空本次公开课的全部评价记录？', '确认', { type: 'warning' })
+    .then(() => { (CI.classroom as any).clearOpenRecords(); ElMessage.success('已清空'); })
+    .catch(() => {});
 }
 
 function back() {
@@ -292,6 +346,46 @@ function back() {
         <el-button type="primary" size="large" @click="finish">完成，请下一位</el-button>
       </div>
     </el-card>
+
+    <!-- 记录：公开课结束后要能回看与导出（评价是三个最要紧环节之一，不能丢） -->
+    <el-card class="panel records">
+      <div class="rec-head">
+        <b>本次公开课记录</b>
+        <span class="sub">共 {{ records.length }} 条</span>
+        <div class="rec-actions">
+          <el-button size="small" :disabled="!records.length" @click="exportCsv">导出 CSV</el-button>
+          <el-button size="small" text type="danger" :disabled="!records.length" @click="clearRecords">清空</el-button>
+        </div>
+      </div>
+      <el-table v-if="records.length" :data="records" size="small" max-height="260">
+        <el-table-column prop="name" label="姓名" width="90" />
+        <el-table-column label="判定" width="80">
+          <template #default="{ row }">
+            <el-tag
+              size="small"
+              :type="row.verdict === 'correct' ? 'success' : (row.verdict === 'half' ? 'warning' : 'danger')"
+            >
+              {{ row.verdict === 'correct' ? '全对' : (row.verdict === 'half' ? '对一半' : '不对') }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="现场评价" min-width="220">
+          <template #default="{ row }">
+            <span v-if="row.evaluation">
+              <b>{{ row.evaluation.total }} 分 · {{ row.evaluation.level }}</b>
+              <span class="sub">（{{ row.evaluation.parts.map((p) => p.label + p.level).join(' ') }}）</span>
+            </span>
+            <span v-else class="sub">未评价</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="评语" min-width="260">
+          <template #default="{ row }">
+            <span class="sub">{{ (row.evaluation && row.evaluation.comment) || '—' }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div v-else class="tip">还没有记录。走完「点名 → 抽题 → 判定 → 评价」并点「完成，请下一位」就会留一条。</div>
+    </el-card>
   </div>
 </template>
 
@@ -324,4 +418,7 @@ function back() {
 .ai-tag { margin-left: 8px; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--el-color-success-light-8); color: var(--el-color-success); }
 .tip-dim { color: var(--el-text-color-placeholder); }
 .actions { display: flex; gap: 12px; }
+.records { margin-top: 16px; }
+.rec-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.rec-actions { margin-left: auto; }
 </style>
