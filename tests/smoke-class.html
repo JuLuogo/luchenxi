@@ -52,6 +52,25 @@ async function until(fn, ms, label) {
 var ROOM = 'smokeclass-' + Math.random().toString(36).slice(2, 8);
 var host, stu, stage;
 
+/**
+ * 公开课现场评价：优先打 Rust 端点（与教师端同一条路径），端点缺失时回退本地实现。
+ * e2e 里这样写是为了**同时验证两条路径**：Rust 枢纽下走端点，Node 枢纽下走回退。
+ */
+async function CI_openEval(scores) {
+  try {
+    const res = await fetch('/api/domain/open-eval', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scores })
+    });
+    if (res.ok) {
+      const j = await res.json();
+      if (j && j.ok && j.evaluation) return j.evaluation;
+    }
+  } catch (e) { /* 回退 */ }
+  const w = document.getElementById('hostFrame').contentWindow;
+  return w.CI.openclass.evaluate(scores);
+}
+
 async function boot() {
   host = document.getElementById('hostFrame');
   stu = document.getElementById('stuFrame');
@@ -179,6 +198,67 @@ async function run() {
     check(meta3.optionDist.length === 4, '选项分布 4 条（对应 4 个选项）');
     check(meta3.optionDist[0].count === 1 && meta3.optionDist[0].correct === true, '分布里正确项被标出且计到 1 票');
     check(Array.isArray(meta3.hardestQuestions), '快照带出讲评建议（正确率最低的题）');
+
+    /* ---------- 9.5 公开课全链路（三端同步） ---------- */
+    {
+      // 公开课现场状态写进 state.classroom.open，随快照下发 —— 大屏与学生端据此同步。
+      // 这一段验的是"点了按钮之后三端都对"，而不只是"端点可用"。
+      const pickedStu = HS.get().students.find((x) => x.teamId === t1);
+      check(!!pickedStu, '公开课：教师端有可点的学生');
+
+      /* ① 点名 */
+      HC.classroom.setOpenState({ step: 'rollcall', sid: pickedStu.id, name: pickedStu.name, qid: null, verdict: '', evaluation: null });
+      await wait(1800);
+      const snapPick = HC.sync.snapshot();
+      check(!!snapPick.meta.open, '公开课：快照带出现场状态');
+      check(snapPick.meta.open.step === 'rollcall' && snapPick.meta.open.sid === pickedStu.id, '公开课：快照记录被点到的学生');
+      const openBlock1 = stage.contentWindow.document.querySelector('.open-block');
+      check(!!openBlock1, '公开课：大屏出现公开课块');
+      const stageText1 = stage.contentWindow.document.body.innerText || '';
+      check(stageText1.indexOf(pickedStu.name) >= 0, '公开课：大屏放大显示被点到的同学（' + pickedStu.name + '）');
+      const stuOpen1 = sw.CIStudent.openState ? sw.CIStudent.openState() : null;
+      check(!!stuOpen1 && stuOpen1.mine === true, '公开课：学生端认出「到你了」（本组同学被点到）');
+      check((sw.document.body.innerText || '').indexOf('到你了') >= 0, '公开课：学生端显示「到你了」横幅');
+
+      /* ② 抽题 */
+      const q3 = HS.addQuestion({ stem: '公开课题：3+3=?', tier: 'basic', answer: 'A', options: ['5', '6', '7'] });
+      HC.classroom.setOpenState({ step: 'question', qid: q3.id });
+      await wait(1200);
+      check(HC.sync.snapshot().meta.open.qid === q3.id, '公开课：快照记录当前题');
+
+      /* ③ 判定（口头作答后老师点一下） */
+      const rec3 = HS.recordResult({ sid: pickedStu.id, qid: q3.id, tier: 'basic', result: 'correct', quizId: null, source: 'quiz', by: 'open', note: '公开课现场判定' });
+      check(rec3 && rec3.points === 3, '公开课：判定即记分（基础题 +3）');
+      HC.classroom.setOpenState({ step: 'verdict', verdict: 'correct' });
+      await wait(1800);
+      check((stage.contentWindow.document.body.innerText || '').indexOf('全对') >= 0, '公开课：大屏显示判定结果「全对」');
+
+      /* ④ 现场评价 */
+      const ev4 = await CI_openEval([
+        { key: 'basic', score: 4 }, { key: 'transfer', score: 3 },
+        { key: 'expression', score: 4 }, { key: 'attitude', score: 4 }
+      ]);
+      check(!!ev4 && ev4.total > 0, '公开课：现场评价算得出总分（' + (ev4 ? ev4.total : '?') + '）');
+      HC.classroom.setOpenState({ step: 'eval', evaluation: ev4 });
+      await wait(1800);
+      const snapEval = HC.sync.snapshot();
+      check(!!(snapEval.meta.open && snapEval.meta.open.evaluation), '公开课：快照带出评价结果');
+      const stageText3 = stage.contentWindow.document.body.innerText || '';
+      check(stageText3.indexOf(String(ev4.total)) >= 0, '公开课：大屏显示评价总分（' + ev4.total + '）');
+      check(stageText3.indexOf(ev4.level) >= 0, '公开课：大屏显示总评档位（' + ev4.level + '）');
+      check(stageText3.indexOf(ev4.comment.slice(0, 8)) >= 0, '公开课：大屏显示评语');
+      const stuOpen2 = sw.CIStudent.openState ? sw.CIStudent.openState() : null;
+      check(!!stuOpen2 && !!stuOpen2.evaluation, '公开课：学生端拿到评价结果');
+      check((sw.document.body.innerText || '').indexOf(String(ev4.total)) >= 0, '公开课：学生端显示自己的评价总分');
+
+      /* ⑤ 结束后回到常规画面 */
+      HC.classroom.clearOpenState();
+      await wait(1800);
+      check(HC.sync.snapshot().meta.open === null, '公开课：结束后快照里的现场状态清空');
+      // 用元素查询做精确断言：查文字容易假失败（被点到的姓名在「点名」画面里也会显示）
+      const openBlock2 = stage.contentWindow.document.querySelector('.open-block');
+      check(!openBlock2, '公开课：结束后大屏的公开课块消失（回到常规画面）');
+    }
 
     /* ---------- 10. 计时器与环节切换 ---------- */
     HC.classroom.setTimer(30, '小组讨论');
