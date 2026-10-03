@@ -41,6 +41,9 @@ pub struct Settings {
     pub weak_threshold: f64,
     /// 正确率高于该值 → 优势
     pub strong_threshold: f64,
+    /// 「快捷记分」是否计入作答次数（默认 true；只影响统计，不影响积分）
+    #[serde(default)]
+    pub quick_counts_as_attempt: Option<bool>,
     /// 判定薄弱/优势所需最少作答次数
     #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub min_sample: i64,
@@ -79,6 +82,7 @@ impl Default for Settings {
             fast_bonus: 0.0,
             weak_threshold: 0.6,
             strong_threshold: 0.85,
+            quick_counts_as_attempt: Some(true),
             min_sample: 5,
             eval_weights: crate::composite::EvalWeights::default(),
             decay_ratio: 0.65,

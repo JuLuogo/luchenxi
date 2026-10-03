@@ -199,7 +199,7 @@
     var minSample = U.num(st.minSample, 2);
     var weakThreshold = U.num(st.weakThreshold, 0.6) * 100;
 
-    var ranked = ranking(s, teamId);
+    var ranked = ranking(s, teamId, opts);
     var weakTiers = tiers.filter(function (t) { return t.attempts >= minSample && t.creditRate < weakThreshold; })
       .sort(function (a, b) { return a.creditRate - b.creditRate; });
 
@@ -228,7 +228,8 @@
     opts = opts || {};
     var s = state || CI.store.get();
     var list = CI.store.activeStudentsOf(s, teamId).map(function (stu) {
-      var stats = studentStats(s, stu.id);
+      // 必须把 opts 透传下去 —— 否则「数据范围（本节课 / 全部课次）」只管得住汇总，管不住这张榜
+      var stats = studentStats(s, stu.id, opts);
       return {
         sid: stu.id,
         name: stu.name,

@@ -11,9 +11,10 @@
 //! 重新生成基准：`node scripts/gen-parity-fixtures.mjs`
 //! CI 校验基准是否过期：`node scripts/gen-parity-fixtures.mjs --check`
 
+use ci_domain::state::ClassroomState;
 use ci_domain::{
     ability_of_tiers, answer_key, apply_pick, auto, build_report, decayed_rate, evaluate, growth_score,
-    option_distribution, participation_rate, default_tiers, describe_submission,
+    option_distribution, participation_rate, student_stats, class_stats, ranking, team_ranking, default_tiers, describe_submission,
     draw_questions, finalize_feed, handle_cmd, mistake_board, question_stats, report_markdown,
     rollcall_pick, score_of_input, set_phase_named, student_mistakes, validate_question, BankQuestion,
     Checkin, ClassStudent, ClassTeam, CmdOutcome, DrawOpts, PickOpts, Question, RollcallSettings,
@@ -40,6 +41,7 @@ struct Fixture {
     composite: CompositeCases,
     #[serde(rename = "optionDist")]
     option_dist: Vec<OptionDistCase>,
+    stats: Vec<StatsCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -628,6 +630,162 @@ struct OptionDistRow {
     count: u32,
     rate: i64,
     correct: bool,
+}
+
+
+/* ---------- 学情统计（analysis.js::studentStats / classStats / ranking / teamRanking）---------- */
+
+#[derive(Debug, Deserialize)]
+struct StatsCase {
+    name: String,
+    students: Vec<StatsStudent>,
+    teams: Vec<StatsTeam>,
+    bank: Vec<StatsQuestion>,
+    quizzes: Vec<StatsQuiz>,
+    settings: StatsSettings,
+    expect: StatsExpect,
+}
+
+#[derive(Debug, Deserialize)]
+struct StatsStudent {
+    id: String,
+    name: String,
+    #[serde(rename = "teamId")]
+    team_id: Option<String>,
+    active: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct StatsTeam {
+    id: String,
+    name: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct StatsQuestion {
+    id: String,
+    tier: String,
+    #[serde(default)]
+    tags: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct StatsQuiz {
+    id: String,
+    records: Vec<StatsRecord>,
+}
+
+#[derive(Debug, Deserialize)]
+struct StatsRecord {
+    sid: String,
+    qid: Option<String>,
+    tier: String,
+    result: String,
+    #[serde(rename = "quizId")]
+    quiz_id: Option<String>,
+    points: f64,
+    base: f64,
+    at: i64,
+    #[serde(default)]
+    source: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct StatsSettings {
+    #[serde(rename = "halfRatio")]
+    half_ratio: f64,
+    #[serde(rename = "minSample")]
+    min_sample: i64,
+    #[serde(rename = "weakThreshold")]
+    weak_threshold: f64,
+    #[serde(rename = "strongThreshold")]
+    strong_threshold: f64,
+}
+
+#[derive(Debug, Deserialize)]
+struct StatsExpect {
+    all: Option<StatsStudentOut>,
+    z1: Option<StatsStudentOut>,
+    z2: Option<StatsStudentOut>,
+    other: Option<StatsStudentOut>,
+    #[serde(rename = "rankAll")]
+    rank_all: Vec<StatsRankOut>,
+    #[serde(rename = "rankZ1")]
+    rank_z1: Vec<StatsRankOut>,
+    #[serde(rename = "classAll")]
+    class_all: StatsClassOut,
+    #[serde(rename = "classZ1")]
+    class_z1: StatsClassOut,
+    team: Vec<StatsTeamOut>,
+}
+
+#[derive(Debug, Deserialize)]
+struct StatsStudentOut {
+    sid: String,
+    name: String,
+    #[serde(rename = "teamName")]
+    team_name: String,
+    score: f64,
+    attempts: u32,
+    correct: u32,
+    half: u32,
+    #[serde(rename = "creditRate")]
+    credit_rate: f64,
+    #[serde(rename = "correctRate")]
+    correct_rate: f64,
+    rolls: u32,
+    #[serde(rename = "lastAt")]
+    last_at: i64,
+    weak: Vec<String>,
+    strong: Vec<String>,
+    level: String,
+    #[serde(rename = "tierKeys")]
+    tier_keys: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct StatsRankOut {
+    sid: String,
+    name: String,
+    score: f64,
+    attempts: u32,
+    correct: u32,
+    #[serde(rename = "creditRate")]
+    credit_rate: f64,
+    rank: u32,
+    level: String,
+    #[serde(rename = "weakCount")]
+    weak_count: u32,
+}
+
+#[derive(Debug, Deserialize)]
+struct StatsClassOut {
+    #[serde(rename = "teamId")]
+    team_id: String,
+    #[serde(rename = "studentCount")]
+    student_count: u32,
+    participants: u32,
+    attempts: u32,
+    correct: u32,
+    #[serde(rename = "creditRate")]
+    credit_rate: f64,
+    #[serde(rename = "weakTiers")]
+    weak_tiers: Vec<String>,
+    #[serde(rename = "needHelp")]
+    need_help: Vec<String>,
+    #[serde(rename = "rankAttempts")]
+    rank_attempts: Vec<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+struct StatsTeamOut {
+    #[serde(rename = "teamId")]
+    team_id: String,
+    score: f64,
+    #[serde(rename = "memberCount")]
+    member_count: u32,
+    avg: f64,
+    attempts: u32,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -1528,4 +1686,195 @@ fn option_dist_matches_js_reference() {
         println!("  ✔ {} → {}", case.name, got.iter().map(|o| format!("{} {}%", o.key, o.rate)).collect::<Vec<_>>().join(" / "));
     }
     println!("\n✅ 选项分布：{} 组用例与 JS 参考实现逐字段一致", fx.option_dist.len());
+}
+
+/// 学情统计：把基准里的最小状态搭出来，跑 Rust 实现，逐字段与 JS 参考实现比
+///
+/// 重点比 **数据范围（quizId）是否贯穿**：JS 版曾经漏传 opts，
+/// 于是"只看本节课"只管得住汇总、管不住学生榜（汇总 1 次、榜上 2 次）。
+#[test]
+fn stats_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.stats.is_empty(), "基准里没有学情统计用例");
+    for case in &fx.stats {
+        let mut s = ClassroomState::default();
+        s.settings.half_ratio = case.settings.half_ratio;
+        s.settings.min_sample = case.settings.min_sample;
+        s.settings.weak_threshold = case.settings.weak_threshold;
+        s.settings.strong_threshold = case.settings.strong_threshold;
+        s.teams = case
+            .teams
+            .iter()
+            .enumerate()
+            .map(|(i, t)| ci_domain::state::Team {
+                id: t.id.clone(),
+                name: t.name.clone(),
+                icon: String::new(),
+                color: String::new(),
+                order: i as i64,
+            })
+            .collect();
+        s.students = case
+            .students
+            .iter()
+            .enumerate()
+            .map(|(i, x)| ci_domain::state::Student {
+                id: x.id.clone(),
+                name: x.name.clone(),
+                team_id: x.team_id.clone(),
+                active: x.active,
+                joined_at: i as i64 + 1,
+                called: 0,
+            })
+            .collect();
+        s.bank = case
+            .bank
+            .iter()
+            .map(|q| ci_domain::state::BankQuestion {
+                id: q.id.clone(),
+                tier: q.tier.clone(),
+                tags: q.tags.clone(),
+                ..Default::default()
+            })
+            .collect();
+        s.quizzes = case
+            .quizzes
+            .iter()
+            .map(|q| ci_domain::state::Quiz {
+                id: q.id.clone(),
+                name: q.id.clone(),
+                note: String::new(),
+                created_at: 1,
+                closed_at: 0,
+                question_ids: vec![],
+                records: q
+                    .records
+                    .iter()
+                    .map(|r| ScoreRecord {
+                        id: format!("r{}-{}", q.id, r.at),
+                        sid: Some(r.sid.clone()),
+                        qid: r.qid.clone(),
+                        tier: r.tier.clone(),
+                        quiz_id: r.quiz_id.clone(),
+                        result: r.result.clone(),
+                        base: r.base,
+                        ratio: 0.0,
+                        points: r.points,
+                        source: if r.source.is_empty() { "quiz".into() } else { r.source.clone() },
+                        note: String::new(),
+                        picked: String::new(),
+                        at: r.at,
+                        by: String::new(),
+                    })
+                    .collect(),
+            })
+            .collect();
+
+        let z1 = case.quizzes.first().map(|q| q.id.clone());
+        let z2 = case.quizzes.get(1).map(|q| q.id.clone());
+
+        // 学生统计：全部课次 / 第一节 / 第二节
+        let checks: [(&str, Option<&StatsStudentOut>, Option<&str>); 3] = [
+            ("全部课次", case.expect.all.as_ref(), None),
+            ("只看第一节", case.expect.z1.as_ref(), z1.as_deref()),
+            ("只看第二节", case.expect.z2.as_ref(), z2.as_deref()),
+        ];
+        for (label, want, quiz) in checks {
+            let Some(want) = want else { continue };
+            let got = student_stats(&s, &want.sid, quiz).expect("学生应存在");
+            let n = format!("{} / {}", case.name, label);
+            assert_eq!(got.sid, want.sid, "[{}] sid", n);
+            assert_eq!(got.name, want.name, "[{}] 姓名", n);
+            assert_eq!(got.team_name, want.team_name, "[{}] 队伍名", n);
+            assert_eq!(got.score, want.score, "[{}] 积分", n);
+            assert_eq!(got.total.attempts, want.attempts, "[{}] 作答次数", n);
+            assert_eq!(got.total.correct, want.correct, "[{}] 答对次数", n);
+            assert_eq!(got.total.half, want.half, "[{}] 半对次数", n);
+            assert_eq!(got.total.credit_rate, want.credit_rate, "[{}] 掌握度", n);
+            assert_eq!(got.total.correct_rate, want.correct_rate, "[{}] 正确率", n);
+            assert_eq!(got.rolls, want.rolls, "[{}] 被点次数", n);
+            assert_eq!(got.last_at, want.last_at, "[{}] 最后作答时间", n);
+            assert_eq!(got.weak, want.weak, "[{}] 薄弱题型", n);
+            assert_eq!(got.strong, want.strong, "[{}] 优势题型", n);
+            assert_eq!(got.level, want.level, "[{}] 等级", n);
+            assert_eq!(
+                got.tiers.iter().map(|t| t.key.clone()).collect::<Vec<_>>(),
+                want.tier_keys,
+                "[{}] 题型桶",
+                n
+            );
+        }
+
+        // 榜单：范围必须贯穿
+        for (label, want, quiz) in [
+            ("全部课次", &case.expect.rank_all, None),
+            ("只看第一节", &case.expect.rank_z1, z1.as_deref()),
+        ] {
+            let got = ranking(&s, None, quiz);
+            assert_eq!(got.len(), want.len(), "[{} / {}] 榜单长度", case.name, label);
+            for (i, w) in want.iter().enumerate() {
+                let g = &got[i];
+                let n = format!("{} / {} #{}", case.name, label, i + 1);
+                assert_eq!(g.sid, w.sid, "[{}] sid", n);
+                assert_eq!(g.name, w.name, "[{}] 姓名", n);
+                assert_eq!(g.score, w.score, "[{}] 积分", n);
+                assert_eq!(g.attempts, w.attempts, "[{}] 作答次数（范围必须贯穿）", n);
+                assert_eq!(g.correct, w.correct, "[{}] 答对次数", n);
+                assert_eq!(g.credit_rate, w.credit_rate, "[{}] 掌握度", n);
+                assert_eq!(g.rank, w.rank, "[{}] 名次", n);
+                assert_eq!(g.level, w.level, "[{}] 等级", n);
+                assert_eq!(g.weak_count, w.weak_count, "[{}] 薄弱题型数", n);
+            }
+        }
+
+        // 班级统计
+        for (label, want, quiz) in [
+            ("全部课次", &case.expect.class_all, None),
+            ("只看第一节", &case.expect.class_z1, z1.as_deref()),
+        ] {
+            let got = class_stats(&s, None, quiz);
+            let n = format!("{} / class {}", case.name, label);
+            assert_eq!(got.team_id, want.team_id, "[{}] teamId", n);
+            assert_eq!(got.student_count, want.student_count, "[{}] 学生数", n);
+            assert_eq!(got.participants, want.participants, "[{}] 参与者", n);
+            assert_eq!(got.total.attempts, want.attempts, "[{}] 作答次数", n);
+            assert_eq!(got.total.correct, want.correct, "[{}] 答对次数", n);
+            assert_eq!(got.total.credit_rate, want.credit_rate, "[{}] 掌握度", n);
+            assert_eq!(got.weak_tiers, want.weak_tiers, "[{}] 薄弱题型", n);
+            assert_eq!(
+                got.need_help.iter().map(|r| r.sid.clone()).collect::<Vec<_>>(),
+                want.need_help,
+                "[{}] 需关注名单",
+                n
+            );
+            assert_eq!(
+                got.ranking.iter().map(|r| r.attempts).collect::<Vec<_>>(),
+                want.rank_attempts,
+                "[{}] 榜上作答数（必须与汇总同口径）",
+                n
+            );
+        }
+
+        // 队伍榜
+        let teams = team_ranking(&s);
+        assert_eq!(teams.len(), case.expect.team.len(), "[{}] 队伍数", case.name);
+        for (i, w) in case.expect.team.iter().enumerate() {
+            let g = &teams[i];
+            let n = format!("{} / team #{}", case.name, i + 1);
+            assert_eq!(g.team_id, w.team_id, "[{}] teamId", n);
+            assert_eq!(g.score, w.score, "[{}] 队伍分", n);
+            assert_eq!(g.member_count, w.member_count, "[{}] 成员数", n);
+            assert_eq!(g.avg, w.avg, "[{}] 人均分", n);
+            assert_eq!(g.attempts, w.attempts, "[{}] 作答次数", n);
+        }
+
+        println!(
+            "  ✔ {} → 全部 {} 次 / 第一节 {} 次 / 第二节 {} 次",
+            case.name,
+            case.expect.all.as_ref().map(|x| x.attempts).unwrap_or(0),
+            case.expect.z1.as_ref().map(|x| x.attempts).unwrap_or(0),
+            case.expect.z2.as_ref().map(|x| x.attempts).unwrap_or(0)
+        );
+    }
+    println!("\n✅ 学情统计：{} 组用例与 JS 参考实现逐字段一致", fx.stats.len());
 }

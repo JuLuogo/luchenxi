@@ -240,9 +240,30 @@ pub fn apply_pick(settings: &mut RollcallSettings, p: &Pick, at: i64) {
     });
 }
 
+/// 「有 sid 的历史条目」—— 让 called_count 同时接受两种历史类型
+///
+/// 为什么需要它：`rollcall::RollEntry`（apply_pick 的输入，字段少）与
+/// `state::RollHistoryEntry`（持久化历史，字段多）是**两个结构**，
+/// 但它们都能回答"这次点的是谁"。
+pub trait HasSid {
+    fn sid_of(&self) -> &str;
+}
+
+impl HasSid for RollEntry {
+    fn sid_of(&self) -> &str {
+        &self.sid
+    }
+}
+
+impl HasSid for crate::state::RollHistoryEntry {
+    fn sid_of(&self) -> &str {
+        &self.sid
+    }
+}
+
 /// 被点次数统计（对应 JS 的 calledCount：数历史里同一个人出现几次）
-pub fn called_count(history: &[RollEntry], sid: &str) -> u32 {
-    history.iter().filter(|h| h.sid == sid).count() as u32
+pub fn called_count<T: HasSid>(history: &[T], sid: &str) -> u32 {
+    history.iter().filter(|h| h.sid_of() == sid).count() as u32
 }
 
 /* ------------------------------------------------------------------ *

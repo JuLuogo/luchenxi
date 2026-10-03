@@ -109,7 +109,17 @@ const MIGRATION = [
   { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/ability.rs', name: '加权计分与能力评价', migrated: true, parity: 'ability' },
   { js: 'assets/js/rollcall.js', rs: 'crates/ci-domain/src/rollcall.rs', name: '随机点名', migrated: true, parity: 'rollcall' },
   { js: 'assets/js/classroom.js', rs: 'crates/ci-domain/src/classroom.rs', name: '课堂环节与学生命令', migrated: true, parity: 'classroom', minParity: 3 },
-  { js: 'assets/js/store.js', rs: 'crates/ci-domain/src/scoring.rs', name: '题型权重与计分引擎', migrated: true, parity: 'scoring', minParity: 3 }
+  { js: 'assets/js/store.js', rs: 'crates/ci-domain/src/scoring.rs', name: '题型权重与计分引擎', migrated: true, parity: 'scoring', minParity: 3 },
+  // 2026-10 补齐：下面这些其实早就迁了，只是进度表没跟上
+  { js: 'assets/js/store.js', rs: 'crates/ci-domain/src/draw.rs', name: '随机抽题', migrated: true, parity: 'draw' },
+  { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/question_stats.rs', name: '题目统计与选项分布', migrated: true, parity: 'questionStats', minParity: 2 },
+  { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/mistakes.rs', name: '错题本', migrated: true, parity: 'mistakes', minParity: 2 },
+  { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/report.rs', name: '课堂报告', migrated: true, parity: 'report' },
+  // composite 在 parity.json 里是**对象**（participation/growth/decayed/evaluate 四个子数组），
+  // 形状与其它用例集不同，所以不按数组长度校验；它自己的 41 组在 parity.rs 里逐字段比
+  { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/composite.rs', name: '多维度评价', migrated: true },
+  { js: 'assets/js/import.js', rs: 'crates/ci-domain/src/bank_import.rs', name: '批量导入解析', migrated: true },
+  { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/stats.rs', name: '学情统计聚合', migrated: true, parity: 'stats', minParity: 3 }
 ];
 
 let done = 0;

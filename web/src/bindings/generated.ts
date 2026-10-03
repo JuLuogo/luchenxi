@@ -388,6 +388,8 @@ export type Settings = {
 	weakThreshold: number | null,
 	/**  正确率高于该值 → 优势 */
 	strongThreshold: number | null,
+	/**  「快捷记分」是否计入作答次数（默认 true；只影响统计，不影响积分） */
+	quickCountsAsAttempt?: boolean | null,
 	/**  判定薄弱/优势所需最少作答次数 */
 	minSample: number,
 	/**  多维度评价权重（正确性 / 参与度 / 进步）—— 调研：权重没有实证最优值，属课程政策 */

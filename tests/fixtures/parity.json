@@ -7700,5 +7700,879 @@
         }
       ]
     }
+  ],
+  "stats": [
+    {
+      "name": "统计：两节课（范围必须贯穿到榜）",
+      "students": [
+        {
+          "id": "s1",
+          "name": "甲",
+          "teamId": "tm1",
+          "active": true
+        },
+        {
+          "id": "s2",
+          "name": "乙",
+          "teamId": "tm1",
+          "active": true
+        },
+        {
+          "id": "s3",
+          "name": "丙",
+          "teamId": "tm2",
+          "active": true
+        }
+      ],
+      "teams": [
+        {
+          "id": "tm1",
+          "name": "红队"
+        },
+        {
+          "id": "tm2",
+          "name": "蓝队"
+        }
+      ],
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "tags": []
+        },
+        {
+          "id": "q2",
+          "tier": "advanced",
+          "tags": []
+        }
+      ],
+      "quizzes": [
+        {
+          "id": "z1",
+          "records": [
+            {
+              "sid": "s1",
+              "qid": "q1",
+              "tier": "basic",
+              "result": "wrong",
+              "quizId": "z1",
+              "points": 0,
+              "base": 3,
+              "at": 1,
+              "source": "quiz"
+            },
+            {
+              "sid": "s2",
+              "qid": "q1",
+              "tier": "basic",
+              "result": "correct",
+              "quizId": "z1",
+              "points": 3,
+              "base": 3,
+              "at": 2,
+              "source": "quiz"
+            }
+          ]
+        },
+        {
+          "id": "z2",
+          "records": [
+            {
+              "sid": "s1",
+              "qid": "q2",
+              "tier": "advanced",
+              "result": "correct",
+              "quizId": "z2",
+              "points": 5,
+              "base": 5,
+              "at": 1,
+              "source": "quiz"
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "halfRatio": 0.5,
+        "minSample": 5,
+        "weakThreshold": 0.6,
+        "strongThreshold": 0.85
+      },
+      "expect": {
+        "all": {
+          "sid": "s1",
+          "name": "甲",
+          "teamName": "红队",
+          "score": 5,
+          "attempts": 2,
+          "correct": 1,
+          "half": 0,
+          "creditRate": 50,
+          "correctRate": 50,
+          "rolls": 0,
+          "lastAt": 1,
+          "weak": [],
+          "strong": [],
+          "level": "—",
+          "tierKeys": [
+            "basic",
+            "advanced",
+            "extended",
+            "improve"
+          ]
+        },
+        "z1": {
+          "sid": "s1",
+          "name": "甲",
+          "teamName": "红队",
+          "score": 5,
+          "attempts": 1,
+          "correct": 0,
+          "half": 0,
+          "creditRate": 0,
+          "correctRate": 0,
+          "rolls": 0,
+          "lastAt": 1,
+          "weak": [],
+          "strong": [],
+          "level": "—",
+          "tierKeys": [
+            "basic",
+            "advanced",
+            "extended",
+            "improve"
+          ]
+        },
+        "z2": {
+          "sid": "s1",
+          "name": "甲",
+          "teamName": "红队",
+          "score": 5,
+          "attempts": 1,
+          "correct": 1,
+          "half": 0,
+          "creditRate": 100,
+          "correctRate": 100,
+          "rolls": 0,
+          "lastAt": 1,
+          "weak": [],
+          "strong": [],
+          "level": "—",
+          "tierKeys": [
+            "basic",
+            "advanced",
+            "extended",
+            "improve"
+          ]
+        },
+        "other": {
+          "sid": "s2",
+          "name": "乙",
+          "teamName": "红队",
+          "score": 3,
+          "attempts": 1,
+          "correct": 1,
+          "half": 0,
+          "creditRate": 100,
+          "correctRate": 100,
+          "rolls": 0,
+          "lastAt": 1,
+          "weak": [],
+          "strong": [],
+          "level": "—",
+          "tierKeys": [
+            "basic",
+            "advanced",
+            "extended",
+            "improve"
+          ]
+        },
+        "rankAll": [
+          {
+            "sid": "s1",
+            "name": "甲",
+            "score": 5,
+            "attempts": 2,
+            "correct": 1,
+            "creditRate": 50,
+            "rank": 1,
+            "level": "—",
+            "weakCount": 0
+          },
+          {
+            "sid": "s2",
+            "name": "乙",
+            "score": 3,
+            "attempts": 1,
+            "correct": 1,
+            "creditRate": 100,
+            "rank": 2,
+            "level": "—",
+            "weakCount": 0
+          },
+          {
+            "sid": "s3",
+            "name": "丙",
+            "score": 0,
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "rank": 3,
+            "level": "—",
+            "weakCount": 0
+          }
+        ],
+        "rankZ1": [
+          {
+            "sid": "s1",
+            "name": "甲",
+            "score": 5,
+            "attempts": 1,
+            "correct": 0,
+            "creditRate": 0,
+            "rank": 1,
+            "level": "—",
+            "weakCount": 0
+          },
+          {
+            "sid": "s2",
+            "name": "乙",
+            "score": 3,
+            "attempts": 1,
+            "correct": 1,
+            "creditRate": 100,
+            "rank": 2,
+            "level": "—",
+            "weakCount": 0
+          },
+          {
+            "sid": "s3",
+            "name": "丙",
+            "score": 0,
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "rank": 3,
+            "level": "—",
+            "weakCount": 0
+          }
+        ],
+        "classAll": {
+          "teamId": "all",
+          "studentCount": 3,
+          "participants": 2,
+          "attempts": 3,
+          "correct": 2,
+          "creditRate": 66.7,
+          "weakTiers": [],
+          "needHelp": [],
+          "rankAttempts": [
+            2,
+            1,
+            0
+          ]
+        },
+        "classZ1": {
+          "teamId": "all",
+          "studentCount": 3,
+          "participants": 2,
+          "attempts": 2,
+          "correct": 1,
+          "creditRate": 50,
+          "weakTiers": [],
+          "needHelp": [],
+          "rankAttempts": [
+            1,
+            1,
+            0
+          ]
+        },
+        "team": [
+          {
+            "teamId": "tm1",
+            "score": 8,
+            "memberCount": 2,
+            "avg": 4,
+            "attempts": 3
+          },
+          {
+            "teamId": "tm2",
+            "score": 0,
+            "memberCount": 1,
+            "avg": 0,
+            "attempts": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "统计：半对按 halfRatio 折算",
+      "students": [
+        {
+          "id": "s1",
+          "name": "甲",
+          "teamId": "tm1",
+          "active": true
+        },
+        {
+          "id": "s2",
+          "name": "乙",
+          "teamId": "tm1",
+          "active": true
+        },
+        {
+          "id": "s3",
+          "name": "丙",
+          "teamId": "tm2",
+          "active": true
+        }
+      ],
+      "teams": [
+        {
+          "id": "tm1",
+          "name": "红队"
+        },
+        {
+          "id": "tm2",
+          "name": "蓝队"
+        }
+      ],
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "tags": []
+        },
+        {
+          "id": "q2",
+          "tier": "advanced",
+          "tags": []
+        }
+      ],
+      "quizzes": [
+        {
+          "id": "z1",
+          "records": [
+            {
+              "sid": "s1",
+              "qid": "q1",
+              "tier": "basic",
+              "result": "half",
+              "quizId": "z1",
+              "points": 1.5,
+              "base": 3,
+              "at": 1,
+              "source": "quiz"
+            }
+          ]
+        },
+        {
+          "id": "z2",
+          "records": [
+            {
+              "sid": "s1",
+              "qid": "q2",
+              "tier": "advanced",
+              "result": "correct",
+              "quizId": "z2",
+              "points": 5,
+              "base": 5,
+              "at": 1,
+              "source": "quiz"
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "halfRatio": 0.5,
+        "minSample": 5,
+        "weakThreshold": 0.6,
+        "strongThreshold": 0.85
+      },
+      "expect": {
+        "all": {
+          "sid": "s1",
+          "name": "甲",
+          "teamName": "红队",
+          "score": 6.5,
+          "attempts": 2,
+          "correct": 1,
+          "half": 1,
+          "creditRate": 75,
+          "correctRate": 50,
+          "rolls": 0,
+          "lastAt": 1,
+          "weak": [],
+          "strong": [],
+          "level": "—",
+          "tierKeys": [
+            "basic",
+            "advanced",
+            "extended",
+            "improve"
+          ]
+        },
+        "z1": {
+          "sid": "s1",
+          "name": "甲",
+          "teamName": "红队",
+          "score": 6.5,
+          "attempts": 1,
+          "correct": 0,
+          "half": 1,
+          "creditRate": 50,
+          "correctRate": 0,
+          "rolls": 0,
+          "lastAt": 1,
+          "weak": [],
+          "strong": [],
+          "level": "—",
+          "tierKeys": [
+            "basic",
+            "advanced",
+            "extended",
+            "improve"
+          ]
+        },
+        "z2": {
+          "sid": "s1",
+          "name": "甲",
+          "teamName": "红队",
+          "score": 6.5,
+          "attempts": 1,
+          "correct": 1,
+          "half": 0,
+          "creditRate": 100,
+          "correctRate": 100,
+          "rolls": 0,
+          "lastAt": 1,
+          "weak": [],
+          "strong": [],
+          "level": "—",
+          "tierKeys": [
+            "basic",
+            "advanced",
+            "extended",
+            "improve"
+          ]
+        },
+        "other": {
+          "sid": "s2",
+          "name": "乙",
+          "teamName": "红队",
+          "score": 0,
+          "attempts": 0,
+          "correct": 0,
+          "half": 0,
+          "creditRate": 0,
+          "correctRate": 0,
+          "rolls": 0,
+          "lastAt": 0,
+          "weak": [],
+          "strong": [],
+          "level": "—",
+          "tierKeys": [
+            "basic",
+            "advanced",
+            "extended",
+            "improve"
+          ]
+        },
+        "rankAll": [
+          {
+            "sid": "s1",
+            "name": "甲",
+            "score": 6.5,
+            "attempts": 2,
+            "correct": 1,
+            "creditRate": 75,
+            "rank": 1,
+            "level": "—",
+            "weakCount": 0
+          },
+          {
+            "sid": "s3",
+            "name": "丙",
+            "score": 0,
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "rank": 2,
+            "level": "—",
+            "weakCount": 0
+          },
+          {
+            "sid": "s2",
+            "name": "乙",
+            "score": 0,
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "rank": 3,
+            "level": "—",
+            "weakCount": 0
+          }
+        ],
+        "rankZ1": [
+          {
+            "sid": "s1",
+            "name": "甲",
+            "score": 6.5,
+            "attempts": 1,
+            "correct": 0,
+            "creditRate": 50,
+            "rank": 1,
+            "level": "—",
+            "weakCount": 0
+          },
+          {
+            "sid": "s3",
+            "name": "丙",
+            "score": 0,
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "rank": 2,
+            "level": "—",
+            "weakCount": 0
+          },
+          {
+            "sid": "s2",
+            "name": "乙",
+            "score": 0,
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "rank": 3,
+            "level": "—",
+            "weakCount": 0
+          }
+        ],
+        "classAll": {
+          "teamId": "all",
+          "studentCount": 3,
+          "participants": 1,
+          "attempts": 2,
+          "correct": 1,
+          "creditRate": 75,
+          "weakTiers": [],
+          "needHelp": [],
+          "rankAttempts": [
+            2,
+            0,
+            0
+          ]
+        },
+        "classZ1": {
+          "teamId": "all",
+          "studentCount": 3,
+          "participants": 1,
+          "attempts": 1,
+          "correct": 0,
+          "creditRate": 50,
+          "weakTiers": [],
+          "needHelp": [],
+          "rankAttempts": [
+            1,
+            0,
+            0
+          ]
+        },
+        "team": [
+          {
+            "teamId": "tm1",
+            "score": 6.5,
+            "memberCount": 2,
+            "avg": 3.3,
+            "attempts": 2
+          },
+          {
+            "teamId": "tm2",
+            "score": 0,
+            "memberCount": 1,
+            "avg": 0,
+            "attempts": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "统计：样本不足不判薄弱/优势",
+      "students": [
+        {
+          "id": "s1",
+          "name": "甲",
+          "teamId": "tm1",
+          "active": true
+        },
+        {
+          "id": "s2",
+          "name": "乙",
+          "teamId": "tm1",
+          "active": true
+        },
+        {
+          "id": "s3",
+          "name": "丙",
+          "teamId": "tm2",
+          "active": true
+        }
+      ],
+      "teams": [
+        {
+          "id": "tm1",
+          "name": "红队"
+        },
+        {
+          "id": "tm2",
+          "name": "蓝队"
+        }
+      ],
+      "bank": [
+        {
+          "id": "q1",
+          "tier": "basic",
+          "tags": []
+        },
+        {
+          "id": "q2",
+          "tier": "advanced",
+          "tags": []
+        }
+      ],
+      "quizzes": [
+        {
+          "id": "z1",
+          "records": [
+            {
+              "sid": "s1",
+              "qid": "q1",
+              "tier": "basic",
+              "result": "correct",
+              "quizId": "z1",
+              "points": 3,
+              "base": 3,
+              "at": 1,
+              "source": "quiz"
+            }
+          ]
+        },
+        {
+          "id": "z2",
+          "records": []
+        }
+      ],
+      "settings": {
+        "halfRatio": 0.5,
+        "minSample": 5,
+        "weakThreshold": 0.6,
+        "strongThreshold": 0.85
+      },
+      "expect": {
+        "all": {
+          "sid": "s1",
+          "name": "甲",
+          "teamName": "红队",
+          "score": 3,
+          "attempts": 1,
+          "correct": 1,
+          "half": 0,
+          "creditRate": 100,
+          "correctRate": 100,
+          "rolls": 0,
+          "lastAt": 1,
+          "weak": [],
+          "strong": [],
+          "level": "—",
+          "tierKeys": [
+            "basic",
+            "advanced",
+            "extended",
+            "improve"
+          ]
+        },
+        "z1": {
+          "sid": "s1",
+          "name": "甲",
+          "teamName": "红队",
+          "score": 3,
+          "attempts": 1,
+          "correct": 1,
+          "half": 0,
+          "creditRate": 100,
+          "correctRate": 100,
+          "rolls": 0,
+          "lastAt": 1,
+          "weak": [],
+          "strong": [],
+          "level": "—",
+          "tierKeys": [
+            "basic",
+            "advanced",
+            "extended",
+            "improve"
+          ]
+        },
+        "z2": {
+          "sid": "s1",
+          "name": "甲",
+          "teamName": "红队",
+          "score": 3,
+          "attempts": 0,
+          "correct": 0,
+          "half": 0,
+          "creditRate": 0,
+          "correctRate": 0,
+          "rolls": 0,
+          "lastAt": 1,
+          "weak": [],
+          "strong": [],
+          "level": "—",
+          "tierKeys": [
+            "basic",
+            "advanced",
+            "extended",
+            "improve"
+          ]
+        },
+        "other": {
+          "sid": "s2",
+          "name": "乙",
+          "teamName": "红队",
+          "score": 0,
+          "attempts": 0,
+          "correct": 0,
+          "half": 0,
+          "creditRate": 0,
+          "correctRate": 0,
+          "rolls": 0,
+          "lastAt": 0,
+          "weak": [],
+          "strong": [],
+          "level": "—",
+          "tierKeys": [
+            "basic",
+            "advanced",
+            "extended",
+            "improve"
+          ]
+        },
+        "rankAll": [
+          {
+            "sid": "s1",
+            "name": "甲",
+            "score": 3,
+            "attempts": 1,
+            "correct": 1,
+            "creditRate": 100,
+            "rank": 1,
+            "level": "—",
+            "weakCount": 0
+          },
+          {
+            "sid": "s3",
+            "name": "丙",
+            "score": 0,
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "rank": 2,
+            "level": "—",
+            "weakCount": 0
+          },
+          {
+            "sid": "s2",
+            "name": "乙",
+            "score": 0,
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "rank": 3,
+            "level": "—",
+            "weakCount": 0
+          }
+        ],
+        "rankZ1": [
+          {
+            "sid": "s1",
+            "name": "甲",
+            "score": 3,
+            "attempts": 1,
+            "correct": 1,
+            "creditRate": 100,
+            "rank": 1,
+            "level": "—",
+            "weakCount": 0
+          },
+          {
+            "sid": "s3",
+            "name": "丙",
+            "score": 0,
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "rank": 2,
+            "level": "—",
+            "weakCount": 0
+          },
+          {
+            "sid": "s2",
+            "name": "乙",
+            "score": 0,
+            "attempts": 0,
+            "correct": 0,
+            "creditRate": 0,
+            "rank": 3,
+            "level": "—",
+            "weakCount": 0
+          }
+        ],
+        "classAll": {
+          "teamId": "all",
+          "studentCount": 3,
+          "participants": 1,
+          "attempts": 1,
+          "correct": 1,
+          "creditRate": 100,
+          "weakTiers": [],
+          "needHelp": [],
+          "rankAttempts": [
+            1,
+            0,
+            0
+          ]
+        },
+        "classZ1": {
+          "teamId": "all",
+          "studentCount": 3,
+          "participants": 1,
+          "attempts": 1,
+          "correct": 1,
+          "creditRate": 100,
+          "weakTiers": [],
+          "needHelp": [],
+          "rankAttempts": [
+            1,
+            0,
+            0
+          ]
+        },
+        "team": [
+          {
+            "teamId": "tm1",
+            "score": 3,
+            "memberCount": 2,
+            "avg": 1.5,
+            "attempts": 1
+          },
+          {
+            "teamId": "tm2",
+            "score": 0,
+            "memberCount": 1,
+            "avg": 0,
+            "attempts": 0
+          }
+        ]
+      }
+    }
   ]
 }

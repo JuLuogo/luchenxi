@@ -1005,6 +1005,103 @@ mkOptionDistCase('选项分布：含跳过（不进分母）', [['A', 'correct']
 mkOptionDistCase('选项分布：全对', [['A', 'correct'], ['A', 'correct']]);
 mkOptionDistCase('选项分布：无人作答', []);
 
+
+/* ---------- 用例集：学情统计（analysis.js::studentStats / classStats / ranking / teamRanking）---------- *
+ * 重点比"数据范围（quizId）是否贯穿"—— JS 版曾经漏传 opts，汇总说 1 次、榜上说 2 次 */
+const statsCases = [];
+
+function mkStatsCase(name, spec) {
+  globalThis.localStorage.clear();
+  S.replaceState(S.defaultState());
+  const teams = S.get().teams;
+  const t1 = teams[0].id, t2 = teams[1].id;
+  const mk = (nm, tm) => { const x = S.addStudent(nm, tm); return typeof x === 'string' ? x : x.id; };
+  const s1 = mk('甲', t1), s2 = mk('乙', t1), s3 = mk('丙', t2);
+  const q1 = S.addQuestion({ stem: '第一节的题', tier: 'basic', answer: 'A' });
+  const q2 = S.addQuestion({ stem: '第二节的题', tier: 'advanced', answer: 'B' });
+  const z1 = S.createQuiz('第一节课', [q1.id]);
+  const z2 = S.createQuiz('第二节课', [q2.id]);
+  // spec: [sid, 'q1'|'q2', tier, result, 'z1'|'z2', points?]
+  const QID = { q1: q1.id, q2: q2.id };
+  const ZID = { z1: z1.id, z2: z2.id };
+  spec.forEach(([sid, q, tier, result, quiz, points]) => {
+    const rec = { sid: sid === 's1' ? s1 : sid === 's2' ? s2 : s3, qid: QID[q] || q, tier, result, quizId: ZID[quiz] || quiz };
+    if (points !== undefined) rec.points = points;
+    S.recordResult(rec);
+  });
+  const pick = (st) => st && ({
+    sid: st.sid, name: st.name, teamName: st.teamName, score: st.score,
+    attempts: st.total.attempts, correct: st.total.correct, half: st.total.half,
+    creditRate: st.total.creditRate, correctRate: st.total.correctRate,
+    rolls: st.rolls, lastAt: st.lastAt, weak: st.weak, strong: st.strong, level: st.level,
+    tierKeys: st.tiers.map((x) => x.key)
+  });
+  const one = (sid, quizId) => pick(CI.analysis.studentStats(S.get(), sid, { quizId: quizId }));
+  const rank = (teamId, quizId) => CI.analysis.ranking(S.get(), teamId, { quizId: quizId }).map((r) => ({
+    sid: r.sid, name: r.name, score: r.score, attempts: r.attempts, correct: r.correct,
+    creditRate: r.creditRate, rank: r.rank, level: r.level, weakCount: r.weakCount
+  }));
+  const cs = (teamId, quizId) => {
+    const c = CI.analysis.classStats(S.get(), teamId, { quizId: quizId });
+    return {
+      teamId: c.teamId, studentCount: c.studentCount, participants: c.participants,
+      attempts: c.total.attempts, correct: c.total.correct, creditRate: c.total.creditRate,
+      weakTiers: c.weakTiers, needHelp: c.needHelp.map((r) => r.sid),
+      rankAttempts: c.ranking.map((r) => r.attempts)
+    };
+  };
+  // 归一化：uid → sN/tmN（随机 uid 不可复现），lastAt → 序号（时间戳不可复现）
+  const SID = {}; [s1, s2, s3].forEach((id, i) => { SID[id] = 's' + (i + 1); });
+  const QN = {}; S.get().bank.forEach((x, i) => { QN[x.id] = 'q' + (i + 1); });
+  const TM = {}; S.get().teams.forEach((x, i) => { TM[x.id] = 'tm' + (i + 1); });
+  const normStu = (x) => x && Object.assign({}, x, { sid: SID[x.sid] || x.sid, lastAt: x.lastAt ? 1 : 0,
+    level: x.level && x.level.short });
+  const normRank = (list) => list.map((r) => Object.assign({}, r, { sid: SID[r.sid] || r.sid, level: r.level && r.level.short }));
+  const normClass = (c) => Object.assign({}, c, { needHelp: c.needHelp.map((x) => SID[x] || x) });
+
+  statsCases.push({
+    name,
+    students: S.get().students.map((x) => ({ id: SID[x.id] || x.id, name: x.name, teamId: TM[x.teamId] || x.teamId, active: x.active })),
+    teams: S.get().teams.map((x) => ({ id: TM[x.id] || x.id, name: x.name })),
+    bank: S.get().bank.map((x, i) => ({ id: 'q' + (i + 1), tier: x.tier, tags: x.tags || [] })),
+    quizzes: S.get().quizzes.map((q, qi) => ({
+      id: 'z' + (qi + 1),
+      records: q.records.map((r, ri) => ({
+        sid: SID[r.sid] || r.sid,
+        qid: QN[r.qid] || r.qid,
+        tier: r.tier, result: r.result,
+        quizId: 'z' + (qi + 1),
+        points: r.points, base: r.base,
+        // at 归一化成序号（时间戳不可复现）
+        at: ri + 1,
+        source: r.source
+      }))
+    })),
+    settings: { halfRatio: S.get().settings.halfRatio, minSample: S.get().settings.minSample, weakThreshold: S.get().settings.weakThreshold, strongThreshold: S.get().settings.strongThreshold },
+    expect: {
+      // 注意：这里要用**真实的 uid**（s1/s2/s3 是 mk() 的返回值），不能用字面量 s1
+      all: normStu(one(s1, null)), z1: normStu(one(s1, z1.id)), z2: normStu(one(s1, z2.id)),
+      other: normStu(one(s2, z1.id)),
+      rankAll: normRank(rank(null, null)), rankZ1: normRank(rank(null, z1.id)),
+      classAll: normClass(cs(null, null)), classZ1: normClass(cs(null, z1.id)),
+      team: CI.analysis.teamRanking(S.get()).map((x) => ({ teamId: TM[x.teamId] || x.teamId, score: x.score, memberCount: x.memberCount, avg: x.avg, attempts: x.attempts }))
+    }
+  });
+}
+
+mkStatsCase('统计：两节课（范围必须贯穿到榜）', [
+  ['s1', 'q1', 'basic', 'wrong', 'z1'],
+  ['s1', 'q2', 'advanced', 'correct', 'z2'],
+  ['s2', 'q1', 'basic', 'correct', 'z1']
+]);
+mkStatsCase('统计：半对按 halfRatio 折算', [
+  ['s1', 'q1', 'basic', 'half', 'z1'],
+  ['s1', 'q2', 'advanced', 'correct', 'z2']
+]);
+mkStatsCase('统计：样本不足不判薄弱/优势', [
+  ['s1', 'q1', 'basic', 'correct', 'z1']
+]);
+
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
@@ -1019,7 +1116,8 @@ const payload = {
   mistakes: mistakeCases,
   report: reportCases,
   composite: compositeCases,
-  optionDist: optionDistCases
+  optionDist: optionDistCases,
+  stats: statsCases
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
@@ -1030,7 +1128,7 @@ if (CHECK) {
     ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' + 课堂 ' + classroom.length + ' + 抽题 ' + drawCases.length + ' + 题目统计 ' + questionStats.length +
     ' + 错题本 ' + mistakeCases.length + ' + 报告 ' + reportCases.length +
     ' + 多维评价 ' + (compositeCases.participation.length + compositeCases.growth.length + compositeCases.decayed.length + compositeCases.evaluate.length) +
-    ' + 选项分布 ' + optionDistCases.length + ' 组）');
+    ' + 选项分布 ' + optionDistCases.length + ' + 学情统计 ' + statsCases.length + ' 组）');
     process.exit(0);
   }
   console.error('[stale] parity.json 与 JS 参考实现不一致 —— 运行 node scripts/gen-parity-fixtures.mjs 重新生成');

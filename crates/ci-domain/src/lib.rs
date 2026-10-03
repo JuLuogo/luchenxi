@@ -22,6 +22,7 @@ pub mod question_stats;
 pub mod report;
 pub mod rollcall;
 pub mod scoring;
+pub mod stats;
 pub mod state;
 
 pub use ability::{
@@ -41,6 +42,10 @@ pub use report::{build_report, to_markdown as report_markdown, Checkin, ClassRep
 pub use rollcall::{
     apply_pick, called_count, candidates as rollcall_candidates, pick as rollcall_pick, recent_ids,
     Pick, PickOpts, RollEntry, RollcallSettings, Student, XorShift64,
+};
+pub use stats::{
+    class_stats, ranking, student_stats, team_ranking, ClassStats, FinalBucket, RankRow, StudentStats,
+    StudentTierRow, TagRow, TeamRankRow,
 };
 pub use scoring::{
     compute_points, default_tiers, is_countable, normalize_result, question_points, result_label,

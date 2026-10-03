@@ -1341,6 +1341,41 @@ group('选项分布（错选分布）');
   eq(A.retestQuestions(S.get(), { quizId: null }).length, 1, '全部课次范围下仍是那一道');
 })();
 
+/* ================= 21. 数据范围贯穿（quizId 必须一路传到最底层） ================= */
+group('数据范围贯穿到学生榜');
+
+(function () {
+  const A = CI.analysis;
+  S.replaceState(S.defaultState());
+  const team = S.get().teams[0].id;
+  const a = S.addStudent('甲', team);
+  const sid = typeof a === 'string' ? a : a.id;
+  const q1 = S.addQuestion({ stem: '第一节的题', tier: 'basic', answer: 'A' });
+  const q2 = S.addQuestion({ stem: '第二节的题', tier: 'basic', answer: 'A' });
+  const quiz1 = S.createQuiz('第一节课', [q1.id]);
+  const quiz2 = S.createQuiz('第二节课', [q2.id]);
+  S.recordResult({ sid, qid: q1.id, tier: 'basic', result: 'wrong', quizId: quiz1.id });
+  S.recordResult({ sid, qid: q2.id, tier: 'basic', result: 'correct', quizId: quiz2.id });
+
+  // 这三行以前是一模一样的 —— ranking 收了 opts 却没往下传（"数据范围"只管得住汇总）
+  const all = A.ranking(S.get(), null, { quizId: null })[0];
+  const only1 = A.ranking(S.get(), null, { quizId: quiz1.id })[0];
+  const only2 = A.ranking(S.get(), null, { quizId: quiz2.id })[0];
+  eq(all.attempts, 2, '全部课次：作答 2 次');
+  eq(only1.attempts, 1, '只看第一节课：作答 1 次');
+  eq(only1.correct, 0, '只看第一节课：0 次答对');
+  eq(only1.creditRate, 0, '只看第一节课：掌握度 0%');
+  eq(only2.attempts, 1, '只看第二节课：作答 1 次');
+  eq(only2.correct, 1, '只看第二节课：1 次答对');
+  eq(only2.creditRate, 100, '只看第二节课：掌握度 100%');
+
+  // classStats 的汇总与它内部的榜必须同口径（以前一个是 1、一个是 2）
+  const cs1 = A.classStats(S.get(), null, { quizId: quiz1.id });
+  eq(cs1.total.attempts, 1, 'classStats 汇总：1 次作答');
+  eq(cs1.ranking[0].attempts, 1, 'classStats 内部榜单与汇总同口径');
+  eq(cs1.participants, 1, '参与者 1 人');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {
