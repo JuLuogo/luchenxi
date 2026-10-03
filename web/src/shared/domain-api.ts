@@ -147,7 +147,7 @@ export interface DomainPickResult {
  *
  * 端点要求蛇形入参（rollcall 段的既有约定），所以这里把 JS 状态翻译一遍。
  */
-export async function fetchPick(opts: { seed?: number } = {}): Promise<DomainPickResult> {
+export async function fetchPick(opts: { seed?: number; allowRepeat?: boolean } = {}): Promise<DomainPickResult> {
   const state = CI.store.get() as {
     students?: { id: string; name: string; active?: boolean; teamId?: string | null }[];
     rollcall?: Record<string, unknown>;
@@ -176,18 +176,19 @@ export async function fetchPick(opts: { seed?: number } = {}): Promise<DomainPic
     settings: {
       mode: rollcall.mode ?? 'even',
       scope: rollcall.scope ?? 'all',
-      exclude_answered: !!rollcall.excludeAnswered,
-      recent_exclude: Number(rollcall.recentExclude) || 0,
+      // allowRepeat：公开课有时希望"人人都可能被点到"（含刚答过的）→ 不排除、不避重
+      exclude_answered: opts.allowRepeat ? false : !!rollcall.excludeAnswered,
+      recent_exclude: opts.allowRepeat ? 0 : (Number(rollcall.recentExclude) || 0),
       round: Number(rollcall.round) || 1,
-      round_pool: (rollcall.roundPool as string[]) || [],
+      round_pool: opts.allowRepeat ? [] : ((rollcall.roundPool as string[]) || []),
       history: ((rollcall.history as { sid: string }[]) || []).map((h) => ({ sid: h.sid, at: 0 }))
     },
     opts: {
       // 与 JS 的 candidates() 口径一致：scope 为空表示全部
       scope: (rollcall.scope as string) || 'all',
       mode: (rollcall.mode as string) || 'even',
-      exclude_answered: !!rollcall.excludeAnswered,
-      recent_exclude: Number(rollcall.recentExclude) || 0,
+      exclude_answered: opts.allowRepeat ? false : !!rollcall.excludeAnswered,
+      recent_exclude: opts.allowRepeat ? 0 : (Number(rollcall.recentExclude) || 0),
       has_current_question: !!(state.runtime?.quizId && state.runtime?.qid)
     },
     seed: opts.seed ?? null
@@ -395,6 +396,16 @@ export async function scoreVerdictWithRust(opts: {
 }
 
 /** 公开课现场评价（四维四档 → 总分/档位/评语） */
+/** 读当前量规（课程政策，存在 settings 里） */
+export function openDimensions(): { key: string; label: string; weight: number; anchor: string }[] {
+  const s = CI.store.get() as { settings?: { openDimensions?: unknown } };
+  const d = s.settings?.openDimensions;
+  const O = (CI as unknown as { openclass: { defaultDimensions(): unknown[] } }).openclass;
+  return (Array.isArray(d) && d.length ? d : O.defaultDimensions()) as {
+    key: string; label: string; weight: number; anchor: string;
+  }[];
+}
+
 export async function fetchOpenEval(scores: { key: string; score: number }[]): Promise<{
   source: StatsSource;
   evaluation: Record<string, unknown> | null;
@@ -405,7 +416,8 @@ export async function fetchOpenEval(scores: { key: string; score: number }[]): P
       const res = await fetch(hubBase() + '/api/domain/open-eval', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scores })
+        // 量规一起发上去：各校评课表不同，端点按传入的量规算
+        body: JSON.stringify({ scores, dimensions: openDimensions() })
       });
       if (res.ok) {
         const j = await res.json();
@@ -413,6 +425,6 @@ export async function fetchOpenEval(scores: { key: string; score: number }[]): P
       }
     } catch { /* 落到回退 */ }
   }
-  const O = (CI as unknown as { openclass: { evaluate(s: unknown): Record<string, unknown> } }).openclass;
-  return { source: 'js', evaluation: O.evaluate(scores) };
+  const O = (CI as unknown as { openclass: { evaluate(s: unknown, d?: unknown): Record<string, unknown> } }).openclass;
+  return { source: 'js', evaluation: O.evaluate(scores, openDimensions()) };
 }

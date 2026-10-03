@@ -1533,6 +1533,46 @@ group('AI 润色提示词');
   ok(emptyPrompt.indexOf('0 分') >= 0 && emptyPrompt.indexOf('【硬约束】') >= 0, '空评价也能构造提示词');
 })();
 
+/* ================= 25. 公开课量规可配置 ================= */
+group('公开课量规可配置');
+
+(function () {
+  const O = CI.openclass;
+  // 默认量规进 settings（课程政策，随课堂同步）
+  S.replaceState(S.defaultState());
+  const def = S.get().settings.openDimensions;
+  ok(Array.isArray(def) && def.length === 4, '默认四维进 settings');
+  eq(def.map((d) => d.key).join(','), 'basic,transfer,expression,attitude', '默认维度顺序');
+  eq(def.reduce((n, d) => n + d.weight, 0), 100, '默认权重和为 100');
+  ok(def.every((d) => d.anchor && d.label), '每维都有名称与锚点');
+
+  // 换成"某校评课表"：三个维度、权重不同 —— 要真的生效
+  const custom = [
+    { key: 'goal', label: '目标达成', weight: 40, anchor: '是否达成本节课的目标' },
+    { key: 'thinking', label: '思维品质', weight: 40, anchor: '思路是否清晰、有没有深度' },
+    { key: 'engage', label: '课堂参与', weight: 20, anchor: '投入程度与回应质量' }
+  ];
+  const ev = O.evaluate([{ key: 'goal', score: 4 }, { key: 'thinking', score: 4 }, { key: 'engage', score: 4 }], custom);
+  eq(ev.total, 100, '自定义量规：全优秀 → 100');
+  eq(ev.parts.length, 3, '自定义量规：三维');
+  eq(ev.parts[0].label, '目标达成', '维度名跟着换');
+  eq(ev.parts[0].weight, 40, '权重跟着换');
+  ok(ev.comment.indexOf('目标达成') >= 0 || ev.comment.indexOf('均衡') >= 0, '评语用自定义维度名');
+
+  // 权重不必和为 100（自动归一）
+  const lopsided = O.evaluate([{ key: 'goal', score: 4 }, { key: 'thinking', score: 1 }], custom);
+  eq(lopsided.total, 50, '40×100 + 40×0 → 50（按有效维度归一）');
+  eq(lopsided.strongest, 'goal', '强项 = 目标达成');
+  eq(lopsided.weakest, 'thinking', '短板 = 思维品质');
+
+  // 只评自定义量规里的一维
+  const one = O.evaluate([{ key: 'engage', score: 3 }], custom);
+  eq(one.total, 67, '只评一维 → 该维折算分（67）');
+
+  // 换回默认不影响（evaluate 不写状态）
+  eq(O.evaluate(O.defaultDimensions().map((d) => ({ key: d.key, score: 4 }))).total, 100, '默认量规仍可用');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

@@ -1,7 +1,7 @@
 {
  "version": 2,
  "rev": 11,
- "updatedAt": 1791029564803,
+ "updatedAt": 1791032455098,
  "settings": {
   "courseName": "24机械高考公开课",
   "halfRatio": 0.5,
@@ -18,7 +18,33 @@
   },
   "decayRatio": 0.65,
   "manualCapPlus": 2,
-  "manualCapMinus": -1
+  "manualCapMinus": -1,
+  "openDimensions": [
+   {
+    "key": "basic",
+    "label": "基础掌握",
+    "weight": 30,
+    "anchor": "概念、公式、常规运算是否准确"
+   },
+   {
+    "key": "transfer",
+    "label": "拓展迁移",
+    "weight": 30,
+    "anchor": "能否举一反三、把方法用到新情境"
+   },
+   {
+    "key": "expression",
+    "label": "思维表达",
+    "weight": 25,
+    "anchor": "思路是否清晰、表达是否有条理"
+   },
+   {
+    "key": "attitude",
+    "label": "参与态度",
+    "weight": 15,
+    "anchor": "投入程度、回应质量、是否敢试"
+   }
+  ]
  },
  "tiers": [
   {
@@ -61,14 +87,14 @@
  ],
  "teams": [
   {
-   "id": "tm_muscrcsihe8nm",
+   "id": "tm_musehaygc3bnz",
    "name": "红队",
    "icon": "🔴",
    "color": "#e74c3c",
    "order": 0
   },
   {
-   "id": "tm_muscrcsiqlm3n",
+   "id": "tm_musehaygxbsdk",
    "name": "蓝队",
    "icon": "🔵",
    "color": "#3498db",
@@ -77,17 +103,17 @@
  ],
  "students": [
   {
-   "id": "st_muscrcsibrlh7",
+   "id": "st_musehaygl1imp",
    "name": "甲",
-   "teamId": "tm_muscrcsihe8nm",
+   "teamId": "tm_musehaygc3bnz",
    "active": true,
    "called": 0,
-   "joinedAt": 1791029564802
+   "joinedAt": 1791032455096
   }
  ],
  "bank": [
   {
-   "id": "q_muscrcsitrxjk",
+   "id": "q_musehayhyd49e",
    "tier": "basic",
    "points": null,
    "stem": "示例题：1+1=?",
@@ -104,26 +130,26 @@
    "note": "讲评要点",
    "imageUrl": "data:image/png;base64,AA",
    "archived": false,
-   "createdAt": 1791029564802
+   "createdAt": 1791032455096
   }
  ],
  "quizzes": [
   {
-   "id": "qz_muscrcsiwnu6y",
+   "id": "qz_musehayhm5djj",
    "name": "示例卷",
    "note": "",
-   "createdAt": 1791029564802,
+   "createdAt": 1791032455097,
    "closedAt": 0,
    "questionIds": [
-    "q_muscrcsitrxjk"
+    "q_musehayhyd49e"
    ],
    "records": [
     {
-     "id": "rc_muscrcsj66qxm",
-     "sid": "st_muscrcsibrlh7",
-     "qid": "q_muscrcsitrxjk",
+     "id": "rc_musehayhv1o8c",
+     "sid": "st_musehaygl1imp",
+     "qid": "q_musehayhyd49e",
      "tier": "basic",
-     "quizId": "qz_muscrcsiwnu6y",
+     "quizId": "qz_musehayhm5djj",
      "result": "correct",
      "base": 3,
      "ratio": 1,
@@ -131,13 +157,13 @@
      "source": "quiz",
      "note": "",
      "picked": "A",
-     "at": 1791029564803,
+     "at": 1791032455097,
      "by": ""
     }
    ]
   }
  ],
- "currentQuizId": "qz_muscrcsiwnu6y",
+ "currentQuizId": "qz_musehayhm5djj",
  "rollcall": {
   "mode": "even",
   "scope": "all",
@@ -145,11 +171,11 @@
   "recentExclude": 1,
   "history": [
    {
-    "id": "rl_muscrcsjdsdzj",
-    "sid": "st_muscrcsibrlh7",
-    "at": 1791029564803,
-    "quizId": "qz_muscrcsiwnu6y",
-    "qid": "q_muscrcsitrxjk"
+    "id": "rl_musehayikz4p5",
+    "sid": "st_musehaygl1imp",
+    "at": 1791032455098,
+    "quizId": "qz_musehayhm5djj",
+    "qid": "q_musehayhyd49e"
    }
   ],
   "roundPool": [],
@@ -157,63 +183,63 @@
  },
  "logs": [
   {
-   "id": "lg_muscrcsi011m1",
-   "ts": 1791029564802,
+   "id": "lg_musehayg7wx0z",
+   "ts": 1791032455096,
    "type": "批量添加学生",
    "detail": "共 1 人 → 红队"
   },
   {
-   "id": "lg_muscrcsisnkba",
-   "ts": 1791029564802,
+   "id": "lg_musehayhi5aal",
+   "ts": 1791032455097,
    "type": "新增题目",
    "detail": "基础题 · 示例题：1+1=?"
   },
   {
-   "id": "lg_muscrcsjjy45m",
-   "ts": 1791029564803,
+   "id": "lg_musehayhpuf25",
+   "ts": 1791032455097,
    "type": "新建试卷",
    "detail": "示例卷（1 题）"
   },
   {
-   "id": "lg_muscrcsjq5mms",
-   "ts": 1791029564803,
+   "id": "lg_musehayhf0qpv",
+   "ts": 1791032455097,
    "type": "切换试卷",
    "detail": "示例卷"
   },
   {
-   "id": "lg_muscrcsjljxge",
-   "ts": 1791029564803,
+   "id": "lg_musehayhpzdrh",
+   "ts": 1791032455097,
    "type": "记分",
    "detail": "甲 · 基础题·示例题：1+1=? 答对 → +3"
   },
   {
-   "id": "lg_muscrcsji06lb",
-   "ts": 1791029564803,
+   "id": "lg_musehayh17fbc",
+   "ts": 1791032455097,
    "type": "课堂环节",
    "detail": "出题答题"
   },
   {
-   "id": "lg_muscrcsj62jca",
-   "ts": 1791029564803,
+   "id": "lg_musehayh56ksn",
+   "ts": 1791032455097,
    "type": "课堂计时",
    "detail": "60 秒（随堂练习）"
   },
   {
-   "id": "lg_muscrcsj8cwfq",
-   "ts": 1791029564803,
+   "id": "lg_musehayihz7le",
+   "ts": 1791032455098,
    "type": "点名",
    "detail": "甲"
   }
  ],
  "runtime": {
-  "quizId": "qz_muscrcsiwnu6y",
-  "qid": "q_muscrcsitrxjk",
-  "sid": "st_muscrcsibrlh7",
+  "quizId": "qz_musehayhm5djj",
+  "qid": "q_musehayhyd49e",
+  "sid": "st_musehaygl1imp",
   "phase": "question",
   "accepting": true,
   "reveal": false,
   "revealedQid": null,
-  "timerEndsAt": 1791029624803,
+  "timerEndsAt": 1791032515097,
   "timerLabel": "随堂练习"
  },
  "classroom": {

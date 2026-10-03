@@ -14,7 +14,7 @@ import { computed, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useClassStore } from '../../shared/class-store';
 import { CI } from '../../shared/bridge';
-import { fetchPick, scoreVerdictWithRust, fetchOpenEval } from '../../shared/domain-api';
+import { fetchPick, scoreVerdictWithRust, fetchOpenEval, openDimensions } from '../../shared/domain-api';
 import { aiReady, polishComment } from '../../shared/ai-polish';
 
 const store = useClassStore();
@@ -25,6 +25,14 @@ const step = ref<Step>(1);
 const picked = ref<any>(null);        // { sid, name, teamName }
 const question = ref<any>(null);      // 抽到的题
 const onlyObjective = ref(true);      // 抽题默认只抽客观题（公开课以客观题为主）
+/**
+ * 是否允许重复点到同一个人
+ *
+ * 公开课常见两种取向：
+ *   · 关（默认）：沿用日常课的"本轮不重复"，让更多人有发言机会
+ *   · 开：人人都可能被点到（含刚答过的），更像"随机抽查"
+ */
+const allowRepeat = ref(false);
 const tierFilter = ref<string>('');   // 可选：限定题型
 const verdict = ref<'' | 'correct' | 'half' | 'wrong'>('');
 const scores = ref<Record<string, number>>({});
@@ -52,7 +60,8 @@ async function doPolish() {
 }
 const busy = ref(false);
 
-const dims = computed<any[]>(() => (CI as any).openclass.defaultDimensions());
+// 量规可配置（课程政策）：从 settings 读，没配就用默认四维
+const dims = computed<any[]>(() => { void store.rev; return openDimensions(); });
 
 /** 客观题：有标准答案且选项 >= 2 */
 function isObjective(q: any) {
@@ -63,7 +72,7 @@ function isObjective(q: any) {
 async function doPick() {
   busy.value = true;
   try {
-    const r = await fetchPick();
+    const r = await fetchPick({ allowRepeat: allowRepeat.value });
     if (!r.pick) { ElMessage.warning('没有可点名的学生（检查名单或候选池设置）'); return; }
     CI.rollcall.applyPick(r.pick);
     CI.classroom.setPhase('rollcall');
@@ -199,6 +208,9 @@ function back() {
     <el-card v-if="step === 1" class="panel">
       <div class="big-hint">请一位同学回答</div>
       <el-button type="primary" size="large" :loading="busy" @click="doPick">随机抽一位</el-button>
+      <div class="row">
+        <el-checkbox v-model="allowRepeat">允许重复点到同一个人（默认不重复）</el-checkbox>
+      </div>
       <div class="tip">抽到的同学会同时在大屏上放大显示</div>
     </el-card>
 

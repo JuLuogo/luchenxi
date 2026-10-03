@@ -115,6 +115,14 @@ export const routes = [
     component: () => import('./pages/settings/AiPolishPage.vue'),
     meta: { title: 'AI 润色', icon: 'MagicStick', group: '设置' }
   },
+
+  /* ---------- 设置 · 公开课量规（课程政策：各校评课表不同） ---------- */
+  {
+    path: '/settings/rubric',
+    name: 'settings-rubric',
+    component: () => import('./pages/settings/OpenRubricPage.vue'),
+    meta: { title: '公开课量规', icon: 'Postcard', group: '设置' }
+  },
   {
     path: '/settings/network',
     name: 'settings-network',

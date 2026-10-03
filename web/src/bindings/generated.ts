@@ -247,6 +247,15 @@ export type OpenClassState = {
 	evaluation: OpenEvaluation | null,
 };
 
+/**  一个评价维度（含给老师的锚点：现场要一眼知道"看什么"） */
+export type OpenDimension = {
+	key: string,
+	label: string,
+	weight: number | null,
+	/**  给老师的锚点（"看什么"） */
+	anchor: string,
+};
+
 /**  一次公开课现场评价 */
 export type OpenEvaluation = {
 	/**  加权总分（百分制，四舍五入到整数） */
@@ -457,6 +466,11 @@ export type Settings = {
 	manualCapPlus?: number | null,
 	/**  手动加减分的下限（单次扣分不低于它，默认 −1） */
 	manualCapMinus?: number | null,
+	/**
+	 *  公开课现场评价量规（维度名/权重/锚点）—— **课程政策**，各校评课表不同，所以可配置。
+	 *  默认 基础 30 / 拓展 30 / 表达 25 / 态度 15。
+	 */
+	openDimensions?: OpenDimension[],
 };
 
 /**

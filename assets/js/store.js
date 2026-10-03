@@ -142,7 +142,14 @@
         decayRatio: 0.65,      // 掌握度衰减平均：最近一次占 65%（Otus 默认，看重「现在会什么」）
         // 手动加减分的上下限（防通胀：调研建议单次 +2 封顶、−1 下限，照抄同行已验参数）
         manualCapPlus: 2,
-        manualCapMinus: -1
+        manualCapMinus: -1,
+        // 公开课现场评价量规（课程政策：各校评课表不同 → 可配置）
+        openDimensions: [
+          { key: 'basic', label: '基础掌握', weight: 30, anchor: '概念、公式、常规运算是否准确' },
+          { key: 'transfer', label: '拓展迁移', weight: 30, anchor: '能否举一反三、把方法用到新情境' },
+          { key: 'expression', label: '思维表达', weight: 25, anchor: '思路是否清晰、表达是否有条理' },
+          { key: 'attitude', label: '参与态度', weight: 15, anchor: '投入程度、回应质量、是否敢试' }
+        ]
       },
       tiers: clone(DEFAULT_TIERS),
       tags: ['集合与逻辑', '函数与导数', '三角函数', '数列', '立体几何', '解析几何', '概率统计'],

@@ -59,6 +59,10 @@ pub struct Settings {
     /// 手动加减分的下限（单次扣分不低于它，默认 −1）
     #[serde(default = "default_cap_minus")]
     pub manual_cap_minus: f64,
+    /// 公开课现场评价量规（维度名/权重/锚点）—— **课程政策**，各校评课表不同，所以可配置。
+    /// 默认 基础 30 / 拓展 30 / 表达 25 / 态度 15。
+    #[serde(default = "default_open_dims")]
+    pub open_dimensions: Vec<crate::openclass::OpenDimension>,
 }
 
 fn default_decay_ratio() -> f64 {
@@ -71,6 +75,10 @@ fn default_cap_plus() -> f64 {
 
 fn default_cap_minus() -> f64 {
     -1.0
+}
+
+fn default_open_dims() -> Vec<crate::openclass::OpenDimension> {
+    crate::openclass::default_open_dimensions()
 }
 
 impl Default for Settings {
@@ -88,6 +96,7 @@ impl Default for Settings {
             decay_ratio: 0.65,
             manual_cap_plus: 2.0,
             manual_cap_minus: -1.0,
+            open_dimensions: default_open_dims(),
         }
     }
 }
