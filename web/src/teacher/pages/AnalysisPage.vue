@@ -26,6 +26,14 @@ const scopeName = computed(() => (scope.value === 'all'
   ? '全班'
   : ((store.teams.find((t) => t.id === scope.value) || {}).name || '该队伍')));
 
+/**
+ * 综合表现（多维度评价）：正确性 / 参与度 / 进步 三维加权，可下钻。
+ * 口径来自 CI.analysis.studentEvaluation（与 Rust composite.rs 同契约、有 parity）。
+ */
+function evaluationOf(sid: string): any {
+  try { return CI.analysis.studentEvaluation(store.state, sid, scopeOpts.value); } catch { return null; }
+}
+
 /** 按题目正确率（低 → 高）：课后讲评顺序的依据 */
 const questionRows = computed<any[]>(() => {
   void store.rev; // 状态变了就重算
@@ -380,6 +388,19 @@ function personalRate(tierKey) {
             <el-table-column label="积分" width="80" align="right">
               <template #default="{ row }"><span class="score-num">{{ row.score }}</span></template>
             </el-table-column>
+            <!-- 综合表现：正确性 / 参与度 / 进步 三维加权，悬停看下钻 -->
+            <el-table-column label="综合表现" width="105" align="center">
+              <template #default="{ row }">
+                <el-tooltip
+                  v-if="evaluationOf(row.sid)"
+                  :content="evaluationOf(row.sid).parts.map((p) => p.label + ' ' + p.value + '×' + Math.round(p.weight) + '% = ' + p.contribution).join(' ｜ ')"
+                  placement="left"
+                >
+                  <span class="eval-score">{{ evaluationOf(row.sid).total }}<i>/100</i></span>
+                </el-tooltip>
+                <span v-else class="sub">—</span>
+              </template>
+            </el-table-column>
             <el-table-column label="作答/答对" width="110" align="right">
               <template #default="{ row }">{{ row.attempts }} / {{ row.correct }}</template>
             </el-table-column>
@@ -434,5 +455,7 @@ function personalRate(tierKey) {
 .tm-row { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12px; }
 .tm-label { color: var(--ci-text-weak); }
 .missers { font-size: 12px; color: #b45309; }
+.eval-score { font-weight: 700; color: #4f46e5; cursor: help; }
+.eval-score i { font-size: 11px; color: var(--el-text-color-secondary); font-style: normal; }
 .empty-hint { color: var(--el-text-color-secondary); font-size: 13px; padding: 8px 0; }
 </style>

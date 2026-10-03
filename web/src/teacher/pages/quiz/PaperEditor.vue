@@ -94,6 +94,31 @@ function doDraw() {
   ElMessage.success('已抽入 ' + added + ' 道题');
 }
 
+/**
+ * 一键重测卷（错题重做）
+ *
+ * 把"答对率低于 35%"的题单独组一套新试卷 —— 阈值与形态照抄 Kahoot 报告的 Create 功能。
+ * 依据：Roediger & Karpicke (2006) 的提取练习效应（只做重测不给反馈，一周后回忆 61%，
+ * 重复阅读组读了 14 次也只有 40%）。
+ */
+function createRetest() {
+  const weak = (CI.analysis as any).retestQuestions(store.state, {}) as any[];
+  if (!weak.length) {
+    ElMessage.info('本节课没有"答对率低于 35%"的题，暂时不需要重测卷（也可以先讲评）');
+    return;
+  }
+  const stamp = new Date().toLocaleDateString('zh-CN');
+  const qz = store.createQuiz('重测 · ' + stamp, weak.map((x) => x.qid));
+  if (qz) {
+    store.setCurrentQuiz(qz.id);
+    ElMessageBox.alert(
+      weak.map((x, i) => (i + 1) + '. ' + x.stem + '（正确率 ' + x.correctRate + '%）').join('\n'),
+      '已生成「' + qz.name + '」：' + weak.length + ' 道题',
+      { confirmButtonText: '好' }
+    ).catch(() => {});
+  }
+}
+
 /* ---------- 分值覆盖与统计 ---------- */
 function overridePoints(q, value) {
   const num = value === '' || value === null ? null : Number(value);
@@ -148,6 +173,7 @@ function tierColor(key) {
         <el-button @click="rename">改名</el-button>
         <el-button @click="saveNote">说明</el-button>
         <el-button @click="openDraw">一键抽题</el-button>
+  <el-button @click="createRetest">一键重测卷</el-button>
         <el-button type="primary" @click="setCurrent">设为当前试卷</el-button>
       </div>
     </div>
