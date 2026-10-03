@@ -56,6 +56,20 @@ rules.forEach(([f, c]) => {
 });
 console.log('   规则模块 ' + rules.length + ' 个，Rust 对应文件 ' + rules.reduce((n, [, c]) => n + c.rs.length, 0) + ' 个');
 
+group('Rust 实现不能是空壳');
+rules.forEach(([f, c]) => {
+  c.rs.forEach((m) => {
+    const src = fs.readFileSync(path.join(DOMAIN, m + '.rs'), 'utf8');
+    ok(/mod tests/.test(src), 'crates/ci-domain/src/' + m + '.rs 自带测试（不是空壳）');
+    ok(src.length > 1200, 'crates/ci-domain/src/' + m + '.rs 有实质内容（' + src.length + ' 字节）');
+  });
+});
+// parity 基准必须覆盖规则模块（"有实现"与"与 JS 口径一致"是两件事）
+const parityJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/fixtures/parity.json'), 'utf8'));
+const parityKeys = Object.keys(parityJson).filter((k) => !k.startsWith('_') && k !== 'generatedBy');
+ok(parityKeys.length >= 10, 'parity 基准覆盖 ≥10 个用例集（当前 ' + parityKeys.length + '）');
+console.log('   parity 用例集：' + parityKeys.join(', '));
+
 group('客户端固有模块不应被要求迁到 Rust');
 const others = Object.entries(CLASSIFY).filter(([, c]) => c.kind !== 'rule');
 others.forEach(([f, c]) => {
