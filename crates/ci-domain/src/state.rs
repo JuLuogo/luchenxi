@@ -278,7 +278,9 @@ pub struct LogItem {
     #[serde(rename = "type", default)]
     pub kind: String,
     pub detail: String,
+    /// 时间戳 —— JS 侧这个字段叫 `ts`，所以直接按它序列化（specta 不支持 alias）
     #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
+    #[serde(rename = "ts")]
     pub at: i64,
 }
 
@@ -562,7 +564,7 @@ mod tests {
             "version": 2, "rev": 7, "updatedAt": 123,
             "settings": { "courseName": "公开课", "halfRatio": 0.4, "wrongPenalty": 2,
                           "fastBonus": 1, "weakThreshold": 0.5, "strongThreshold": 0.9, "minSample": 3 },
-            "tiers": [{ "key": "basic", "label": "基础题", "weight": 3 }],
+            "tiers": [{ "key": "basic", "label": "基础题", "weight": 3, "color": "#66bb6a", "desc": "" }],
             "tags": ["集合与逻辑"],
             "teams": [{ "id": "tm1", "name": "红队", "icon": "🔴", "color": "#f00", "order": 0 }],
             "students": [{ "id": "s1", "name": "甲", "teamId": "tm1", "active": true, "joinedAt": 9, "called": 2 }],
@@ -573,11 +575,28 @@ mod tests {
             "currentQuizId": "qz1",
             "rollcall": { "mode": "random", "scope": "tm1", "excludeAnswered": true,
                           "recentExclude": 2, "history": [], "roundPool": ["s1"], "round": 3 },
-            "logs": [{ "id": "lg1", "type": "添加学生", "detail": "甲", "at": 5 }],
-            "runtime": { "phase": "question", "quizId": "qz1", "qid": "q1", "accepting": true, "reveal": false, "sid": "s1" },
+            // 日志时间字段 JS 侧叫 ts（Rust 用 #[serde(rename = "ts")] 对齐）
+            "logs": [{ "id": "lg1", "type": "添加学生", "detail": "甲", "ts": 5 }],
+            "runtime": { "phase": "question", "quizId": "qz1", "qid": "q1", "accepting": true, "reveal": false, "sid": "s1",
+                         "timerEndsAt": 0, "timerLabel": "" },
             "classroom": { "buzz": [], "pending": [], "feed": [] }
         });
-        let s: ClassroomState = serde_json::from_value(json).expect("反序列化失败");
+        // 用默认状态打底再合并覆盖项：手写全字段的 JSON 会随结构演进而腐烂
+        // （本轮就补了 timerLabel、tiers[].color…）。这样断言仍针对下面这些具体值，
+        // 但不必把每个字段都抄一遍。
+        let mut merged = serde_json::to_value(ClassroomState::default()).unwrap();
+        fn merge(dst: &mut serde_json::Value, src: &serde_json::Value) {
+            match (dst, src) {
+                (serde_json::Value::Object(d), serde_json::Value::Object(s)) => {
+                    for (k, v) in s {
+                        merge(d.entry(k.clone()).or_insert(serde_json::Value::Null), v);
+                    }
+                }
+                (d, s) => *d = s.clone(),
+            }
+        }
+        merge(&mut merged, &json);
+        let s: ClassroomState = serde_json::from_value(merged).expect("反序列化失败");
         assert_eq!(s.rev, 7);
         assert_eq!(s.settings.half_ratio, 0.4);
         assert_eq!(s.settings.wrong_penalty, 2.0);

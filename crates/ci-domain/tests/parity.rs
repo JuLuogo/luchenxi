@@ -1878,3 +1878,44 @@ fn stats_matches_js_reference() {
     }
     println!("\n✅ 学情统计：{} 组用例与 JS 参考实现逐字段一致", fx.stats.len());
 }
+
+/// **前端发来的状态，Rust 必须能吃下**
+///
+/// 领域端点（`/api/domain/stats`）收的是前端序列化出来的 `ClassroomState`。
+/// 只要有一个字段 Rust 要求、JS 不产出，整个请求就会被 serde 拒掉 ——
+/// 实测踩到两个：`BankQuestion.archived`（测试 JSON 手写漏了）与
+/// `ClassroomState.classroom`（JS 侧懒创建，新课堂的状态里根本没有它）。
+///
+/// 所以这里不手写 JSON，直接用 **JS 真实产出的那份**（`tests/fixtures/state-from-js.json`，
+/// 由 `node tests/gen-state-fixture.cjs` 生成）。
+#[test]
+fn accepts_state_produced_by_js() {
+    let raw = std::fs::read_to_string(fixtures_path().parent().unwrap().join("state-from-js.json"))
+        .expect("缺 state-from-js.json —— 先跑 node tests/gen-state-fixture.cjs");
+    let s: ClassroomState = serde_json::from_str(&raw)
+        .expect("前端产出的状态必须能被 Rust 反序列化（缺字段就加 #[serde(default)]）");
+
+    // 抽查几处：能反序列化还不够，值也得对上
+    assert_eq!(s.students.len(), 1, "一名学生");
+    assert_eq!(s.students[0].name, "甲");
+    assert_eq!(s.bank.len(), 1, "一道题");
+    assert_eq!(s.bank[0].archived, false, "题目未归档");
+    assert_eq!(s.bank[0].image_url, "data:image/png;base64,AA", "题目配图（JS 的 imageUrl → Rust 的 image_url）");
+    assert_eq!(s.bank[0].tags, vec!["代数".to_string()], "题目标签");
+    assert_eq!(s.quizzes.len(), 1);
+    assert_eq!(s.quizzes[0].records.len(), 1);
+    assert_eq!(s.quizzes[0].records[0].picked, "A", "学生选的选项（错选分布要用）");
+    assert_eq!(s.quizzes[0].records[0].points, 3.0, "基础题答对 3 分");
+    assert_eq!(s.settings.min_sample, 5, "样本量默认 5");
+    assert_eq!(s.runtime.phase, "question", "课堂环节");
+
+    // 统计也得能在这份状态上跑起来（这才是端点的真实用途）
+    let sid = s.students[0].id.clone();
+    let st = student_stats(&s, &sid, None).expect("能算出学生统计");
+    assert_eq!(st.total.attempts, 1);
+    assert_eq!(st.total.credit_rate, 100.0, "答对 1 题 → 100%");
+    assert_eq!(st.score, 3.0, "积分 3");
+    assert_eq!(ranking(&s, None, None).len(), 1, "榜单里有这名学生");
+
+    println!("  ✔ 前端状态（{} 字节）能被 Rust 吃下，且统计跑得通", raw.len());
+}

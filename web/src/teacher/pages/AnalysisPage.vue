@@ -3,10 +3,11 @@
  * 数据分析 · 学情分析
  * 数字全部来自 CI.analysis（与旧版同一口径）；图表用 ECharts，本页懒加载。
  */
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useClassStore } from '../../shared/class-store';
 import { CI } from '../../shared/bridge';
+import { fetchStats } from '../../shared/domain-api';
 import EChart from '../components/EChart.vue';
 import AbilityPanel from '../components/AbilityPanel.vue';
 
@@ -20,7 +21,12 @@ const scopeOpts = computed(() => ({
 const detailSid = ref('');
 
 const classStats = computed(() => CI.analysis.classStats(store.state, scope.value, scopeOpts.value));
-const ranking = computed(() => CI.analysis.ranking(store.state, scope.value, scopeOpts.value));
+// Rust 结果优先（同一套口径，且与 JS 逐字段比对过）；没有就用本地实现
+const ranking = computed<any[]>(() =>
+  (rustStats.value && rustStats.value.ranking && rustStats.value.ranking.length)
+    ? rustStats.value.ranking
+    : CI.analysis.ranking(store.state, scope.value, scopeOpts.value)
+);
 
 const scopeName = computed(() => (scope.value === 'all'
   ? '全班'
@@ -93,6 +99,23 @@ const rateOption = computed<any>(() => ({
     data: tierRows.value.map((t) => t.rate)
   }]
 }));
+
+/**
+ * 统计来源（docs/14 P4）：优先 Rust 核心（/api/domain/stats），不可达时回退本地参考实现。
+ * 拿到异步结果前先用本地同步实现渲染，拿到后替换 —— 页面不会白屏。
+ */
+const rustStats = ref<any>(null);
+const statsSource = ref<'rust' | 'js' | 'pending'>('pending');
+const statsNote = ref('');
+
+async function loadStats() {
+  const r = await fetchStats({ quizId: scopeOpts.value.quizId ?? null, teamId: null });
+  rustStats.value = r.source === 'rust' ? r : null;
+  statsSource.value = r.source;
+  statsNote.value = r.note || '';
+}
+onMounted(loadStats);
+watch(() => [scope.value, store.rev], () => { loadStats(); });
 
 /** 学生明细表：每人每题型的得分与正确率 */
 const detail = computed(() => {
@@ -374,7 +397,18 @@ function personalRate(tierKey) {
     <el-row :gutter="14">
       <el-col :xs="24" :md="14">
         <div class="panel">
-          <h3 class="panel-title">学生明细<span class="sub">点某一行看个人报告</span></h3>
+          <h3 class="panel-title">
+          学生明细
+          <span class="sub">点某一行看个人报告</span>
+          <el-tag
+            size="small"
+            :type="statsSource === 'rust' ? 'success' : (statsSource === 'js' ? 'info' : 'warning')"
+            effect="plain"
+            :title="statsNote || (statsSource === 'rust' ? '统计由 Rust 核心计算（与 JS 参考实现逐字段比对过）' : '枢纽没有领域端点，暂用浏览器内的参考实现')"
+          >
+            统计来源：{{ statsSource === 'rust' ? 'Rust 核心' : (statsSource === 'js' ? '本地参考实现' : '加载中…') }}
+          </el-tag>
+        </h3>
           <el-table
             :data="ranking"
             size="small"

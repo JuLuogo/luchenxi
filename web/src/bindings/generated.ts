@@ -89,8 +89,8 @@ export type BankQuestion = {
 
 export type Buzz = {
 	teamId: string,
-	qid?: string | null,
-	sid?: string | null,
+	qid: string | null,
+	sid: string | null,
 	at: number,
 };
 
@@ -104,17 +104,17 @@ export type BuzzOutcome = {
 export type ClassStudent = {
 	id: string,
 	name: string,
-	teamId?: string | null,
+	teamId: string | null,
 	active?: boolean,
 };
 
 export type ClassTeam = {
 	id: string,
 	name: string,
-	color?: string,
-	icon?: string,
+	color: string,
+	icon: string,
 	/**  全员 id（用于"队伍里没有成员"判断与取第一个成员） */
-	memberIds?: string[],
+	memberIds: string[],
 };
 
 /**  课堂协同的即时状态（`state.classroom`，由 classroom.js 懒创建） */
@@ -187,13 +187,13 @@ export type EvalWeights = {
 /**  实时流条目（教师端右上角滚动显示） */
 export type FeedItem = {
 	kind: string,
-	teamId?: string | null,
-	sid?: string | null,
-	qid?: string | null,
-	result?: string | null,
-	answer?: string | null,
-	expected?: string | null,
-	points?: number | null,
+	teamId: string | null,
+	sid: string | null,
+	qid: string | null,
+	result: string | null,
+	answer: string | null,
+	expected: string | null,
+	points: number | null,
 	text: string,
 	at: number,
 };
@@ -220,18 +220,19 @@ export type LogItem = {
 	/**  日志类型（"添加学生"/"课堂环节"/"抢答"…） */
 	type?: string,
 	detail: string,
-	at: number,
+	/**  时间戳 —— JS 侧这个字段叫 `ts`，所以直接按它序列化（specta 不支持 alias） */
+	ts: number,
 };
 
 /**  待确认提交（主观题由老师判定） */
 export type Pending = {
 	sid: string,
-	teamId?: string | null,
-	qid?: string | null,
-	quizId?: string | null,
+	teamId: string | null,
+	qid: string | null,
+	quizId: string | null,
 	/**  提交内容可读化后的文本 */
 	answer: string,
-	backlog?: boolean,
+	backlog: boolean,
 	at: number,
 };
 
@@ -285,20 +286,20 @@ export type RollcallState = {
 
 /**  环节相关的运行态（对应 state.runtime 里与课堂有关的部分） */
 export type Runtime = {
-	phase?: string,
-	quizId?: string | null,
-	qid?: string | null,
-	accepting?: boolean,
-	reveal?: boolean,
+	phase: string,
+	quizId: string | null,
+	qid: string | null,
+	accepting: boolean,
+	reveal: boolean,
 	/**  当前被点到的学生（点名环节大屏用） */
-	sid?: string | null,
+	sid: string | null,
 	/**
 	 *  课堂计时器结束时刻（ms 时间戳）；None = 没在计时。
 	 *  大屏/学生端按这个时刻**本地**渲染倒计时，不需要每秒广播。
 	 */
 	timerEndsAt?: number | null,
 	/**  计时器说明（如「随堂练习」「小组讨论」），显示在倒计时旁边 */
-	timerLabel?: string,
+	timerLabel: string,
 };
 
 /**  一条积分流水（与 `store.js` 的 `normalizeRecord` 字段一致） */
@@ -336,24 +337,24 @@ export type ScoreRequest = {
 	 *  部分得分系数（0~1）：多答案题按命中比例算出的值；
 	 *  为空时存储层回退到 halfRatio（教师手工判定「部分正确」的情形）。
 	 */
-	ratio?: number | null,
+	ratio: number | null,
 	/**
 	 *  抢答名次（1 起）：本队此前是否对该题抢过答、排第几。
 	 *  答对且有名次 → 存储层按名次加分（第 1 个 +2 / 第 2 个 +1，见 ScoringSettings）。
 	 */
-	rank?: number | null,
+	rank: number | null,
 };
 
 /**  一条流水的算分快照（写库前的那部分） */
 export type ScoreSnapshot = {
 	sid: string,
-	qid?: string | null,
-	tier?: string,
-	result?: string,
+	qid: string | null,
+	tier: string,
+	result: string,
 	base: number | null,
 	ratio: number | null,
 	points: number | null,
-	source?: string,
+	source: string,
 };
 
 /**
@@ -420,13 +421,13 @@ export type Student = {
 /**  学生命令（对应 cmd.kind = hello | buzz | answer） */
 export type StudentCmd = {
 	kind: string,
-	teamId?: string | null,
-	sid?: string | null,
-	qid?: string | null,
-	choice?: string[],
-	text?: string | null,
-	skip?: boolean,
-	backlog?: boolean,
+	teamId: string | null,
+	sid: string | null,
+	qid: string | null,
+	choice: string[],
+	text: string | null,
+	skip: boolean,
+	backlog: boolean,
 };
 
 export type Team = {
@@ -454,18 +455,18 @@ export type Tier = {
 	key: string,
 	label: string,
 	weight: number | null,
-	color?: string,
-	desc?: string,
+	color: string,
+	desc: string,
 };
 
 /**  题型统计（finalizeBucket 之后的形态） */
 export type TierStat = {
-	key: string,
+	key?: string,
 	label: string,
 	color?: string,
 	weight?: number | null,
 	attempts: number,
-	correct: number,
+	correct?: number,
 	/**  掌握度百分比（已按 halfRatio 折算，保留一位小数，与 JS 的 pct 一致） */
 	credit_rate?: number | null,
 	/**  正确率百分比 */

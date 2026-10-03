@@ -23,9 +23,7 @@ pub struct Tier {
     pub key: String,
     pub label: String,
     pub weight: f64,
-    #[serde(default)]
     pub color: String,
-    #[serde(default)]
     pub desc: String,
 }
 
@@ -214,16 +212,12 @@ pub fn is_countable(tier: &str, result: &str) -> bool {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ScoreSnapshot {
     pub sid: String,
-    #[serde(default)]
     pub qid: Option<String>,
-    #[serde(default)]
     pub tier: String,
-    #[serde(default)]
     pub result: String,
     pub base: f64,
     pub ratio: f64,
     pub points: f64,
-    #[serde(default)]
     pub source: String,
 }
 
@@ -234,7 +228,6 @@ pub struct ScoreSnapshot {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScoreInput {
-    #[serde(default)]
     pub sid: String,
     #[serde(default)]
     pub qid: Option<String>,
@@ -250,7 +243,6 @@ pub struct ScoreInput {
     /// 显式基准分（优先级最高）
     #[serde(default)]
     pub base: Option<f64>,
-    #[serde(default)]
     pub result: String,
     #[serde(default)]
     pub fast: bool,
@@ -261,7 +253,6 @@ pub struct ScoreInput {
     /// 为空时：half 用 `st.half_ratio`（教师手工判定「部分正确」的情形），其余按判定取整。
     #[serde(default)]
     pub ratio: Option<f64>,
-    #[serde(default)]
     pub source: Option<String>,
 }
 

@@ -165,7 +165,14 @@
       },
       logs: [],
       /* 运行时上下文（本地记忆，不参与同步）：当前正在进行的试卷与题目 */
-      runtime: { quizId: null, qid: null, sid: null }
+      // 字段必须写全：Rust 的 Runtime 是**非可选**形状契约（specta 生成的 TS 也是必填），
+      // 少一个字段就会让「把状态发给 Rust 领域端点」被拒
+      runtime: {
+        quizId: null, qid: null, sid: null,
+        phase: 'idle', accepting: false, reveal: false, timerEndsAt: 0, timerLabel: ''
+      },
+      // classroom 同理：契约的一部分，懒创建会让请求缺字段
+      classroom: { buzz: [], pending: [], feed: [] }
     };
   }
 
@@ -419,7 +426,9 @@
 
   function log(type, detail) {
     var s = get();
-    s.logs.push({ ts: Date.now(), type: str(type), detail: str(detail) });
+    // id 是状态契约的一部分（Rust 的 LogItem 有它）—— 缺了会让「把状态发给 Rust 端点」整个被拒
+    s.logs.push({
+      id: uid('lg'), ts: Date.now(), type: str(type), detail: str(detail) });
     if (s.logs.length > MAX_LOGS) s.logs = s.logs.slice(s.logs.length - MAX_LOGS);
   }
 
@@ -867,6 +876,7 @@
         name: str(name) || ('学生' + (s.students.length + 1)),
         teamId: teamId || (s.teams[0] ? s.teams[0].id : null),
         active: true,
+        called: 0,        // 状态契约的一部分（Rust 的 Student 有它）
         joinedAt: Date.now()
       };
       s.students.push(stu);

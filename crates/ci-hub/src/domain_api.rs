@@ -9,6 +9,7 @@
 //!   POST /api/domain/score   加权计分（含题型权重 / 半对折算 / 抢答加分 / 答错扣分）
 //!   POST /api/domain/ability 能力评价（雷达轴 / 评级 / 评语）
 //!   POST /api/domain/pick    随机点名（带种子，可复现 —— 与 parity 基准同一套算法）
+//!   POST /api/domain/stats   学情统计（学生明细 / 班级汇总 / 学生榜 / 队伍榜，一次拿全）
 //!
 //! 设计取舍：
 //!   · **不做鉴权**：教师机自己局域网内的枢纽，与 /api/state 同级；要防的是误用不是攻击。
@@ -29,6 +30,7 @@ use serde_json::{json, Value};
  * ------------------------------------------------------------------ */
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GradeBody {
     pub question: Question,
     #[serde(default)]
@@ -63,6 +65,7 @@ pub async fn grade(Json(body): Json<GradeBody>) -> impl IntoResponse {
  * ------------------------------------------------------------------ */
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ScoreBody {
     /// 题型表（不传用默认四档）
     #[serde(default)]
@@ -141,4 +144,50 @@ pub async fn pick_handler(Json(body): Json<PickBody>) -> impl IntoResponse {
             "message": "没有可点名的学生（名单为空，或都被排除规则过滤掉了）"
         })),
     }
+}
+
+/* ------------------------------------------------------------------ *
+ * 学情统计
+ * ------------------------------------------------------------------ */
+
+#[derive(Deserialize)]
+// 必须 camelCase：前端发的是 quizId / teamId。少了这一行，参数会被**静默忽略**
+// —— 端点永远按"全部课次"算，而调用方以为筛选生效了（实测踩到）
+#[serde(rename_all = "camelCase")]
+pub struct StatsBody {
+    /// 整份课堂状态（前端把自己那份发上来即可，纯函数、不碰存储）
+    pub state: ci_domain::state::ClassroomState,
+    /// 只看某套试卷（= 本节课）；不传表示全部课次
+    #[serde(default)]
+    pub quiz_id: Option<String>,
+    /// 只看某支队伍
+    #[serde(default)]
+    pub team_id: Option<String>,
+    /// 要取明细的学生 id（不传就只返回汇总与榜单）
+    #[serde(default)]
+    pub sid: Option<String>,
+}
+
+/// 学情统计：把"按学生 / 题型 / 标签汇总"整层交给 Rust 核心
+///
+/// 为什么做成一个聚合端点：学情页要的东西彼此依赖（榜单要逐个学生统计、班级汇总又建在榜单上），
+/// 拆成多个端点会让前端来回拼装、还容易拼出**口径不一致**（JS 版就出过
+/// "汇总说 1 次作答、同一份返回的榜说 2 次"）。一次算完、一次返回，口径天然一致。
+pub async fn stats(Json(body): Json<StatsBody>) -> impl IntoResponse {
+    let s = &body.state;
+    let quiz = body.quiz_id.as_deref();
+    let team = body.team_id.as_deref();
+
+    let student = body
+        .sid
+        .as_deref()
+        .and_then(|sid| ci_domain::stats::student_stats(s, sid, quiz));
+
+    Json(json!({
+        "ok": true,
+        "student": student,
+        "class": ci_domain::stats::class_stats(s, team, quiz),
+        "ranking": ci_domain::stats::ranking(s, team, quiz),
+        "teamRanking": ci_domain::stats::team_ranking(s),
+    }))
 }

@@ -227,12 +227,12 @@ async fn pick_endpoint_is_deterministic_with_seed() {
 
     let body = json!({
         "students": [
-            { "id": "s1", "name": "甲", "active": true },
-            { "id": "s2", "name": "乙", "active": true },
-            { "id": "s3", "name": "丙", "active": true }
+            { "id": "s1", "name": "甲", "active": true, "called": 0, "joinedAt": 1 },
+            { "id": "s2", "name": "乙", "active": true, "called": 0, "joinedAt": 1 },
+            { "id": "s3", "name": "丙", "active": true, "called": 0, "joinedAt": 1 }
         ],
         "answered": [],
-        "settings": { "mode": "random", "scope": "all", "exclude_answered": false, "recent_exclude": 0 },
+        "settings": { "mode": "random", "scope": "all", "exclude_answered": false, "recent_exclude": 0, "round": 1, "round_pool": [], "history": [] },
         "opts": {},
         "seed": 20261002
     });
@@ -256,4 +256,73 @@ async fn pick_endpoint_is_deterministic_with_seed() {
     assert!(d["message"].as_str().unwrap().contains("没有可点名的学生"));
 
     let _ = std::fs::remove_dir_all(dir);
+}
+
+/// 学情统计端点：整份状态发上去，拿回学生明细 / 班级汇总 / 学生榜 / 队伍榜
+///
+/// 重点验证两件事：
+///   ① 口径与 `ci-domain` 一致（期望值写"算法该给什么"，不是"上次返回了什么"）
+///   ② **数据范围（quiz_id）贯穿到榜** —— JS 版曾漏传 opts，汇总说 1 次、榜上说 2 次
+#[tokio::test]
+async fn stats_endpoint_scopes_ranking_and_class() {
+    let (base, dir) = start_hub("stats").await;
+
+    // 参数就是试卷 id：这样"改试卷"时流水里的 quizId 一定跟着改（第一版事后改 JSON，漏了流水）
+    let mk_state = |quiz: &str| {
+        let mut s = serde_json::to_value(ci_domain::state::ClassroomState::default()).unwrap();
+        s["teams"] = json!([{ "id": "tm1", "name": "红队", "icon": "", "color": "", "order": 1 }]);
+        s["students"] = json!([
+            { "id": "s1", "name": "甲", "teamId": "tm1", "active": true, "joinedAt": 1, "called": 0 },
+            { "id": "s2", "name": "乙", "teamId": "tm1", "active": true, "joinedAt": 2, "called": 0 }
+        ]);
+        s["bank"] = json!([
+            { "id": "q1", "tier": "basic", "stem": "第一节", "answer": "A", "options": [], "tags": [], "source": "", "note": "", "imageUrl": "", "archived": false, "createdAt": 1 }
+        ]);
+        s["quizzes"] = json!([{
+            "id": quiz, "name": "第一节课", "note": "", "createdAt": 1, "closedAt": 0,
+            "questionIds": ["q1"],
+            "records": [
+                { "id": "r1", "sid": "s1", "qid": "q1", "tier": "basic", "quizId": quiz, "result": "wrong",
+                  "base": 3.0, "ratio": 0.0, "points": 0.0, "source": "quiz", "note": "", "picked": "B", "at": 1, "by": "" },
+                { "id": "r2", "sid": "s2", "qid": "q1", "tier": "basic", "quizId": quiz, "result": "correct",
+                  "base": 3.0, "ratio": 1.0, "points": 3.0, "source": "quiz", "note": "", "picked": "A", "at": 2, "by": "" }
+            ]
+        }]);
+        s
+    };
+
+    // ① 全部课次：两人各 1 次作答，甲 0%、乙 100%
+    let r = post(&base, "/api/domain/stats", json!({ "state": mk_state("z1") })).await;
+    assert_eq!(r["ok"], json!(true), "端点应返回 ok");
+    let ranking = r["ranking"].as_array().expect("ranking 是数组");
+    assert_eq!(ranking.len(), 2, "两名学生都在榜上");
+    assert_eq!(ranking[0]["sid"], json!("s2"), "乙分高排第一");
+    assert_eq!(ranking[0]["creditRate"], json!(100.0), "乙掌握度 100%");
+    assert_eq!(ranking[1]["creditRate"], json!(0.0), "甲掌握度 0%");
+    assert_eq!(r["class"]["total"]["attempts"], json!(2), "班级汇总 2 次作答");
+    assert_eq!(r["class"]["participants"], json!(2), "2 人参与");
+    // 汇总与榜必须同口径（这条断言就是冲着那个 bug 来的）
+    let sum: u32 = ranking.iter().map(|x| x["attempts"].as_u64().unwrap_or(0) as u32).sum();
+    assert_eq!(sum, r["class"]["total"]["attempts"].as_u64().unwrap() as u32, "榜上作答数之和 = 汇总作答数");
+    let teams = r["teamRanking"].as_array().expect("teamRanking 是数组");
+    assert_eq!(teams.len(), 1, "一支队伍");
+    assert_eq!(teams[0]["score"], json!(3.0), "队伍分 = 成员分之和");
+    assert_eq!(teams[0]["memberCount"], json!(2));
+
+    // ② 学生明细（传 sid 才有）
+    let r2 = post(&base, "/api/domain/stats", json!({ "state": mk_state("z1"), "sid": "s1" })).await;
+    let stu = &r2["student"];
+    assert_eq!(stu["name"], json!("甲"));
+    assert_eq!(stu["total"]["attempts"], json!(1), "学生明细：作答次数在 total 桶里");
+    assert_eq!(stu["total"]["creditRate"], json!(0.0), "掌握度也在 total 桶里");
+    assert_eq!(stu["level"], json!("—"), "样本不足时等级是「—」");
+
+    // ③ 只看某节课：范围必须贯穿（汇总 0，榜上也得是 0）
+    // 用 z2 建一份状态，再按 z1 过滤：应该一条都不命中
+    let other = mk_state("z2");
+    let r3 = post(&base, "/api/domain/stats", json!({ "state": other, "quizId": "z1" })).await;
+    assert_eq!(r3["class"]["total"]["attempts"], json!(0), "范围切到 z1 时 z2 的记录不计入");
+    assert_eq!(r3["ranking"][0]["attempts"], json!(0), "榜上也是 0（不能汇总 0、榜上 1）");
+
+    let _ = std::fs::remove_dir_all(&dir);
 }

@@ -71,18 +71,12 @@ impl Phase {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Runtime {
-    #[serde(default)]
     pub phase: String,
-    #[serde(default)]
     pub quiz_id: Option<String>,
-    #[serde(default)]
     pub qid: Option<String>,
-    #[serde(default)]
     pub accepting: bool,
-    #[serde(default)]
     pub reveal: bool,
     /// 当前被点到的学生（点名环节大屏用）
-    #[serde(default)]
     pub sid: Option<String>,
     /// 课堂计时器结束时刻（ms 时间戳）；None = 没在计时。
     /// 大屏/学生端按这个时刻**本地**渲染倒计时，不需要每秒广播。
@@ -90,7 +84,6 @@ pub struct Runtime {
     #[cfg_attr(feature = "bindings", specta(type = Option<specta_typescript::Number>))]
     pub timer_ends_at: Option<i64>,
     /// 计时器说明（如「随堂练习」「小组讨论」），显示在倒计时旁边
-    #[serde(default)]
     pub timer_label: String,
 }
 
@@ -224,7 +217,6 @@ fn apply_phase(rt: &mut Runtime, phase: Phase, quiz_first_qid: Option<&str>, ban
 pub struct ClassStudent {
     pub id: String,
     pub name: String,
-    #[serde(default)]
     pub team_id: Option<String>,
     #[serde(default = "default_true")]
     pub active: bool,
@@ -240,12 +232,9 @@ fn default_true() -> bool {
 pub struct ClassTeam {
     pub id: String,
     pub name: String,
-    #[serde(default)]
     pub color: String,
-    #[serde(default)]
     pub icon: String,
     /// 全员 id（用于"队伍里没有成员"判断与取第一个成员）
-    #[serde(default)]
     pub member_ids: Vec<String>,
 }
 
@@ -303,19 +292,12 @@ fn team_name(teams: &[ClassTeam], tid: Option<&str>) -> String {
 #[serde(rename_all = "camelCase")]
 pub struct FeedItem {
     pub kind: String,
-    #[serde(default)]
     pub team_id: Option<String>,
-    #[serde(default)]
     pub sid: Option<String>,
-    #[serde(default)]
     pub qid: Option<String>,
-    #[serde(default)]
     pub result: Option<String>,
-    #[serde(default)]
     pub answer: Option<String>,
-    #[serde(default)]
     pub expected: Option<String>,
-    #[serde(default)]
     pub points: f64,
     pub text: String,
     #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
@@ -335,9 +317,7 @@ pub fn push_feed(feed: &mut Vec<FeedItem>, item: FeedItem) {
 #[serde(rename_all = "camelCase")]
 pub struct Buzz {
     pub team_id: String,
-    #[serde(default)]
     pub qid: Option<String>,
-    #[serde(default)]
     pub sid: Option<String>,
     #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub at: i64,
@@ -399,15 +379,11 @@ pub fn add_buzz(
 #[serde(rename_all = "camelCase")]
 pub struct Pending {
     pub sid: String,
-    #[serde(default)]
     pub team_id: Option<String>,
-    #[serde(default)]
     pub qid: Option<String>,
-    #[serde(default)]
     pub quiz_id: Option<String>,
     /// 提交内容可读化后的文本
     pub answer: String,
-    #[serde(default)]
     pub backlog: bool,
     #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
     pub at: i64,
@@ -430,19 +406,12 @@ pub fn add_pending(pending: &mut Vec<Pending>, item: Pending) {
 #[serde(rename_all = "camelCase")]
 pub struct StudentCmd {
     pub kind: String,
-    #[serde(default)]
     pub team_id: Option<String>,
-    #[serde(default)]
     pub sid: Option<String>,
-    #[serde(default)]
     pub qid: Option<String>,
-    #[serde(default)]
     pub choice: Vec<String>,
-    #[serde(default)]
     pub text: Option<String>,
-    #[serde(default)]
     pub skip: bool,
-    #[serde(default)]
     pub backlog: bool,
 }
 
@@ -459,11 +428,9 @@ pub struct ScoreRequest {
     pub points: f64,
     /// 部分得分系数（0~1）：多答案题按命中比例算出的值；
     /// 为空时存储层回退到 halfRatio（教师手工判定「部分正确」的情形）。
-    #[serde(default)]
     pub ratio: Option<f64>,
     /// 抢答名次（1 起）：本队此前是否对该题抢过答、排第几。
     /// 答对且有名次 → 存储层按名次加分（第 1 个 +2 / 第 2 个 +1，见 ScoringSettings）。
-    #[serde(default)]
     pub rank: Option<u32>,
 }
 

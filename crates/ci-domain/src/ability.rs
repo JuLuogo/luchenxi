@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "bindings", derive(specta::Type))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TierStat {
+    #[serde(default)]
     pub key: String,
     pub label: String,
     #[serde(default)]
@@ -28,6 +29,7 @@ pub struct TierStat {
     #[serde(default)]
     pub weight: f64,
     pub attempts: u32,
+    #[serde(default)]
     pub correct: u32,
     /// 掌握度百分比（已按 halfRatio 折算，保留一位小数，与 JS 的 pct 一致）
     #[serde(default)]

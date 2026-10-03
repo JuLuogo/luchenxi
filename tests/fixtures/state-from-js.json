@@ -1,0 +1,223 @@
+{
+ "version": 2,
+ "rev": 11,
+ "updatedAt": 1791014003204,
+ "settings": {
+  "courseName": "24机械高考公开课",
+  "halfRatio": 0.5,
+  "wrongPenalty": 0,
+  "fastBonus": 0,
+  "buzzRankBonuses": [],
+  "weakThreshold": 0.6,
+  "strongThreshold": 0.85,
+  "minSample": 5,
+  "evalWeights": {
+   "mastery": 60,
+   "participation": 25,
+   "growth": 15
+  },
+  "decayRatio": 0.65,
+  "manualCapPlus": 2,
+  "manualCapMinus": -1
+ },
+ "tiers": [
+  {
+   "key": "basic",
+   "label": "基础题",
+   "weight": 3,
+   "color": "#66bb6a",
+   "desc": "课本概念与常规运算，面向全体"
+  },
+  {
+   "key": "advanced",
+   "label": "拔高题",
+   "weight": 5,
+   "color": "#42a5f5",
+   "desc": "综合应用，需要两步以上推理"
+  },
+  {
+   "key": "extended",
+   "label": "扩展题",
+   "weight": 8,
+   "color": "#ab47bc",
+   "desc": "跨章节综合或建模，考查迁移能力"
+  },
+  {
+   "key": "improve",
+   "label": "提升题",
+   "weight": 10,
+   "color": "#ef6c00",
+   "desc": "压轴/竞赛级，挑战思维上限"
+  }
+ ],
+ "tags": [
+  "集合与逻辑",
+  "函数与导数",
+  "三角函数",
+  "数列",
+  "立体几何",
+  "解析几何",
+  "概率统计"
+ ],
+ "teams": [
+  {
+   "id": "tm_mus3htdu15ebn",
+   "name": "红队",
+   "icon": "🔴",
+   "color": "#e74c3c",
+   "order": 0
+  },
+  {
+   "id": "tm_mus3htdu9qbcu",
+   "name": "蓝队",
+   "icon": "🔵",
+   "color": "#3498db",
+   "order": 1
+  }
+ ],
+ "students": [
+  {
+   "id": "st_mus3htdvd0h4b",
+   "name": "甲",
+   "teamId": "tm_mus3htdu15ebn",
+   "active": true,
+   "called": 0,
+   "joinedAt": 1791014003203
+  }
+ ],
+ "bank": [
+  {
+   "id": "q_mus3htdv05ioz",
+   "tier": "basic",
+   "points": null,
+   "stem": "示例题：1+1=?",
+   "answer": "A",
+   "options": [
+    "1",
+    "2",
+    "3"
+   ],
+   "tags": [
+    "代数"
+   ],
+   "source": "课本",
+   "note": "讲评要点",
+   "imageUrl": "data:image/png;base64,AA",
+   "archived": false,
+   "createdAt": 1791014003203
+  }
+ ],
+ "quizzes": [
+  {
+   "id": "qz_mus3htdvkczyf",
+   "name": "示例卷",
+   "note": "",
+   "createdAt": 1791014003203,
+   "closedAt": 0,
+   "questionIds": [
+    "q_mus3htdv05ioz"
+   ],
+   "records": [
+    {
+     "id": "rc_mus3htdvevbnc",
+     "sid": "st_mus3htdvd0h4b",
+     "qid": "q_mus3htdv05ioz",
+     "tier": "basic",
+     "quizId": "qz_mus3htdvkczyf",
+     "result": "correct",
+     "base": 3,
+     "ratio": 1,
+     "points": 3,
+     "source": "quiz",
+     "note": "",
+     "picked": "A",
+     "at": 1791014003203,
+     "by": ""
+    }
+   ]
+  }
+ ],
+ "currentQuizId": "qz_mus3htdvkczyf",
+ "rollcall": {
+  "mode": "even",
+  "scope": "all",
+  "excludeAnswered": true,
+  "recentExclude": 1,
+  "history": [
+   {
+    "id": "rl_mus3htdwcuq7o",
+    "sid": "st_mus3htdvd0h4b",
+    "at": 1791014003204,
+    "quizId": "qz_mus3htdvkczyf",
+    "qid": "q_mus3htdv05ioz"
+   }
+  ],
+  "roundPool": [],
+  "round": 1
+ },
+ "logs": [
+  {
+   "id": "lg_mus3htdvtzqur",
+   "ts": 1791014003203,
+   "type": "添加学生",
+   "detail": "甲 → 红队"
+  },
+  {
+   "id": "lg_mus3htdvgn1o6",
+   "ts": 1791014003203,
+   "type": "新增题目",
+   "detail": "基础题 · 示例题：1+1=?"
+  },
+  {
+   "id": "lg_mus3htdv1h633",
+   "ts": 1791014003203,
+   "type": "新建试卷",
+   "detail": "示例卷（1 题）"
+  },
+  {
+   "id": "lg_mus3htdvasvr0",
+   "ts": 1791014003203,
+   "type": "切换试卷",
+   "detail": "示例卷"
+  },
+  {
+   "id": "lg_mus3htdvpf00s",
+   "ts": 1791014003203,
+   "type": "记分",
+   "detail": "甲 · 基础题·示例题：1+1=? 答对 → +3"
+  },
+  {
+   "id": "lg_mus3htdv0mmgn",
+   "ts": 1791014003203,
+   "type": "课堂环节",
+   "detail": "出题答题"
+  },
+  {
+   "id": "lg_mus3htdw66jpf",
+   "ts": 1791014003204,
+   "type": "课堂计时",
+   "detail": "60 秒（随堂练习）"
+  },
+  {
+   "id": "lg_mus3htdwjy7d7",
+   "ts": 1791014003204,
+   "type": "点名",
+   "detail": "甲"
+  }
+ ],
+ "runtime": {
+  "quizId": "qz_mus3htdvkczyf",
+  "qid": "q_mus3htdv05ioz",
+  "sid": "st_mus3htdvd0h4b",
+  "phase": "question",
+  "accepting": true,
+  "reveal": false,
+  "timerEndsAt": 1791014063204,
+  "timerLabel": "随堂练习"
+ },
+ "classroom": {
+  "buzz": [],
+  "pending": [],
+  "feed": []
+ }
+}

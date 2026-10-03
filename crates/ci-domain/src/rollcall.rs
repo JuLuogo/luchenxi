@@ -27,7 +27,6 @@ pub struct Student {
     pub name: String,
     #[serde(default = "default_true")]
     pub active: bool,
-    #[serde(default)]
     pub called: u32,
 }
 
@@ -39,7 +38,6 @@ fn default_true() -> bool {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RollEntry {
     pub sid: String,
-    #[serde(default)]
     pub at: i64,
 }
 
@@ -50,13 +48,11 @@ pub struct RollcallSettings {
     pub mode: String,
     #[serde(default = "default_scope")]
     pub scope: String,
-    #[serde(default)]
     pub exclude_answered: bool,
     #[serde(default)]
     pub recent_exclude: u32,
     #[serde(default = "default_round")]
     pub round: u32,
-    #[serde(default)]
     pub round_pool: Vec<String>,
     #[serde(default)]
     pub history: Vec<RollEntry>,
@@ -89,8 +85,10 @@ impl Default for RollcallSettings {
 /// 本次抽选的覆盖参数（对应 JS 的 opts；None 表示沿用设置）
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PickOpts {
+    #[serde(default)]
     pub scope: Option<String>,
     pub mode: Option<String>,
+    #[serde(default)]
     pub exclude_answered: Option<bool>,
     pub recent_exclude: Option<u32>,
     /// 是否真的有"当前题"（对应 JS 里 quizId && qid 都存在）
