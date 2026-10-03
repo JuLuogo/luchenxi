@@ -20,6 +20,7 @@ pub mod grade;
 pub mod mistakes;
 pub mod question_stats;
 pub mod openclass;
+pub mod polish;
 pub mod report;
 pub mod rollcall;
 pub mod scoring;
@@ -44,6 +45,7 @@ pub use openclass::{
     default_open_dimensions, evaluate_open, open_comment, open_level, open_rate, OpenDimension,
     OpenEvaluation, OpenPart, OPEN_LEVELS,
 };
+pub use polish::{polish_prompt, sanitize_polish, POLISH_MAX_CHARS, POLISH_RULES};
 pub use report::{build_report, to_markdown as report_markdown, Checkin, ClassReport, ReportInput, ReportStudent};
 pub use rollcall::{
     apply_pick, called_count, candidates as rollcall_candidates, pick as rollcall_pick, recent_ids,

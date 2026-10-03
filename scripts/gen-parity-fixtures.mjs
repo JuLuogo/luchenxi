@@ -37,7 +37,7 @@ function fakeStorage() {
 function loadCI() {
   globalThis.localStorage = fakeStorage();
   // 2026-10：bank.js 已随旧界面删除；批量导入的解析器在 import.js（领域层）
-  for (const f of ['store.js', 'analysis.js', 'grade.js', 'rollcall.js', 'classroom.js', 'import.js', 'openclass.js']) {
+  for (const f of ['store.js', 'analysis.js', 'grade.js', 'rollcall.js', 'classroom.js', 'import.js', 'openclass.js', 'polish.js']) {
     require(path.join(ROOT, 'assets', 'js', f));
   }
   return globalThis.CI;
@@ -1174,6 +1174,31 @@ mkOpenCase('公开课：只评两维（要重新归一）', [{ key: 'basic', sco
 mkOpenCase('公开课：只评一维', [{ key: 'transfer', score: 3 }]);
 mkOpenCase('公开课：全是最低档', [{ key: 'basic', score: 1 }, { key: 'transfer', score: 1 }, { key: 'expression', score: 1 }, { key: 'attitude', score: 1 }]);
 mkOpenCase('公开课：一维都没评', []);
+
+/* ---------- 用例集：AI 润色提示词（polish.js）---------- *
+ * 提示词也是规则：它编码了"只润色不判断 / 不出现姓名 / 限长"三条硬约束 */
+const polishCases = [];
+
+function mkPolishCase(name, scores) {
+  const ev = CI.openclass.evaluate(scores);
+  polishCases.push({
+    name,
+    evaluation: JSON.parse(JSON.stringify(ev)),
+    expect: {
+      prompt: CI.polish.prompt(ev),
+      sanitized: [
+        CI.polish.sanitize('「他答得很好」'),
+        CI.polish.sanitize('第一行\n第二行'),
+        CI.polish.sanitize('字'.repeat(200))
+      ]
+    }
+  });
+}
+
+mkPolishCase('润色：四维全优秀', [{ key: 'basic', score: 4 }, { key: 'transfer', score: 4 }, { key: 'expression', score: 4 }, { key: 'attitude', score: 4 }]);
+mkPolishCase('润色：强基础弱迁移', [{ key: 'basic', score: 4 }, { key: 'transfer', score: 1 }, { key: 'expression', score: 3 }, { key: 'attitude', score: 3 }]);
+mkPolishCase('润色：各维接近（不能硬编短板）', [{ key: 'basic', score: 3 }, { key: 'transfer', score: 3 }]);
+mkPolishCase('润色：一维都没评', []);
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
@@ -1191,7 +1216,8 @@ const payload = {
   optionDist: optionDistCases,
   stats: statsCases,
   view: viewCases,
-  openclass: openCases
+  openclass: openCases,
+  polish: polishCases
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
@@ -1203,7 +1229,8 @@ if (CHECK) {
     ' + 错题本 ' + mistakeCases.length + ' + 报告 ' + reportCases.length +
     ' + 多维评价 ' + (compositeCases.participation.length + compositeCases.growth.length + compositeCases.decayed.length + compositeCases.evaluate.length) +
     ' + 选项分布 ' + optionDistCases.length + ' + 学情统计 ' + statsCases.length +
-    ' + 学生视图 ' + viewCases.length + ' + 公开课量规 ' + openCases.length + ' 组）');
+    ' + 学生视图 ' + viewCases.length + ' + 公开课量规 ' + openCases.length +
+    ' + 润色提示词 ' + polishCases.length + ' 组）');
     process.exit(0);
   }
   console.error('[stale] parity.json 与 JS 参考实现不一致 —— 运行 node scripts/gen-parity-fixtures.mjs 重新生成');

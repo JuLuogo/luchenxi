@@ -30,6 +30,7 @@ require(path.join(__dirname, '..', 'assets', 'js', 'rollcall.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'classroom.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'import.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'openclass.js'));
+require(path.join(__dirname, '..', 'assets', 'js', 'polish.js'));
 // bank.js / quiz.js / analysis-ui.js / admin.js 已随旧界面删除（界面统一到 Vue，见 docs/13）
 
 const CI = globalThis.CI;
@@ -1484,6 +1485,52 @@ group('公开课现场评价量规');
   const c = gap.comment;
   ok(c.length > 10 && c.length < 120, '评语长度适合当众念（' + c.length + ' 字）');
   ok(c.indexOf('。') > 0, '评语是完整句子');
+})();
+
+/* ================= 24. AI 润色提示词（可选增强） ================= */
+group('AI 润色提示词');
+
+(function () {
+  const P = CI.polish;
+  const O = CI.openclass;
+  const dims = O.defaultDimensions();
+  const ev = O.evaluate(dims.map((d) => ({ key: d.key, score: 4 })));
+
+  const prompt = P.prompt(ev);
+  // 三条硬约束必须都在提示词里（这是"只润色不判断"的落地方式）
+  P.POLISH_RULES.forEach((r, i) => {
+    ok(prompt.indexOf(r) >= 0, '提示词含第 ' + (i + 1) + ' 条硬约束');
+  });
+  ok(prompt.indexOf('不得新增任何判断') >= 0, '明确禁止新增判断');
+  ok(prompt.indexOf('只能用这些') >= 0, '说明事实来源是封闭的');
+  ok(prompt.indexOf('不超过 60 字') >= 0, '限制长度（评语要能当众念）');
+
+  // 事实必须来自规则评语本身
+  ok(prompt.indexOf(ev.comment) >= 0, '带上原始评语（作为润色对象）');
+  ok(prompt.indexOf(String(ev.total) + ' 分') >= 0, '带上总分');
+  ok(prompt.indexOf(ev.level) >= 0, '带上总评档位');
+  ok(prompt.indexOf('基础掌握：优秀') >= 0, '带上各维度档位');
+
+  // 隐私：提示词里不能有姓名（调用方压根不传，这里也钉一遍）
+  ok(prompt.indexOf('甲') < 0 && prompt.indexOf('乙') < 0, '提示词不出现学生姓名');
+
+  // 各维接近时不能硬编短板
+  const flat = O.evaluate([{ key: 'basic', score: 3 }, { key: 'transfer', score: 3 }]);
+  const flatPrompt = P.prompt(flat);
+  ok(flatPrompt.indexOf('各维度比较均衡') >= 0, '分差不足时提示词说"均衡"');
+  ok(flatPrompt.indexOf('还有空间') < 0, '不能凭空造短板');
+
+  // 清理函数：去引号 / 换行 / 限长
+  eq(P.sanitize('「他答得很好」'), '他答得很好', '去中文引号');
+  eq(P.sanitize('"不错"'), '不错', '去英文引号');
+  eq(P.sanitize('第一行\n第二行'), '第一行 第二行', '换行变空格');
+  const long = P.sanitize('字'.repeat(200));
+  eq(Array.from(long).length, P.POLISH_MAX_CHARS + 1, '超长截断（含省略号）');
+  ok(long.endsWith('…'), '截断后有省略号');
+
+  // 没评也要能构造（不炸）
+  const emptyPrompt = P.prompt(O.evaluate([]));
+  ok(emptyPrompt.indexOf('0 分') >= 0 && emptyPrompt.indexOf('【硬约束】') >= 0, '空评价也能构造提示词');
 })();
 
 /* ================= 汇总 ================= */

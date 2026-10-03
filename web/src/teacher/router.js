@@ -107,6 +107,14 @@ export const routes = [
     component: () => import('./pages/settings/StoragePage.vue'),
     meta: { title: '存储与备份', icon: 'Coin', group: '系统设置' }
   },
+
+  /* ---------- 设置 · AI 润色（可选，默认关闭） ---------- */
+  {
+    path: '/settings/ai',
+    name: 'settings-ai',
+    component: () => import('./pages/settings/AiPolishPage.vue'),
+    meta: { title: 'AI 润色', icon: 'MagicStick', group: '设置' }
+  },
   {
     path: '/settings/network',
     name: 'settings-network',

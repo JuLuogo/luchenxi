@@ -120,7 +120,8 @@ const MIGRATION = [
   { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/composite.rs', name: '多维度评价', migrated: true },
   { js: 'assets/js/import.js', rs: 'crates/ci-domain/src/bank_import.rs', name: '批量导入解析', migrated: true },
   { js: 'assets/js/analysis.js', rs: 'crates/ci-domain/src/stats.rs', name: '学情统计聚合', migrated: true, parity: 'stats', minParity: 3 },
-  { js: 'assets/js/openclass.js', rs: 'crates/ci-domain/src/openclass.rs', name: '公开课现场评价量规', migrated: true, parity: 'openclass', minParity: 3 }
+  { js: 'assets/js/openclass.js', rs: 'crates/ci-domain/src/openclass.rs', name: '公开课现场评价量规', migrated: true, parity: 'openclass', minParity: 3 },
+  { js: 'assets/js/polish.js', rs: 'crates/ci-domain/src/polish.rs', name: 'AI 润色提示词', migrated: true, parity: 'polish', minParity: 3 }
 ];
 
 let done = 0;

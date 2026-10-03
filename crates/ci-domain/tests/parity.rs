@@ -15,7 +15,8 @@ use ci_domain::state::ClassroomState;
 use ci_domain::{
     ability_of_tiers, answer_key, apply_pick, auto, build_report, decayed_rate, evaluate, growth_score,
     default_open_dimensions, evaluate_open,
-    option_distribution, participation_rate, student_stats, student_view, class_stats, ranking, team_ranking, default_tiers, describe_submission,
+    option_distribution, participation_rate, polish_prompt, sanitize_polish, student_stats, student_view,
+    POLISH_RULES, class_stats, ranking, team_ranking, default_tiers, describe_submission,
     draw_questions, finalize_feed, handle_cmd, mistake_board, question_stats, report_markdown,
     rollcall_pick, score_of_input, set_phase_named, student_mistakes, validate_question, BankQuestion,
     Checkin, ClassStudent, ClassTeam, CmdOutcome, DrawOpts, PickOpts, Question, RollcallSettings,
@@ -45,6 +46,7 @@ struct Fixture {
     stats: Vec<StatsCase>,
     view: Vec<ViewCase>,
     openclass: Vec<OpenCase>,
+    polish: Vec<PolishCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -885,6 +887,22 @@ struct OpenPartOut {
     level: String,
     rate: f64,
     contribution: f64,
+}
+
+
+/* ---------- AI 润色提示词（polish.js）---------- */
+
+#[derive(Debug, Deserialize)]
+struct PolishCase {
+    name: String,
+    evaluation: ci_domain::openclass::OpenEvaluation,
+    expect: PolishExpect,
+}
+
+#[derive(Debug, Deserialize)]
+struct PolishExpect {
+    prompt: String,
+    sanitized: Vec<String>,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -2106,4 +2124,36 @@ fn openclass_matches_js_reference() {
         println!("  ✔ {} → {} 分 {}", n, got.total, got.level);
     }
     println!("\n✅ 公开课量规：{} 组用例与 JS 参考实现逐字段一致", fx.openclass.len());
+}
+
+/// AI 润色提示词：与 JS 逐字符比对
+///
+/// 提示词是**规则**，不是随手拼的字符串 —— 它编码了三条硬约束：
+/// 只润色不判断 / 不出现姓名 / 限长。所以它值得 parity。
+#[test]
+fn polish_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.polish.is_empty(), "基准里没有润色用例");
+    for case in &fx.polish {
+        let got = polish_prompt(&case.evaluation);
+        let n = &case.name;
+        assert_eq!(got, case.expect.prompt, "[{}] 提示词逐字符一致", n);
+        // 三条硬约束必须在提示词里（这是"AI 只润色不判断"的落地方式）
+        for r in POLISH_RULES {
+            assert!(got.contains(r), "[{}] 缺少约束：{}", n, r);
+        }
+        assert!(got.contains("只能用这些"), "[{}] 必须说明事实来源封闭", n);
+        // 隐私：提示词里不能有姓名（调用方压根不传，这里也钉一遍）
+        assert!(!got.contains("甲") && !got.contains("乙"), "[{}] 提示词不应出现姓名", n);
+        println!("  ✔ {} → {} 字符", n, got.chars().count());
+    }
+    // 清理函数也要一致（去引号 / 换行 / 限长）
+    let sanitized = vec![
+        sanitize_polish("「他答得很好」"),
+        sanitize_polish("第一行\n第二行"),
+        sanitize_polish(&"字".repeat(200)),
+    ];
+    assert_eq!(sanitized, fx.polish[0].expect.sanitized, "清理函数与 JS 一致");
+    assert_eq!(sanitize_polish("x").chars().count(), 1);
+    println!("\n✅ 润色提示词：{} 组用例与 JS 参考实现一致", fx.polish.len());
 }

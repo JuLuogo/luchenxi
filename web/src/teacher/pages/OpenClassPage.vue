@@ -15,6 +15,7 @@ import { ElMessage } from 'element-plus';
 import { useClassStore } from '../../shared/class-store';
 import { CI } from '../../shared/bridge';
 import { fetchPick, scoreVerdictWithRust, fetchOpenEval } from '../../shared/domain-api';
+import { aiReady, polishComment } from '../../shared/ai-polish';
 
 const store = useClassStore();
 
@@ -29,6 +30,26 @@ const verdict = ref<'' | 'correct' | 'half' | 'wrong'>('');
 const scores = ref<Record<string, number>>({});
 const evaluation = ref<any>(null);
 const evalSource = ref<'rust' | 'js' | ''>('');
+/** AI 润色：默认关闭；配好了才有按钮 */
+const aiOn = computed(() => aiReady());
+const polished = ref('');
+const polishing = ref(false);
+
+async function doPolish() {
+  if (!evaluation.value) return;
+  polishing.value = true;
+  try {
+    const r = await polishComment(evaluation.value);
+    if (r.ok && r.text) {
+      polished.value = r.text;
+      ElMessage.success('已润色（只改了措辞，事实没变）');
+    } else {
+      ElMessage.warning(r.error || '润色失败');
+    }
+  } finally {
+    polishing.value = false;
+  }
+}
 const busy = ref(false);
 
 const dims = computed<any[]>(() => (CI as any).openclass.defaultDimensions());
@@ -244,7 +265,14 @@ function back() {
           </el-tag>
         </div>
         <div class="comment">「{{ evaluation.comment }}」</div>
-        <div class="tip">评语由规则生成（离线可用、不会编造），可直接当众念</div>
+        <div v-if="polished" class="comment polished">「{{ polished }}」<span class="ai-tag">AI 润色</span></div>
+        <div class="tip">
+          评语由规则生成（离线可用、不会编造），可直接当众念
+          <el-button v-if="aiOn" size="small" text type="primary" :loading="polishing" @click="doPolish">
+            AI 润色
+          </el-button>
+          <span v-else class="tip-dim">（想让它更顺口？可在「设置 · AI 润色」里开启，默认关闭）</span>
+        </div>
       </div>
 
       <div class="actions">
@@ -280,5 +308,8 @@ function back() {
 .result { border-top: 1px dashed var(--el-border-color); padding-top: 12px; margin-bottom: 12px; }
 .total { font-size: 20px; margin-bottom: 6px; }
 .comment { font-size: 17px; line-height: 1.7; color: var(--el-color-primary); }
+.comment.polished { margin-top: 6px; color: var(--el-color-success); }
+.ai-tag { margin-left: 8px; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--el-color-success-light-8); color: var(--el-color-success); }
+.tip-dim { color: var(--el-text-color-placeholder); }
 .actions { display: flex; gap: 12px; }
 </style>

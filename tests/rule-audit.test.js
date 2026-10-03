@@ -33,6 +33,7 @@ const CLASSIFY = {
   'classroom.js': { kind: 'rule', rs: ['classroom'], why: '课堂环节与计分' },
   'store.js': { kind: 'rule', rs: ['scoring', 'draw', 'state'], why: '计分引擎与状态模型' },
   'openclass.js': { kind: 'rule', rs: ['openclass'], why: '公开课现场评价量规' },
+  'polish.js': { kind: 'rule', rs: ['polish'], why: 'AI 润色提示词（编码了只润色不判断的约束）' },
   'sync.js': { kind: 'transport', why: 'WS 客户端：连接/重连/命令队列' },
   'net.js': { kind: 'transport', why: '组网探测与 EasyTier 参数' },
   'storage.js': { kind: 'adapter', why: 'localStorage / SQLite / 内存三态适配' },
