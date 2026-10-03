@@ -436,6 +436,39 @@
   }
 
   /** 当前题是否处于"已公布答案"状态（按题判断，换题即失效） */
+  /**
+   * 学生端 / 大屏能看到的题目视图
+   *
+   * 与 Rust `question_stats::student_view` **同契约**（parity 逐字段比对）。
+   * 这里的每一条都是规则，不是传输：
+   *   · 没公布答案就不下发 answerKey / explanation —— 提前下发会泄题
+   *   · multiple = 答案字母多于一个；hasAnswer = 题目有标准答案
+   *   · 短题干截断（大屏一行放不下，120 字）
+   */
+  function studentView(s, q) {
+    if (!q) return null;
+    var letters = CI.grade.LETTERS;
+    var revealed = isRevealed(s, q);
+    var answer = String(q.answer || '').trim();
+    return {
+      id: q.id,
+      stem: CI.util.shortStem(q.stem, 120),
+      fullStem: q.stem,
+      imageUrl: q.imageUrl || '',
+      tier: q.tier,
+      tierLabel: CI.store.tierOf(s, q.tier).label,
+      points: CI.store.questionPoints(s, q),
+      multiple: CI.grade.parseChoice(answer).length > 1,
+      options: (q.options || []).map(function (text, i) {
+        return { key: letters[i], text: text };
+      }),
+      hasAnswer: !!answer,
+      answerKey: (revealed && answer) ? CI.grade.answerKey(q) : null,
+      explanation: revealed ? String(q.note || '') : '',
+      tags: (q.tags || []).slice(0, 4)
+    };
+  }
+
   function isRevealed(s, q) {
     s = s || CI.store.get();
     q = q || currentQuestion(s);
@@ -825,6 +858,7 @@
     setAccepting: setAccepting, setReveal: setReveal, isRevealed: isRevealed, moveQuestion: moveQuestion,
     /* 课堂节奏：计时器 + 签到统计 */
     setTimer: setTimer, clearTimer: clearTimer, timerLeft: timerLeft, formatLeft: formatLeft,
+    studentView: studentView,
     checkinStats: checkinStats,
     focusBuzz: focusBuzz, loadRemoteState: loadRemoteState, applyRemote: applyRemote,
     pickAnswerer: pickAnswerer, currentQuestion: currentQuestion, box: box,

@@ -8574,5 +8574,289 @@
         ]
       }
     }
+  ],
+  "view": [
+    {
+      "name": "视图：未公布（不能泄题）",
+      "question": {
+        "id": "q1",
+        "tier": "basic",
+        "stem": "题干",
+        "answer": "A",
+        "options": [
+          "甲",
+          "乙",
+          "丙"
+        ],
+        "tags": [],
+        "note": "这题的关键是…",
+        "imageUrl": ""
+      },
+      "tierLabel": "基础题",
+      "points": 3,
+      "revealed": false,
+      "expect": {
+        "id": "q1",
+        "stem": "题干",
+        "fullStem": "题干",
+        "imageUrl": "",
+        "tier": "basic",
+        "tierLabel": "基础题",
+        "points": 3,
+        "multiple": false,
+        "options": [
+          {
+            "key": "A",
+            "text": "甲"
+          },
+          {
+            "key": "B",
+            "text": "乙"
+          },
+          {
+            "key": "C",
+            "text": "丙"
+          }
+        ],
+        "hasAnswer": true,
+        "answerKey": null,
+        "explanation": "",
+        "tags": []
+      }
+    },
+    {
+      "name": "视图：已公布（带答案与讲评要点）",
+      "question": {
+        "id": "q1",
+        "tier": "basic",
+        "stem": "题干",
+        "answer": "A",
+        "options": [
+          "甲",
+          "乙",
+          "丙"
+        ],
+        "tags": [],
+        "note": "这题的关键是…",
+        "imageUrl": ""
+      },
+      "tierLabel": "基础题",
+      "points": 3,
+      "revealed": true,
+      "expect": {
+        "id": "q1",
+        "stem": "题干",
+        "fullStem": "题干",
+        "imageUrl": "",
+        "tier": "basic",
+        "tierLabel": "基础题",
+        "points": 3,
+        "multiple": false,
+        "options": [
+          {
+            "key": "A",
+            "text": "甲"
+          },
+          {
+            "key": "B",
+            "text": "乙"
+          },
+          {
+            "key": "C",
+            "text": "丙"
+          }
+        ],
+        "hasAnswer": true,
+        "answerKey": "A. 甲",
+        "explanation": "这题的关键是…",
+        "tags": []
+      }
+    },
+    {
+      "name": "视图：多选题",
+      "question": {
+        "id": "q1",
+        "tier": "basic",
+        "stem": "题干",
+        "answer": "AB",
+        "options": [
+          "甲",
+          "乙",
+          "丙"
+        ],
+        "tags": [],
+        "note": "讲评要点",
+        "imageUrl": ""
+      },
+      "tierLabel": "基础题",
+      "points": 3,
+      "revealed": true,
+      "expect": {
+        "id": "q1",
+        "stem": "题干",
+        "fullStem": "题干",
+        "imageUrl": "",
+        "tier": "basic",
+        "tierLabel": "基础题",
+        "points": 3,
+        "multiple": true,
+        "options": [
+          {
+            "key": "A",
+            "text": "甲"
+          },
+          {
+            "key": "B",
+            "text": "乙"
+          },
+          {
+            "key": "C",
+            "text": "丙"
+          }
+        ],
+        "hasAnswer": true,
+        "answerKey": "A. 甲；B. 乙",
+        "explanation": "讲评要点",
+        "tags": []
+      }
+    },
+    {
+      "name": "视图：主观题（没有标准答案）",
+      "question": {
+        "id": "q1",
+        "tier": "basic",
+        "stem": "题干",
+        "answer": "",
+        "options": [],
+        "tags": [],
+        "note": "讲评要点",
+        "imageUrl": ""
+      },
+      "tierLabel": "基础题",
+      "points": 3,
+      "revealed": true,
+      "expect": {
+        "id": "q1",
+        "stem": "题干",
+        "fullStem": "题干",
+        "imageUrl": "",
+        "tier": "basic",
+        "tierLabel": "基础题",
+        "points": 3,
+        "multiple": false,
+        "options": [],
+        "hasAnswer": false,
+        "answerKey": null,
+        "explanation": "讲评要点",
+        "tags": []
+      }
+    },
+    {
+      "name": "视图：超长题干要截断",
+      "question": {
+        "id": "q1",
+        "tier": "basic",
+        "stem": "题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题",
+        "answer": "A",
+        "options": [
+          "甲",
+          "乙",
+          "丙"
+        ],
+        "tags": [],
+        "note": "讲评要点",
+        "imageUrl": ""
+      },
+      "tierLabel": "基础题",
+      "points": 3,
+      "revealed": true,
+      "expect": {
+        "id": "q1",
+        "stem": "题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题…",
+        "fullStem": "题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题",
+        "imageUrl": "",
+        "tier": "basic",
+        "tierLabel": "基础题",
+        "points": 3,
+        "multiple": false,
+        "options": [
+          {
+            "key": "A",
+            "text": "甲"
+          },
+          {
+            "key": "B",
+            "text": "乙"
+          },
+          {
+            "key": "C",
+            "text": "丙"
+          }
+        ],
+        "hasAnswer": true,
+        "answerKey": "A. 甲",
+        "explanation": "讲评要点",
+        "tags": []
+      }
+    },
+    {
+      "name": "视图：带配图与标签",
+      "question": {
+        "id": "q1",
+        "tier": "basic",
+        "stem": "题干",
+        "answer": "A",
+        "options": [
+          "甲",
+          "乙",
+          "丙"
+        ],
+        "tags": [
+          "代数",
+          "函数",
+          "图像",
+          "综合",
+          "第五个会被丢掉"
+        ],
+        "note": "讲评要点",
+        "imageUrl": ""
+      },
+      "tierLabel": "基础题",
+      "points": 3,
+      "revealed": true,
+      "expect": {
+        "id": "q1",
+        "stem": "题干",
+        "fullStem": "题干",
+        "imageUrl": "",
+        "tier": "basic",
+        "tierLabel": "基础题",
+        "points": 3,
+        "multiple": false,
+        "options": [
+          {
+            "key": "A",
+            "text": "甲"
+          },
+          {
+            "key": "B",
+            "text": "乙"
+          },
+          {
+            "key": "C",
+            "text": "丙"
+          }
+        ],
+        "hasAnswer": true,
+        "answerKey": "A. 甲",
+        "explanation": "讲评要点",
+        "tags": [
+          "代数",
+          "函数",
+          "图像",
+          "综合"
+        ]
+      }
+    }
   ]
 }

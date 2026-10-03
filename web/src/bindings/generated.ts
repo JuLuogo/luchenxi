@@ -291,6 +291,11 @@ export type Runtime = {
 	qid: string | null,
 	accepting: boolean,
 	reveal: boolean,
+	/**
+	 *  已公布答案的那道题（对应 JS 的 runtime.revealedQid）——
+	 *  "公布"是按题生效的：换题后要重新公布，否则新题会沿用上一题的公布状态
+	 */
+	revealedQid?: string | null,
 	/**  当前被点到的学生（点名环节大屏用） */
 	sid: string | null,
 	/**

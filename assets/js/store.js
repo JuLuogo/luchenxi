@@ -169,7 +169,7 @@
       // 少一个字段就会让「把状态发给 Rust 领域端点」被拒
       runtime: {
         quizId: null, qid: null, sid: null,
-        phase: 'idle', accepting: false, reveal: false, timerEndsAt: 0, timerLabel: ''
+        phase: 'idle', accepting: false, reveal: false, revealedQid: null, timerEndsAt: 0, timerLabel: ''
       },
       // classroom 同理：契约的一部分，懒创建会让请求缺字段
       classroom: { buzz: [], pending: [], feed: [] }

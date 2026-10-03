@@ -84,6 +84,8 @@ ok(rustHub.indexOf('safe_room') >= 0, 'hub.rs 有房间号白名单清洗（与 
 group('教师端 sync.js');
 
 const syncJs = read('assets/js/sync.js');
+// 题目组装规则已下沉到 CI.classroom.studentView（classroom.js），所以两边都要看
+const viewSrc = syncJs + read('assets/js/classroom.js');
 ['welcome', 'dump', 'state', 'cmd', 'cmd-backlog', 'presence', 'error'].forEach((t) => {
   ok(new RegExp("case '" + t + "'").test(syncJs), 'sync.js 处理出站报文 ' + t);
 });
@@ -97,7 +99,7 @@ Object.keys(P.SNAPSHOT_FIELDS).forEach((f) => {
   ok(syncJs.indexOf(f) >= 0, 'snapshot 含字段 ' + f);
 });
 ['accepting', 'reveal', 'questionIndex', 'tierWeights', 'recent', 'answerKey', 'hasAnswer'].forEach((f) => {
-  ok(syncJs.indexOf(f) >= 0, 'snapshot.meta 含 ' + f);
+  ok(viewSrc.indexOf(f) >= 0, 'snapshot.meta 含 ' + f);
 });
 
 /* ================= 5. 学生端（student.js） ================= */

@@ -272,29 +272,8 @@
     var question = null;
     var revealed = !!(CI.classroom && CI.classroom.isRevealed ? CI.classroom.isRevealed(s, q) : s.runtime.reveal);
     if (q) {
-      var options = (q.options || []).map(function (text, i) {
-        return { key: CI.grade.LETTERS[i], text: text };
-      });
-      question = {
-        id: q.id,
-        stem: U.shortStem(q.stem, 120),
-        fullStem: q.stem,
-        /* 题目配图（数学图形题）：大屏与学生端都据此显示 */
-        imageUrl: q.imageUrl || '',
-        tier: q.tier,
-        tierLabel: CI.store.tierOf(s, q.tier).label,
-        points: CI.store.questionPoints(s, q),
-        type: CI.grade.typeOf(q),
-        typeLabel: CI.grade.typeLabel(q),
-        multiple: CI.grade.parseChoice(q.answer).length > 1,
-        options: options,
-        hasAnswer: !!String(q.answer || '').trim(),
-        answerKey: (revealed && String(q.answer || '').trim()) ? CI.grade.answerKey(q) : null,
-        /* 讲评要点 / 易错点（题目的 note 字段）：**公布答案后才下发** ——
-           与学生端「你的答案 + 正确答案 + 为什么」三件套配套，提前下发会泄题。 */
-        explanation: revealed ? String(q.note || '') : '',
-        tags: (q.tags || []).slice(0, 4)
-      };
+      // 组装规则已下沉到领域层（CI.classroom.studentView，Rust 侧同契约、有 parity）
+      question = CI.classroom.studentView(s, q);
     }
 
     return {

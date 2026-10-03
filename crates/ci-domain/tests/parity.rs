@@ -14,7 +14,7 @@
 use ci_domain::state::ClassroomState;
 use ci_domain::{
     ability_of_tiers, answer_key, apply_pick, auto, build_report, decayed_rate, evaluate, growth_score,
-    option_distribution, participation_rate, student_stats, class_stats, ranking, team_ranking, default_tiers, describe_submission,
+    option_distribution, participation_rate, student_stats, student_view, class_stats, ranking, team_ranking, default_tiers, describe_submission,
     draw_questions, finalize_feed, handle_cmd, mistake_board, question_stats, report_markdown,
     rollcall_pick, score_of_input, set_phase_named, student_mistakes, validate_question, BankQuestion,
     Checkin, ClassStudent, ClassTeam, CmdOutcome, DrawOpts, PickOpts, Question, RollcallSettings,
@@ -42,6 +42,7 @@ struct Fixture {
     #[serde(rename = "optionDist")]
     option_dist: Vec<OptionDistCase>,
     stats: Vec<StatsCase>,
+    view: Vec<ViewCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -786,6 +787,63 @@ struct StatsTeamOut {
     member_count: u32,
     avg: f64,
     attempts: u32,
+}
+
+
+/* ---------- 学生可见视图（classroom.js::studentView）---------- */
+
+#[derive(Debug, Deserialize)]
+struct ViewCase {
+    name: String,
+    question: ViewQuestion,
+    #[serde(rename = "tierLabel")]
+    tier_label: String,
+    points: f64,
+    revealed: bool,
+    expect: Option<ViewExpect>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ViewQuestion {
+    id: String,
+    tier: String,
+    stem: String,
+    answer: String,
+    options: Vec<String>,
+    #[serde(default)]
+    tags: Vec<String>,
+    #[serde(default)]
+    note: String,
+    #[serde(rename = "imageUrl", default)]
+    image_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct ViewExpect {
+    id: String,
+    stem: String,
+    #[serde(rename = "fullStem")]
+    full_stem: String,
+    #[serde(rename = "imageUrl")]
+    image_url: String,
+    tier: String,
+    #[serde(rename = "tierLabel")]
+    tier_label: String,
+    points: f64,
+    multiple: bool,
+    options: Vec<ViewOption>,
+    #[serde(rename = "hasAnswer")]
+    has_answer: bool,
+    #[serde(rename = "answerKey")]
+    answer_key: Option<String>,
+    explanation: String,
+    tags: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ViewOption {
+    key: String,
+    text: String,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -1918,4 +1976,54 @@ fn accepts_state_produced_by_js() {
     assert_eq!(ranking(&s, None, None).len(), 1, "榜单里有这名学生");
 
     println!("  ✔ 前端状态（{} 字节）能被 Rust 吃下，且统计跑得通", raw.len());
+}
+
+/// 学生可见视图：与 JS 逐字段比对
+///
+/// **重点断言"没公布答案就不下发答案"** —— 这是防泄题的规则，不是传输细节。
+#[test]
+fn view_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.view.is_empty(), "基准里没有学生视图用例");
+    for case in &fx.view {
+        let q = ci_domain::state::BankQuestion {
+            // 用归一化后的 id（fixture 的 expect.id 是 q1，question.id 是原始 uid）
+            id: case.expect.as_ref().map(|x| x.id.clone()).unwrap_or_else(|| case.question.id.clone()),
+            tier: case.question.tier.clone(),
+            stem: case.question.stem.clone(),
+            answer: case.question.answer.clone(),
+            options: case.question.options.clone(),
+            tags: case.question.tags.clone(),
+            note: case.question.note.clone(),
+            image_url: case.question.image_url.clone(),
+            ..Default::default()
+        };
+        let got = student_view(&q, &case.tier_label, case.points, case.revealed);
+        let want = case.expect.as_ref().expect("用例应有 expect");
+        let n = &case.name;
+        assert_eq!(got.id, want.id, "[{}] id", n);
+        assert_eq!(got.stem, want.stem, "[{}] 短题干", n);
+        assert_eq!(got.full_stem, want.full_stem, "[{}] 完整题干", n);
+        assert_eq!(got.image_url, want.image_url, "[{}] 配图", n);
+        assert_eq!(got.tier, want.tier, "[{}] 题型", n);
+        assert_eq!(got.tier_label, want.tier_label, "[{}] 题型名", n);
+        assert_eq!(got.points, want.points, "[{}] 分值", n);
+        assert_eq!(got.multiple, want.multiple, "[{}] 是否多选", n);
+        assert_eq!(got.has_answer, want.has_answer, "[{}] 是否有标准答案", n);
+        assert_eq!(got.answer_key, want.answer_key, "[{}] 答案（未公布必须为 None）", n);
+        assert_eq!(got.explanation, want.explanation, "[{}] 讲评要点（未公布必须为空）", n);
+        assert_eq!(got.tags, want.tags, "[{}] 标签（最多 4 个）", n);
+        assert_eq!(got.options.len(), want.options.len(), "[{}] 选项数", n);
+        for (i, w) in want.options.iter().enumerate() {
+            assert_eq!(got.options[i].key, w.key, "[{}] 选项 {} 字母", n, i + 1);
+            assert_eq!(got.options[i].text, w.text, "[{}] 选项 {} 文本", n, i + 1);
+        }
+        // 防泄题：未公布的用例必须没有答案与讲评要点
+        if !case.revealed {
+            assert!(got.answer_key.is_none(), "[{}] 未公布却下发了答案（泄题！）", n);
+            assert!(got.explanation.is_empty(), "[{}] 未公布却下发了讲评要点（泄题！）", n);
+        }
+        println!("  ✔ {} → answerKey {:?}", n, got.answer_key);
+    }
+    println!("\n✅ 学生可见视图：{} 组用例与 JS 参考实现逐字段一致", fx.view.len());
 }

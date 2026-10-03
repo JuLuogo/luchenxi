@@ -36,7 +36,8 @@ pub use composite::{
 pub use draw::{candidates as draw_candidates, draw as draw_questions, DrawOpts};
 pub use mistakes::{mistake_board, student_mistakes, MistakeItem, StudentMistakes};
 pub use question_stats::{
-    option_distribution, question_stats, review_line, short_stem, OptionCount, QuestionStat,
+    option_distribution, question_stats, review_line, short_stem, short_stem_with, student_view,
+    OptionCount, OptionView, QuestionStat, StudentQuestionView,
 };
 pub use report::{build_report, to_markdown as report_markdown, Checkin, ClassReport, ReportInput, ReportStudent};
 pub use rollcall::{

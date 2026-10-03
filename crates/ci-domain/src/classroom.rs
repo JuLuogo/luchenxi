@@ -76,6 +76,10 @@ pub struct Runtime {
     pub qid: Option<String>,
     pub accepting: bool,
     pub reveal: bool,
+    /// 已公布答案的那道题（对应 JS 的 runtime.revealedQid）——
+    /// "公布"是按题生效的：换题后要重新公布，否则新题会沿用上一题的公布状态
+    #[serde(default)]
+    pub revealed_qid: Option<String>,
     /// 当前被点到的学生（点名环节大屏用）
     pub sid: Option<String>,
     /// 课堂计时器结束时刻（ms 时间戳）；None = 没在计时。
@@ -95,6 +99,7 @@ impl Default for Runtime {
             qid: None,
             accepting: false,
             reveal: false,
+            revealed_qid: None,
             sid: None,
             timer_ends_at: None,
             timer_label: String::new(),

@@ -445,3 +445,98 @@ mod tests {
         assert!(review_line(&[]).is_none());
     }
 }
+
+/* ------------------------------------------------------------------ *
+ * 学生/大屏可见的题目视图
+ * ------------------------------------------------------------------ */
+
+/// 一个选项（字母 + 文本）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OptionView {
+    pub key: String,
+    pub text: String,
+}
+
+/// 学生端 / 大屏能看到的题目视图
+///
+/// **这里的每一条都是规则，不是传输**：
+///   · 没公布答案就不下发 `answer_key` / `explanation` —— 提前下发会泄题
+///   · `multiple` = 答案字母多于一个（学生端据此决定单选还是多选）
+///   · `has_answer` = 题目有标准答案（没有的是主观题）
+///   · 短题干截断（大屏一行放不下，120 字）
+#[cfg_attr(feature = "bindings", derive(specta::Type))]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StudentQuestionView {
+    pub id: String,
+    pub stem: String,
+    pub full_stem: String,
+    #[serde(default)]
+    pub image_url: String,
+    pub tier: String,
+    pub tier_label: String,
+    pub points: f64,
+    pub multiple: bool,
+    pub options: Vec<OptionView>,
+    pub has_answer: bool,
+    /// **公布答案后才有值**
+    pub answer_key: Option<String>,
+    /// 讲评要点 / 易错点：**同样只在公布后下发**
+    pub explanation: String,
+    #[serde(default)]
+    pub tags: Vec<String>,
+}
+
+/// 题干截断（与 JS 的 `U.shortStem(stem, max)` 同口径）
+pub fn short_stem_with(stem: &str, max: usize) -> String {
+    let chars: Vec<char> = stem.chars().collect();
+    if chars.len() <= max {
+        return stem.to_string();
+    }
+    let head: String = chars[..max].iter().collect();
+    format!("{}…", head)
+}
+
+/// 组装"学生可见视图"（对应 JS `sync.js::snapshot()` 里那段题目组装）
+///
+/// `revealed` 由调用方给出（= `runtime.reveal && runtime.revealed_qid == q.id`），
+/// 因为"公布"是按题生效的。
+pub fn student_view(
+    q: &crate::state::BankQuestion,
+    tier_label: &str,
+    points: f64,
+    revealed: bool,
+) -> StudentQuestionView {
+    let letters: Vec<char> = crate::grade::LETTERS.chars().collect();
+    let answer = q.answer.trim();
+    StudentQuestionView {
+        id: q.id.clone(),
+        stem: short_stem_with(&q.stem, 120),
+        full_stem: q.stem.clone(),
+        image_url: q.image_url.clone(),
+        tier: q.tier.clone(),
+        tier_label: tier_label.to_string(),
+        points,
+        multiple: crate::grade::parse_choice(answer).len() > 1,
+        options: q
+            .options
+            .iter()
+            .enumerate()
+            .map(|(i, text)| OptionView {
+                key: letters.get(i).copied().unwrap_or('?').to_string(),
+                text: text.clone(),
+            })
+            .collect(),
+        has_answer: !answer.is_empty(),
+        answer_key: if revealed && !answer.is_empty() {
+            // answer_key 收的是判分用的 Question（选项+答案），先转换
+            Some(crate::grade::answer_key(&q.to_grade_question()))
+        } else {
+            None
+        },
+        explanation: if revealed { q.note.clone() } else { String::new() },
+        tags: q.tags.iter().take(4).cloned().collect(),
+    }
+}

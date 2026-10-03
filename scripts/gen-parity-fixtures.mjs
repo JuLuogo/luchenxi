@@ -1102,6 +1102,50 @@ mkStatsCase('统计：样本不足不判薄弱/优势', [
   ['s1', 'q1', 'basic', 'correct', 'z1']
 ]);
 
+
+/* ---------- 用例集：学生可见视图（classroom.js::studentView）---------- *
+ * 重点：**没公布答案就不下发 answerKey / explanation** —— 提前下发会泄题 */
+const viewCases = [];
+
+function mkViewCase(name, opts) {
+  globalThis.localStorage.clear();
+  S.replaceState(S.defaultState());
+  const q = S.addQuestion({
+    stem: opts.stem || '题干',
+    tier: opts.tier || 'basic',
+    answer: opts.answer === undefined ? 'A' : opts.answer,
+    options: opts.options || ['甲', '乙', '丙'],
+    tags: opts.tags || [],
+    note: opts.note || '讲评要点'
+  });
+  S.setRuntime({ qid: q.id, quizId: null });
+  if (opts.reveal) CI.classroom.setReveal(true);
+  const v = CI.classroom.studentView(S.get(), S.get().bank.find((x) => x.id === q.id));
+  viewCases.push({
+    name,
+    question: {
+      // 归一化：随机 uid 会让基准不可复现（这个坑踩过好几次了）
+      id: 'q1', tier: q.tier, stem: q.stem, answer: q.answer,
+      options: q.options, tags: q.tags, note: q.note, imageUrl: q.imageUrl || ''
+    },
+    tierLabel: S.tierOf(S.get(), q.tier).label,
+    points: S.questionPoints(S.get(), q),
+    revealed: !!opts.reveal,
+    expect: v && {
+      id: 'q1', stem: v.stem, fullStem: v.fullStem, imageUrl: v.imageUrl,
+      tier: v.tier, tierLabel: v.tierLabel, points: v.points,
+      multiple: v.multiple, options: v.options, hasAnswer: v.hasAnswer,
+      answerKey: v.answerKey, explanation: v.explanation, tags: v.tags
+    }
+  });
+}
+
+mkViewCase('视图：未公布（不能泄题）', { reveal: false, note: '这题的关键是…' });
+mkViewCase('视图：已公布（带答案与讲评要点）', { reveal: true, note: '这题的关键是…' });
+mkViewCase('视图：多选题', { reveal: true, answer: 'AB', options: ['甲', '乙', '丙'] });
+mkViewCase('视图：主观题（没有标准答案）', { reveal: true, answer: '', options: [] });
+mkViewCase('视图：超长题干要截断', { reveal: true, stem: '题'.repeat(200) });
+mkViewCase('视图：带配图与标签', { reveal: true, tags: ['代数', '函数', '图像', '综合', '第五个会被丢掉'] });
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
@@ -1117,7 +1161,8 @@ const payload = {
   report: reportCases,
   composite: compositeCases,
   optionDist: optionDistCases,
-  stats: statsCases
+  stats: statsCases,
+  view: viewCases
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
@@ -1128,7 +1173,8 @@ if (CHECK) {
     ' + 点名 ' + rollcall.length + ' + 计分 ' + scoring.length + ' + 课堂 ' + classroom.length + ' + 抽题 ' + drawCases.length + ' + 题目统计 ' + questionStats.length +
     ' + 错题本 ' + mistakeCases.length + ' + 报告 ' + reportCases.length +
     ' + 多维评价 ' + (compositeCases.participation.length + compositeCases.growth.length + compositeCases.decayed.length + compositeCases.evaluate.length) +
-    ' + 选项分布 ' + optionDistCases.length + ' + 学情统计 ' + statsCases.length + ' 组）');
+    ' + 选项分布 ' + optionDistCases.length + ' + 学情统计 ' + statsCases.length +
+    ' + 学生视图 ' + viewCases.length + ' 组）');
     process.exit(0);
   }
   console.error('[stale] parity.json 与 JS 参考实现不一致 —— 运行 node scripts/gen-parity-fixtures.mjs 重新生成');
