@@ -53,10 +53,21 @@ if (doBuild) {
   }
 }
 
-/* ---------- 构建产物必须在 ---------- */
+/* ---------- 构建产物必须在；不在就自动构建 ----------
+ * 为什么自动构建：CI 的 test / rust 工作流只跑 `npm test` 与 `cargo test`，
+ * 不会先跑前端构建 —— 而客户端资源与 crates/ci-store/schema.sql 都由本脚本产出。
+ * 让"少跑一步"变成硬失败没有意义，这里直接补上（约 20 秒，只在前端有改动时才重编）。 */
 if (!fs.existsSync(DIST)) {
-  console.error('✘ 找不到 web/dist —— 先跑 `npm --prefix web run build`（或加 --build 参数）');
-  process.exit(1);
+  console.log('▶ 找不到 web/dist，先构建 Vue 界面（npm --prefix web run build）');
+  const r = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['--prefix', 'web', 'run', 'build'], {
+    cwd: ROOT,
+    stdio: 'inherit',
+    shell: process.platform === 'win32'
+  });
+  if (r.status !== 0 || !fs.existsSync(DIST)) {
+    console.error('✘ Vue 构建失败，未同步（手动排查：npm --prefix web run build）');
+    process.exit(1);
+  }
 }
 
 function copyFile(rel, destRoot) {
