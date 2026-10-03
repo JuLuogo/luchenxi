@@ -244,6 +244,23 @@ async function run() {
       }
     }
 
+    /* ---------- 10.6 界面真的在用 Rust 吗 ---------- */
+    // 端点可用 ≠ 界面在用。学情页会标出统计来源，正好断言这条策略：
+    //   打 Rust 枢纽 → 「Rust 核心」；打 Node 枢纽 → 「本地参考实现」
+    {
+      const hasStats = (await fetch('/api/domain/stats', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: S.defaultState() })
+      })).ok;
+      await goto(w, '#/analysis', '学情页');
+      const pageText = d.body.innerText || '';
+      if (hasStats) {
+        check(pageText.indexOf('Rust 核心') >= 0, '学情页标注「统计来源：Rust 核心」（界面确实在用 Rust）');
+      } else {
+        check(pageText.indexOf('本地参考实现') >= 0, '学情页标注「统计来源：本地参考实现」（端点缺失时回退）');
+      }
+    }
+
     /* ---------- 11. 服务端与数据库（经枢纽） ---------- */
     // 注意带上房间名：应用用的是 ci_room（本用例是 smoke-vue），不带参数会读到 default 房间
     var room = encodeURIComponent(CI.sync.room ? CI.sync.room() : 'default');
