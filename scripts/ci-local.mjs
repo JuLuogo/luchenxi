@@ -183,9 +183,15 @@ run('应用图标齐备（PNG/ICO/ICNS）', ['-e', `
 // 1) 纯 Node 断言（八组）
 const NODE_TESTS = [
   ['逻辑断言（教师端 + 多端协同）', 'tests/logic.test.js'],
+  // 领域层调用参数守卫：**"少传参数"是本项目历史上最高频的 bug**（已出现 4 次），
+  // 这类错误不会让编译失败，只在特定路径上炸
+  ['领域层调用参数守卫（少传参数检测）', 'tests/arity.test.js'],
   ['v5 工作区结构（crate 划分 / 依赖方向 / 迁移进度）', 'tests/v5-workspace.test.js'],
   // JS ↔ Rust 一致性基准：JS 规则改了却没重新生成基准时会在这里红，
   // 免得回头误以为是 Rust 实现漂移
+  // 形状守卫的 fixture：**每次 CI 都重生成** —— 否则 JS 改了状态形状、fixture 还是旧的，
+  // 守卫会静默通过（这是审计发现的 CI 漏洞：生成器存在但没人跑）
+  ['形状守卫 fixture（由 JS 真实产出重生成）', 'tests/gen-state-fixture.cjs'],
   ['JS↔Rust 一致性基准（parity.json 是否最新）', 'scripts/gen-parity-fixtures.mjs', ['--check']],
   ['教师端本地 SQLite', 'tests/db.test.js'],
   ['持久化适配层（浏览器 / 枢纽 / Tauri）', 'tests/storage.test.js'],
