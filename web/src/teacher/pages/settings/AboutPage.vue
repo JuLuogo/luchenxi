@@ -17,7 +17,9 @@ onMounted(() => {
     room: CI.sync.room(),
     host: CI.sync.host() || '（与页面同源）',
     server: CI.sync.serverInfo() || null,
-    protocol: (CI.protocol && CI.protocol.VERSION) || 3,
+    // 审计发现：CI.protocol 在 assets/js 里根本不存在 → 协议版本一直是写死的兜底 3，
+    // 与 packages/protocol/messages.js 脱钩。改成从生成常量读（由 gen-protocol 产出）。
+    protocol: (CI as any).protocolVersion || (window as any).__CI_PROTOCOL_VERSION__ || 3,
     store: { version: CI.store.VERSION, rev: CI.store.get().rev }
   };
 });

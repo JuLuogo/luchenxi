@@ -96,7 +96,7 @@ async function resetScores() {
 
 async function factory() {
   await ElMessageBox.confirm(
-    '恢复到初始状态：**名单、题库、试卷、分数全部清空**（不可撤销，建议先导出备份）。',
+    '恢复到初始状态：名单、题库、试卷、分数全部清空（不可撤销，建议先导出备份）。',
     '恢复初始状态', { type: 'error', confirmButtonText: '我已备份，确认清空' }
   ).then(() => { store.factoryReset(); ElMessage.success('已恢复初始状态'); }).catch(() => {});
 }

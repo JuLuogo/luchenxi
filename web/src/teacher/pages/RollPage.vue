@@ -34,7 +34,6 @@ async function doPick() {
   const stu = store.students.find((x) => x.id === res.sid);
   current.value = stu ? { sid: stu.id, name: stu.name, teamName: teamName(stu.teamId) } : null;
   history.value.unshift({ sid: res.sid, name: stu ? stu.name : '?', at: Date.now() });
-  refresh();
 }
 
 function teamName(tid) {
@@ -57,7 +56,6 @@ function quick(tierKey, result) {
   if (!current.value) { ElMessage.info('先点一次名'); return; }
   CI.rollcall.quickFor(current.value.sid, tierKey, result || 'correct');
   ElMessage.success(`${current.value.name} 已按题型记分`);
-  refresh();
 }
 
 function saveSettings() {
@@ -71,7 +69,6 @@ function resetRound() {
   ElMessage.success('已重置点名池（所有人重新进入候选）');
 }
 
-function refresh() { /* computed 会自动更新，这里只是显式表达依赖 */ }
 
 /* 快捷键：1 答对 / 2 半对 / 3 答错 / 4 跳过；空格 = 点名 */
 function onKey(e) {

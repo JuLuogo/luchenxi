@@ -3,7 +3,7 @@
  * 教学管理 · 课堂协同（两栏：上方作答控制，下方在线小组 + 抢答/待确认/实时流）
  * 所有写入都走 CI.classroom，前端只负责展示与触发，保证与旧版、学生端、大屏行为一致。
  */
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useClassStore } from '../../shared/class-store';
 import { CI } from '../../shared/bridge';
@@ -32,6 +32,9 @@ const qrUrl = computed(() => {
   try { return CI.sync.qrURL(joinUrl.value); } catch (e) { return ''; }
 });
 const qrFailed = ref(false);
+// 审计发现：qrFailed 一旦置 true 就再不复位 —— 换房间/换地址后即使二维码可用，
+// 界面仍显示"二维码不可用"。地址变了就复位。
+watch(qrUrl, () => { qrFailed.value = false; });
 
 const onlineTeams = computed(() => (presence.value.teams || []).filter((t) => t.online));
 const offlineTeams = computed(() => (presence.value.teams || []).filter((t) => !t.online));

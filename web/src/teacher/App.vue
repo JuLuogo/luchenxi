@@ -42,7 +42,10 @@ const GROUP_ICONS = {
   题库中心: 'Files',
   试卷中心: 'Notebook',
   数据分析: 'DataAnalysis',
-  系统设置: 'Setting'
+  系统设置: 'Setting',
+  // 审计发现：这两组缺失 → 侧边栏图标落到默认 Menu
+  公开课: 'Star',
+  设置: 'Tools'
 };
 function groupIcon(title) {
   return GROUP_ICONS[title] || 'Menu';

@@ -37,7 +37,7 @@ function clear() {
     <el-alert type="info" :closable="false" show-icon class="note">
       <template #title>它是润色器，不是评委</template>
       <div class="note-body">
-        公开课评语**默认由规则生成**（离线可用、不会编造）。开启 AI 后，它只把这句话改得更顺口：
+        公开课评语默认由规则生成（离线可用、不会编造）。开启 AI 后，它只把这句话改得更顺口：
         事实全部来自规则评语，提示词明确要求"<b>只能改写措辞，不得新增任何判断</b>"。
         <br />
         原因：Kluger &amp; DeNisi (1996) 的元分析显示 &gt;38% 的反馈干预让表现变差，
