@@ -656,11 +656,12 @@ pub fn handle_cmd(
                         .filter(|t| !t.is_empty())
                         .unwrap_or_default();
                     // 抢答名次：本队对该题在抢答榜里的位置（1 起）；没抢过答就没有名次。
-                    // 前面抢到的队排前面，所以 position + 1 即名次。
+                    // **注意 buzz 是 newest-first**（add_buzz 用 insert(0)）——
+                    // 所以名次 = len - position，不是 position + 1（后者会让先抢到的队拿最低档，审计发现）
                     let rank = current_qid.and_then(|cqid| {
                         buzz.iter()
                             .position(|b| b.team_id == cmd.team_id.clone().unwrap_or_default() && b.qid.as_deref() == Some(cqid))
-                            .map(|i| (i + 1) as u32)
+                            .map(|i| (buzz.len() - i) as u32)
                     });
                     let mut r = CmdResult::new(CmdOutcome::AnswerScored {
                         sid: sid.clone(),
@@ -1208,5 +1209,20 @@ mod tests {
         assert_eq!(tier_key_default(&tiers, "improve"), "improve");
         assert_eq!(tier_key_default(&tiers, ""), "basic", "空题型回落到第一个");
         assert_eq!(scoring::tier_of(&tiers, "不存在").unwrap().key, "basic");
+    }
+    #[test]
+    fn first_buzzer_gets_the_best_rank() {
+        // buzz 是 newest-first（insert(0)），所以名次 = len - position：
+        // 先抢的队排最后 → 名次 1（拿最高档加分）。原来用 position + 1 会让先抢的拿最低档。
+        let mut boxed = crate::state::ClassroomBox::default();
+        // A 先抢（at=1）→ 先 insert；B 后抢（at=2）→ 后 insert 到 0 号位
+        boxed.buzz.insert(0, Buzz { team_id: "tA".into(), qid: Some("q1".into()), sid: None, at: 1 });
+        boxed.buzz.insert(0, Buzz { team_id: "tB".into(), qid: Some("q1".into()), sid: None, at: 2 });
+        assert_eq!(boxed.buzz[0].team_id, "tB", "最新的抢答在 0 号位（newest-first）");
+        assert_eq!(boxed.buzz[1].team_id, "tA");
+        let len = boxed.buzz.len();
+        let rank = |tid: &str| boxed.buzz.iter().position(|b| b.team_id == tid).map(|i| len - i);
+        assert_eq!(rank("tA"), Some(1), "先抢的 A 名次应为 1（拿最高档）");
+        assert_eq!(rank("tB"), Some(2), "后抢的 B 名次应为 2");
     }
 }

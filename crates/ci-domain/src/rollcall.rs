@@ -25,7 +25,7 @@ use std::collections::BTreeSet;
 pub struct Student {
     pub id: String,
     pub name: String,
-    #[serde(default = "default_true")]
+#[serde(default = "default_true")]
     pub active: bool,
     pub called: u32,
 }
@@ -43,6 +43,8 @@ pub struct RollEntry {
 
 /// 点名设置与轮次状态（对应 state.rollcall）
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// **字段名是 snake_case**（与 JS 领域层内部口径、parity 基准一致）——
+/// 前端 `domain-api.ts::fetchPick` 发的也是 snake_case，别"统一"成 camelCase（那会破坏基准）。
 pub struct RollcallSettings {
     #[serde(default = "default_mode")]
     pub mode: String,
@@ -84,6 +86,7 @@ impl Default for RollcallSettings {
 
 /// 本次抽选的覆盖参数（对应 JS 的 opts；None 表示沿用设置）
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+/// **字段名是 snake_case**（同上：前端与 parity 基准都是 snake_case）
 pub struct PickOpts {
     #[serde(default)]
     pub scope: Option<String>,
@@ -489,5 +492,25 @@ mod tests {
                 assert!(r.index(len) < len, "下标必须落在 [0, len)");
             }
         }
+    }
+    #[test]
+    fn settings_use_snake_case() {
+        // **真实契约**：这个端点用 snake_case（与 JS 领域层内部口径、parity 基准一致）。
+        // 前端 domain-api.ts::fetchPick 发的就是这几个名字。
+        let json = r#"{
+            "mode": "even", "scope": "all",
+            "exclude_answered": true, "recent_exclude": 2,
+            "round": 3, "round_pool": ["s1", "s2"]
+        }"#;
+        let s: RollcallSettings = serde_json::from_str(json).expect("snake_case 应当能反序列化");
+        assert!(s.exclude_answered);
+        assert_eq!(s.recent_exclude, 2);
+        assert_eq!(s.round, 3);
+        assert_eq!(s.round_pool, vec!["s1".to_string(), "s2".to_string()]);
+
+        let opts_json = r#"{ "scope": "all", "has_current_question": true, "recent_exclude": 1 }"#;
+        let o: PickOpts = serde_json::from_str(opts_json).expect("snake_case 应当能反序列化");
+        assert!(o.has_current_question);
+        assert_eq!(o.recent_exclude, Some(1));
     }
 }

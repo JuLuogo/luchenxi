@@ -271,6 +271,8 @@ export type OpenEvaluation = {
 	parts: OpenPart[],
 	/**  实际使用的权重和（未评的维度会被剔除并重新归一） */
 	weightUsed: number | null,
+	/**  量规一共有几维（评语里算"还有几维没评"要用它 —— 写死 4 会在三/五维量规上出错） */
+	dimsTotal: number,
 	/**  最强 / 最弱维度 key（分差 <8 分时不给，避免"X 最好、X 是短板"式自相矛盾） */
 	strongest: string | null,
 	weakest: string | null,

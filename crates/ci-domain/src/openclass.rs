@@ -195,6 +195,9 @@ pub struct OpenEvaluation {
     pub parts: Vec<OpenPart>,
     /// 实际使用的权重和（未评的维度会被剔除并重新归一）
     pub weight_used: f64,
+    /// 量规一共有几维（评语里算"还有几维没评"要用它 —— 写死 4 会在三/五维量规上出错）
+    #[cfg_attr(feature = "bindings", specta(type = specta_typescript::Number))]
+    pub dims_total: u32,
     /// 最强 / 最弱维度 key（分差 <8 分时不给，避免"X 最好、X 是短板"式自相矛盾）
     pub strongest: Option<String>,
     pub weakest: Option<String>,
@@ -270,6 +273,7 @@ pub fn evaluate_open_full(
         level,
         parts,
         weight_used: (weight_used * 10.0).round() / 10.0,
+        dims_total: dims.len() as u32,
         strongest,
         weakest,
         comment: String::new(),
@@ -328,7 +332,9 @@ pub fn open_comment(ev: &OpenEvaluation) -> String {
         _ => "先肯定他愿意试，再从最基础的一步重新搭梯子。",
     };
 
-    let missing = 4 - ev.parts.len();
+    // 用**量规实际维度数**算，不能写死 4：五维量规全评会 usize 下溢（debug panic / release 回绕），
+    // 三维量规会谎报"还有 1 个维度没评"（审计发现）
+    let missing = (ev.dims_total as usize).saturating_sub(ev.parts.len());
     let tail = if missing > 0 {
         format!("{}（还有 {} 个维度没评）", tail, missing)
     } else {
@@ -531,4 +537,33 @@ mod tests {
         assert!(!show_on_stage(100, &default_open_levels(), "never"), "never：一律不公开");
     }
 
+    #[test]
+    fn dim_count_is_not_hardcoded() {
+        // 五维量规全评：不能 panic（原来 4 - 5 会 usize 下溢）、也不能谎报漏评
+        let five: Vec<OpenDimension> = ["a", "b", "c", "d", "e"]
+            .iter()
+            .map(|k| OpenDimension { key: k.to_string(), label: k.to_string(), weight: 20.0, anchor: String::new() })
+            .collect();
+        let scores: Vec<(String, u8)> = five.iter().map(|d| (d.key.clone(), 4)).collect();
+        let ev = evaluate_open_full(&scores, &five, &default_open_levels());
+        assert_eq!(ev.dims_total, 5);
+        assert_eq!(ev.parts.len(), 5);
+        assert_eq!(ev.total, 100);
+        assert!(!ev.comment.contains("没评"), "五维全评不该说漏评：{}", ev.comment);
+
+        // 三维量规全评：也不能谎报"还有 1 个维度没评"
+        let three: Vec<OpenDimension> = ["x", "y", "z"]
+            .iter()
+            .map(|k| OpenDimension { key: k.to_string(), label: k.to_string(), weight: 33.0, anchor: String::new() })
+            .collect();
+        let s3: Vec<(String, u8)> = three.iter().map(|d| (d.key.clone(), 3)).collect();
+        let ev3 = evaluate_open_full(&s3, &three, &default_open_levels());
+        assert_eq!(ev3.dims_total, 3);
+        assert!(!ev3.comment.contains("没评"), "三维全评不该说漏评：{}", ev3.comment);
+
+        // 漏评时数字要对：五维只评两维 → "还有 3 个维度没评"
+        let s2: Vec<(String, u8)> = vec![("a".to_string(), 4), ("b".to_string(), 4)];
+        let ev2 = evaluate_open_full(&s2, &five, &default_open_levels());
+        assert!(ev2.comment.contains("还有 3 个维度没评"), "漏评数要按量规维度算：{}", ev2.comment);
+    }
 }

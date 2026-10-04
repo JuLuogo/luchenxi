@@ -235,10 +235,12 @@ pub fn student_stats(s: &ClassroomState, sid: &str, quiz_id: Option<&str>) -> Op
     let recs = counted_records(s, sid, quiz_id);
 
     // 题型桶：先把题型表里都建好（没考到的题型显示 0，而不是消失）
-    let mut tier_keys: Vec<(String, String, String, f64)> = s
+    // 元组第一项是**原始 tier**（查找键），后面才是展示用的 key/label/color/weight ——
+    // 用回退后的 key 当查找键会让表外题型每来一条流水就多一行重复轴（审计发现）
+    let mut tier_keys: Vec<(String, String, String, String, f64)> = s
         .tiers
         .iter()
-        .map(|t| (t.key.clone(), t.label.clone(), t.color.clone(), t.weight))
+        .map(|t| (t.key.clone(), t.key.clone(), t.label.clone(), t.color.clone(), t.weight))
         .collect();
     let mut tier_buckets: Vec<Bucket> = vec![Bucket::default(); tier_keys.len()];
     let mut tag_names: Vec<String> = Vec::new();
@@ -249,7 +251,7 @@ pub fn student_stats(s: &ClassroomState, sid: &str, quiz_id: Option<&str>) -> Op
         total.add(&r.result, r.points, r.base);
 
         // 题型（流水里的 tier 是计分时的快照；不在表里就补一条）
-        let idx = match tier_keys.iter().position(|(k, ..)| k == &r.tier) {
+        let idx = match tier_keys.iter().position(|(raw, ..)| raw == &r.tier) {
             Some(i) => i,
             None => {
                 let t = tier_of(&s.tiers, &r.tier).cloned().unwrap_or(crate::scoring::Tier {
@@ -259,7 +261,7 @@ pub fn student_stats(s: &ClassroomState, sid: &str, quiz_id: Option<&str>) -> Op
                     color: String::new(),
                     desc: String::new(),
                 });
-                tier_keys.push((t.key.clone(), t.label.clone(), t.color.clone(), t.weight));
+                tier_keys.push((r.tier.clone(), t.key.clone(), t.label.clone(), t.color.clone(), t.weight));
                 tier_buckets.push(Bucket::default());
                 tier_keys.len() - 1
             }
@@ -288,7 +290,7 @@ pub fn student_stats(s: &ClassroomState, sid: &str, quiz_id: Option<&str>) -> Op
     let mut tiers: Vec<StudentTierRow> = tier_keys
         .iter()
         .zip(tier_buckets.iter())
-        .map(|((key, label, color, weight), b)| StudentTierRow {
+        .map(|((_raw, key, label, color, weight), b)| StudentTierRow {
             key: key.clone(),
             label: label.clone(),
             color: color.clone(),
@@ -715,6 +717,25 @@ mod tests {
         assert_eq!(ability_board(&s, Some("z1")).class.attempts, 2, "只看第一节：2 次作答");
         assert_eq!(ability_board(&s, Some("z2")).class.attempts, 1, "只看第二节：1 次作答（范围生效）");
     }
+    #[test]
+    fn off_table_tier_makes_one_row() {
+        // 表外题型（老师删过题型后遗留的历史流水）：**只能产生一行**，不能每来一条流水加一行。
+        // 原来用 r.tier 查、存回退后的 t.key → 第二条同 tier 流水查不到 → 再 push 一行（审计发现）。
+        let mut s = state_with_two_quizzes();
+        // 把 s1 的三条流水都换成表外题型 "xyz"
+        let recs: Vec<ScoreRecord> = (0..3)
+            .map(|i| rec("s1", &format!("q{}", i + 1), "xyz", "correct", 3.0, "z1", i as i64 + 10))
+            .collect();
+        s.quizzes[0].records = recs;
+        s.quizzes[1].records = vec![];
+
+        let st = student_stats(&s, "s1", None).expect("应有统计");
+        let rows: Vec<&StudentTierRow> = st.tiers.iter().filter(|t| t.bucket.attempts > 0).collect();
+        assert_eq!(rows.len(), 1, "表外题型只能占一行（实际 {} 行：{:?}）", rows.len(),
+            rows.iter().map(|r| r.key.clone()).collect::<Vec<_>>());
+        assert_eq!(rows[0].bucket.attempts, 3, "三条流水要算进同一行");
+    }
+
 }
 
 /* ============================ 能力评价榜 ============================ */

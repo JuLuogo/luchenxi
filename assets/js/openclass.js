@@ -144,6 +144,8 @@
 
     var ev = {
       total: total, level: level, parts: parts, weightUsed: round1(weightUsed),
+      // 量规一共几维（评语里算"还有几维没评"要用它 —— 写死 4 会在三/五维量规上出错）
+      dimsTotal: list.length,
       strongest: strongest, weakest: weakest, comment: ''
     };
     ev.comment = comment(ev);
@@ -192,7 +194,8 @@
       : ev.level === '合格' ? '基本答到了，建议追问一个变式，看能不能迁移。'
       : '先肯定他愿意试，再从最基础的一步重新搭梯子。';
 
-    var missing = 4 - ev.parts.length;
+    // 用**量规实际维度数**算，不能写死 4（审计发现：五维会算成负数、三维会谎报漏评）
+    var missing = Math.max(0, (Number(ev.dimsTotal) || ev.parts.length) - ev.parts.length);
     if (missing > 0) tail += '（还有 ' + missing + ' 个维度没评）';
 
     return head.join('，') + '。' + tail;

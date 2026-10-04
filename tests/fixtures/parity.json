@@ -9256,6 +9256,7 @@
           }
         ],
         "weightUsed": 100,
+        "dimsTotal": 4,
         "strongest": null,
         "weakest": null,
         "comment": "各维度比较均衡（约 100 分）。表现很完整，可以请他讲讲思路，给全班做个示范。"
@@ -9313,6 +9314,7 @@
           }
         ],
         "weightUsed": 100,
+        "dimsTotal": 4,
         "strongest": "basic",
         "weakest": "transfer",
         "comment": "基础掌握 最突出（优秀），拓展迁移 还有空间（待改进）。基本答到了，建议追问一个变式，看能不能迁移。"
@@ -9352,6 +9354,7 @@
           }
         ],
         "weightUsed": 60,
+        "dimsTotal": 4,
         "strongest": null,
         "weakest": null,
         "comment": "各维度比较均衡（约 67 分）。整体不错，把刚才那一步再追问一句，就能看出他到底懂到哪。（还有 2 个维度没评）"
@@ -9372,6 +9375,7 @@
         "level": "待改进",
         "parts": [],
         "weightUsed": 0,
+        "dimsTotal": 4,
         "strongest": null,
         "weakest": null,
         "comment": "还没有评价任何维度。"
