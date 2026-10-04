@@ -332,7 +332,14 @@ async fn api_put_state(
         let rooms = st.rooms.read().await;
         if let Some(r) = rooms.get(&room) {
             let mut db = st.db.lock().await;
-            let _ = db.save_room(&room, r.rev, r.state.as_ref(), r.dump.as_ref());
+            // 落库失败**不能吞**：原来回 ok:true 但库里没写，重启就丢（审计实测过）
+            if let Err(e) = db.save_room(&room, r.rev, r.state.as_ref(), r.dump.as_ref()) {
+                eprintln!("[hub] 恢复落库失败 room={}: {}", room, e);
+                return (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "ok": false, "message": format!("落库失败：{}", e) })),
+                );
+            }
         }
     }
 
@@ -604,9 +611,9 @@ async fn handle_client_message(st: &HubState, room_id: &str, client_id: u64, rol
                 let mut rooms = st.rooms.write().await;
                 let r = rooms.entry(room_id.to_string()).or_default();
                 r.dump = Some(payload.clone());
-                if r.state.is_none() {
-                    r.state = Some(payload.clone());
-                }
+                // **不要把 dump 当 state**：dump 是完整存档（含答案与全部名单），
+                // 当成 state 后每个 team/stage 一连上就会拿到它 —— 等于泄题（审计实测过）。
+                // 没有轻量快照时就不发 state，等教师端推。
                 r.rev += 1;
                 r.updated_at = now_ms();
                 (r.rev, r.state.clone(), r.dump.clone())
@@ -665,7 +672,18 @@ async fn handle_client_message(st: &HubState, room_id: &str, client_id: u64, rol
                 if let Some(c) = r.clients.get_mut(&client_id) {
                     if let Some(ro) = role_update {
                         if ["host", "stage", "team"].contains(&ro) {
-                            c.role = ro.to_string();
+                            // **不允许把自己提成 host**：host 是教师端的身份，
+                            // 允许提权等于任何人发一条 hello 就能收到全部课堂命令、
+                            // 并把真教师的离线队列吞掉（审计实测过）。
+                            // 只允许"降级/平级"（host→stage/team 是合法的重连场景）。
+                            let may = if ro == "host" {
+                                c.role == "host"        // 已经是 host 才允许保持 host
+                            } else {
+                                true                // stage/team 之间随便切
+                            };
+                            if may {
+                                c.role = ro.to_string();
+                            }
                         }
                     }
                     if team.is_some() {

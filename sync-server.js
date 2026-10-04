@@ -288,7 +288,9 @@ wss.on('connection', (ws, req) => {
     if (msg.type === 'dump' && msg.payload) {
       if (ws.role !== 'host') { send(ws, { type: 'error', message: '只有教师端可以推送课堂数据' }); return; }
       room.dump = msg.payload;
-      if (!room.payload) room.payload = room.dump;
+      // **不要把 dump 当 state**：dump 是完整存档（含答案与全部名单），
+      // 当成 state 后每个 team/stage 一连上就会拿到它 —— 等于泄题（审计实测过）。
+      // 没有轻量快照时就不发 state，等教师端推。
       room.updatedAt = Date.now();
       saveRoomNow(room);        // 完整存档是"换设备恢复"的依据，立即落库（state 仍走防抖）
       return;
@@ -646,10 +648,18 @@ function handleHttp(req, res) {
   const target = path.resolve(ROOT, '.' + urlPath);
   const insideRoot = target === ROOT || target.startsWith(ROOT + path.sep);
   const hasDotSegment = urlPath.split('/').some((seg) => seg.startsWith('.') && seg !== '.');
-  const blockedDirs = SERVE_TESTS ? ['rooms', 'node_modules'] : ['rooms', 'node_modules', 'tests', 'docs'];
+  // data/ 放的是**实时课堂数据库**（classroom.db + -wal），绝不能当静态资源发出去
+  // （审计实测：GET /data/classroom.db 能下到 344KB 的 SQLite —— Rust 侧同源问题已修）
+  const blockedDirs = SERVE_TESTS
+    ? ['rooms', 'node_modules', 'data']
+    : ['rooms', 'node_modules', 'data', 'tests', 'docs'];
+  // 数据库文件一律不发（不论在哪个目录）
+  const lowPath = urlPath.toLowerCase();
+  const blockedFile = lowPath.endsWith('.db') || lowPath.endsWith('.db-wal')
+    || lowPath.endsWith('.db-shm') || lowPath.endsWith('.sqlite');
   const blocked = blockedDirs.some((dir) => target.startsWith(path.join(ROOT, dir)));
 
-  if (!insideRoot || hasDotSegment || blocked) {
+  if (!insideRoot || hasDotSegment || blocked || blockedFile) {
     res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('403 Forbidden');
     return;

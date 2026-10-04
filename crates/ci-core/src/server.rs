@@ -160,9 +160,16 @@ async fn serve_static(
             return file_response(&f).await;
         }
         if let Some(rest) = url_path.strip_prefix("/assets/") {
-            let f = dist.join("assets").join(rest);
-            if f.starts_with(&dist) {
-                return file_response(&f).await;
+            // 显式拒绝点段：starts_with 在非 Windows 主机上挡不住 ../
+            // （Windows 上只是恰好被 canonicalize 的 verbatim 前缀 + PathBuf::push 折叠救了）
+            let dotted_asset = rest
+                .split('/')
+                .any(|seg| seg == ".." || (seg.starts_with('.') && seg != "."));
+            if !dotted_asset {
+                let f = dist.join("assets").join(rest);
+                if f.starts_with(&dist) {
+                    return file_response(&f).await;
+                }
             }
         }
         // 旧版零构建页面已于 2026-10 删除（界面统一到 Vue）
@@ -178,11 +185,19 @@ async fn serve_static(
     let dotted = rel.split('/').any(|seg| seg.starts_with('.') && seg != ".");
     let blocked_dir = {
         let first = rel.split('/').next().unwrap_or("");
+        // data/ 放的是**实时课堂数据库**（classroom.db + -wal），绝不能当静态资源发出去
+        // （审计实测：GET /data/classroom.db 能下到 344KB 的 SQLite）
         first == "node_modules"
             || first == "rooms"
+            || first == "data"
             || (!serve_tests && (first == "tests" || first == "docs"))
     };
-    if !inside || dotted || blocked_dir {
+    // 数据库文件一律不发（不论在哪个目录）
+    let blocked_file = {
+        let low = rel.to_ascii_lowercase();
+        low.ends_with(".db") || low.ends_with(".db-wal") || low.ends_with(".db-shm") || low.ends_with(".sqlite")
+    };
+    if !inside || dotted || blocked_dir || blocked_file {
         return axum::response::Response::builder()
             .status(StatusCode::FORBIDDEN)
             .body(Body::from("403 Forbidden"))

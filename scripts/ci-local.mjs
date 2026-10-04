@@ -218,7 +218,10 @@ if (!QUICK) {
       const base = 'http://127.0.0.1:' + port;
       const a = run('教师端端到端（admin.html）', ['tests/run-smoke.js', base + '/tests/smoke.html']);
       const b = run('多端协同端到端（教师端+学生端+大屏）', ['tests/run-smoke.js', base + '/tests/smoke-class.html']);
-      return a && b;
+      // 枢纽安全黑盒验证：数据库不可下载 / 不能冒名 host / dump 不当 state 广播
+      // （审计发现的高危，修完必须钉住，否则会悄悄回来）
+      const c = run('枢纽安全（黑盒）', ['tests/fix-hub-verify.cjs', base]);
+      return a && b && c;
     });
   } catch (e) {
     results.push({ title: '浏览器端到端（枢纽启动失败）', pass: false, ms: 0, tail: String(e && e.message || e) });
@@ -370,7 +373,9 @@ if (cargoAvailable) {
         const base = 'http://127.0.0.1:' + port;
         const a = run('教师端端到端（Rust 枢纽）', ['tests/run-smoke.js', base + '/tests/smoke.html']);
         const b = run('多端协同端到端（Rust 枢纽）', ['tests/run-smoke.js', base + '/tests/smoke-class.html']);
-        return a && b;
+        // Rust 枢纽才是要出货的那个 —— 同一套安全验证也要打它一遍
+        const c2 = run('枢纽安全（黑盒·Rust 枢纽）', ['tests/fix-hub-verify.cjs', base]);
+        return a && b && c2;
       });
       if (!e2eRust) {
         results.push({ title: '浏览器端到端（打 Rust 枢纽）', pass: false, ms: 0 });
