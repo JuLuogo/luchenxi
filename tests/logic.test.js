@@ -1707,6 +1707,37 @@ group('题型判定与学生提交');
   eq(typeof CIStudent.setDraft, 'function', 'setDraft 可调用');
 })();
 
+/* ================= 30. 学生端状态机修复 ================= */
+group('学生端状态机修复');
+
+(function () {
+  // ① testHub 必须返回 Promise<{ok,text}>（Vue 端读 .ok；不返回就永远"连不上"）
+  ok(typeof CIStudent.testHub === 'function', 'testHub 存在');
+  // Node 里没有 DOM，直接调会抛 —— 改成**结构断言**：它必须返回 Promise
+  ok(/return new Promise/.test(String(CIStudent.testHub)), 'testHub 内部返回 Promise（Vue 端才读得到 .ok）');
+  ok(/resolve\(\{ *ok/.test(String(CIStudent.testHub)), 'testHub resolve 的是 {ok, text} 形状');
+
+  // ② 换题要清空本地作答状态
+  ok(typeof CIStudent.syncQuestion === 'function', '有 syncQuestion（换题清空）');
+  ok(typeof CIStudent.setDraft === 'function', '有 setDraft（草稿由界面传入）');
+
+  // ③ 题型兜底（上一批修的，这里再钉一次：字段缺失也要判对）
+  eq(CIStudent.questionKind({ options: ['a', 'b'] }), 'choice', '兜底：有选项 → 选择题');
+  eq(CIStudent.questionKind({ options: [], hasAnswer: true }), 'fill', '兜底：有答案 → 填空题');
+
+  // ④ 大屏的 reveal 要按题生效（不能只发裸标志）
+  S.replaceState(S.defaultState());
+  S.addQuestion({ stem: '题', tier: 'basic', answer: 'A', options: ['x', 'y'] });
+  const q0 = S.get().bank[0];
+  S.setRuntime({ qid: q0.id });
+  // 没公布时：metaPayload 的 reveal 必须是 false（哪怕 runtime.reveal 是 true）
+  S.setRuntime({ reveal: true, revealedQid: null });
+  eq(CI.classroom.metaPayload().reveal, false, '没公布答案 → meta.reveal 为 false（不会显示空答案行）');
+  // 公布了这一题才是 true
+  S.setRuntime({ reveal: true, revealedQid: q0.id });
+  eq(CI.classroom.metaPayload().reveal, true, '公布了当前题 → meta.reveal 为 true');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

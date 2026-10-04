@@ -93,6 +93,8 @@ function toggleOption(key) {
 }
 function onDraft(v) {
   textDraft.value = v;
+  // 草稿同步给状态机（它负责发 cmd.text —— 原来读的是 Vue 页面里不存在的 DOM 元素）
+  (CIStudent as any).setDraft ? (CIStudent as any).setDraft(v) : void 0;
   CIStudent.draft(v);
 }
 function submit(skip) {

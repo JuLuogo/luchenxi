@@ -889,7 +889,9 @@
       /* 能力评价：全班 + 各队（含评级与评语），用于点评环节的雷达 */
       ability: abilityPayload(s),
       accepting: !!s.runtime.accepting,
-      reveal: !!s.runtime.reveal,
+      // **按题生效**：不能只发 runtime.reveal 这个裸标志 ——
+      // 换卷/换题时不重置它，大屏会出现"答案没公布却显示正确答案空行"（审计发现）
+      reveal: isRevealed(s, currentQuestion(s)),
       buzz: c.buzz.slice(0, 20).map(function (b) {
         return { id: b.id, teamId: b.teamId, teamName: teamName(s, b.teamId), sid: b.sid, sidName: b.sid ? studentName(s, b.sid) : '', at: b.at };
       }),

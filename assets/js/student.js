@@ -162,25 +162,34 @@
   }
 
   /** 连通性自检：客户端里问 Rust，浏览器里直接打 /health */
+  /**
+   * 连通性自检：客户端里问 Rust，浏览器里直接打 /health
+   *
+   * **必须返回 Promise<{ok, text}>**：Vue 端会 await 它并读 .ok。
+   * 原来只调 toast、不返回任何值 → `res && res.ok` 恒假 →
+   * 教师机明明在线，学生端永远弹"连不上，检查地址或让老师开大屏"（审计实测发现）。
+   */
   function testHub() {
     var input = $('hubInput');
     if (input) setHubHost(input.value);
     toast('正在测试连接…');
-    var done = function (okFlag, text) {
-      toast((okFlag ? '✅ 连上了：' : '❌ 连不上：') + text);
-      render();
-    };
-    if (inTauri()) {
-      invoke('check_hub', { host: hubHost() }).then(function (res) {
-        done(res && res.ok, (res && (res.message || res.response || res.url)) || '无返回');
-      }).catch(function (e) { done(false, (e && e.message) || String(e)); });
-      return;
-    }
-    if (!root.fetch) { done(false, '当前环境不支持网络请求'); return; }
-    root.fetch(hubURL() + '/health', { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
-      .then(function (info) { done(!!info.ok, '教师机枢纽在线（房间 ' + (info.rooms || []).join(',') + '）'); })
-      .catch(function (e) { done(false, (e && e.message) || String(e)); });
+    return new Promise(function (resolve) {
+      var done = function (okFlag, text) {
+        toast((okFlag ? '✅ 连上了：' : '❌ 连不上：') + text);
+        notify();
+        resolve({ ok: !!okFlag, text: String(text == null ? '' : text) });
+      };
+      if (inTauri()) {
+        invoke('check_hub', { host: hubHost() }).then(function (res) {
+          done(res && res.ok, (res && res.message) || '客户端自检');
+        }).catch(function (err) { done(false, String(err && err.message || err)); });
+        return;
+      }
+      // 浏览器：直接打 /health
+      fetch(hubURL() + '/health').then(function (r) {
+        done(r.ok, 'HTTP ' + r.status);
+      }).catch(function (err) { done(false, String(err && err.message || err)); });
+    });
   }
 
   /** EasyTier 组网引导（Android 无法内置 EasyTier CLI，只能引导） */
@@ -216,6 +225,8 @@
       try { msg = JSON.parse(evt.data); } catch (e) { return; }
       if (msg.type === 'state' || msg.type === 'leaderboard') {
         payload = msg.payload;
+        // 换题就清空本地作答状态（否则新题显示"已选中"、草稿留着上一题，学生会误交）
+        syncQuestion();
         render();
       } else if (msg.type === 'presence') {
         presence = msg;
@@ -387,6 +398,22 @@
   /** 学生端草稿文本（由界面传进来 —— 原来读 DOM 元素，Vue 界面里那是空壳） */
   var draftText = '';
 
+  /** 上一次看到的题目 id：换题时要清空本地作答状态（否则新题显示"已选中"、草稿留着上一题） */
+  var lastQid = null;
+
+  /** 收到快照后调用：题目变了就清空选择与草稿 */
+  function syncQuestion() {
+    var q = question();
+    var id = q ? q.id : null;
+    if (id !== lastQid) {
+      lastQid = id;
+      selected = [];
+      draftText = '';
+      submitted = null;
+      buzzed = null;
+    }
+  }
+
   /** 界面调它同步草稿（填空题/主观题的输入内容） */
   function setDraft(text) { draftText = String(text == null ? '' : text); }
 
@@ -426,7 +453,9 @@
       }
     }
 
-    send({ type: 'cmd', cmd: cmd });
+    // **发送失败不能假装成功**：断线时界面照常显示"已提交"，学生不会重试、老师收不到（审计发现）
+    var sent = send({ type: 'cmd', cmd: cmd });
+    if (!sent) { toast('未连接教师机，请重试'); notify(); return; }
     submitted = { qid: q.id, at: Date.now(), text: cmd.text || null };
     toast(skip ? '已提交：跳过' : '已提交，等待判定');
     notify();     // 旧 renderQA() 已删
@@ -435,8 +464,12 @@
   function buzz() {
     var q = question();
     if (!accepting()) { toast('抢答还没开放'); return; }
-    send({ type: 'cmd', cmd: { kind: 'buzz', teamId: teamId, sid: answererId || (me() || {}).id || null, qid: q ? q.id : null } });
-    toast('已抢答！');
+    // 记下"已抢答"：否则学生端没有反馈、按钮不禁用，会连续猛点（审计发现）
+    buzzed = { qid: q && q.id, at: Date.now() };
+    var sent = send({ type: 'cmd', cmd: { kind: 'buzz', teamId: teamId, sid: answererId || (me() || {}).id || null, qid: q ? q.id : null } });
+    toast(sent ? '已抢答！' : '未连接，请重试');
+    if (!sent) buzzed = null;      // 没发出去就不算抢到
+    notify();
   }
 
     /* 新版（Vue）界面里没有旧 DOM：所有写入都过一层空值守卫，避免整页报错 */
@@ -507,6 +540,7 @@ function init() {
   CIStudent.draft = draft;
   CIStudent.submit = submit;
   CIStudent.setDraft = setDraft;
+  CIStudent.syncQuestion = syncQuestion;
   CIStudent.questionKind = questionKind;
   CIStudent.buzz = buzz;
   CIStudent.switchTab = switchTab;
