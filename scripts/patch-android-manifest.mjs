@@ -78,6 +78,12 @@ if (checkOnly) {
     console.error('       运行 node scripts/patch-android-manifest.mjs --app ' + app);
     process.exit(1);
   }
+  // 审计发现：非 --check 模式下若一处都没改（模板形状变了），原来也打印"[ok] 已放行明文流量"
+  // → 真机上学生连不上教师机，日志却写着成功。没改动就必须说清楚。
+  // 只有"**需要改却没改成**"才算失败；文件本来就是对的（alreadyOn）不算。
+  if (!alreadyOn && patched === src) {
+    process.exit(1);
+  }
   console.log('[ok] 已放行明文流量：' + path.relative(ROOT, gradle));
   process.exit(0);
 }

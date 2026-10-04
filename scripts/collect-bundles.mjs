@@ -57,7 +57,13 @@ let productName = '';
 try {
   const conf = JSON.parse(fs.readFileSync(path.join(cwd, 'src-tauri', 'tauri.conf.json'), 'utf8'));
   productName = conf.productName || '';
-} catch { /* 读不到就不过滤（旧路径各自独立，不会混） */ }
+} catch (e) {
+  // 审计发现：原来空 catch 吞掉 → productName='' → 不过滤 → 把 workspace 根 target/ 里
+  // **所有客户端**的安装包都归集进 artifact（v5 共用 target 后"各自独立不会混"的前提已失效）。
+  console.error('✘ 读不到 ' + path.join(cwd, 'src-tauri', 'tauri.conf.json') + '：' + e.message);
+  console.error('  没有 productName 就无法区分各客户端的安装包，拒绝在"可能混包"的情况下归集。');
+  process.exit(1);
+}
 
 let picked = found;
 if (productName) {

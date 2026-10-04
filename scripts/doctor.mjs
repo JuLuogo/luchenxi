@@ -113,7 +113,10 @@ function portFree(port) {
 const free = await portFree(PORT);
 let hubStarted = null;
 if (!free) {
-  ok('端口 ' + PORT, true, '已被占用 —— 可能枢纽已在运行；下面直接探测入口');
+  // 审计发现：原来端口被占用时直接记 pass，然后去探测**别人**的服务 —— 诊断工具给出错误结论比没结论更误导。
+  // 验不了就如实说验不了（doctor 的职责就是验证，这里只有 ok(name, pass, detail) 一种结果）。
+  ok('端口 ' + PORT + ' 可用', false,
+    '已被占用 —— 无法验证本仓库的枢纽（探测到的可能是别人的服务）。请先关掉占用该端口的程序再跑 doctor');
 } else {
   // 临时起一个枢纽（3 秒内探测完就关掉）
   hubStarted = spawn(process.execPath, [path.join(ROOT, 'sync-server.js')], { cwd: ROOT, stdio: 'ignore' });
@@ -132,7 +135,17 @@ for (const p of ['/', '/admin.html', '/join', '/stage', '/next/admin.html', '/ne
   ok('入口 ' + p, status === 200, status === 200 ? '200' : ('返回 ' + status + (p.startsWith('/next') && !distReady ? '（新版界面还没构建）' : '')));
 }
 
-if (hubStarted) { try { hubStarted.kill(); } catch (e) { /* 忽略 */ } }
+// 等临时枢纽真的退出再继续：kill() 之后立刻 process.exit() 会让子进程句柄处于
+// 关闭中，触发 libuv 断言（Windows 上表现为"打印完全部通过之后崩溃"）。
+if (hubStarted) {
+  const exited = new Promise((resolve) => {
+    if (hubStarted.exitCode !== null || hubStarted.signalCode !== null) return resolve();
+    hubStarted.once('exit', () => resolve());
+  });
+  try { hubStarted.kill(); } catch (e) { /* 忽略 */ }
+  // 兜底超时：别把 doctor 挂住
+  await Promise.race([exited, new Promise((r) => setTimeout(r, 2000))]);
+}
 
 /* ---------- 输出 ---------- */
 const bad = rows.filter((r) => !r.pass);
@@ -150,4 +163,5 @@ if (!bad.length) {
   bad.forEach((r) => console.log('     · ' + r.name + (r.detail ? '  →  ' + r.detail : '')));
   console.log('\n  按上面提示逐条处理后重跑：npm run doctor');
 }
-process.exit(bad.length ? 1 : 0);
+// 给事件循环一拍，确保所有子进程句柄释放后再退出（否则 Windows 上会 libuv 断言）
+setTimeout(() => process.exit(bad.length ? 1 : 0), 50);

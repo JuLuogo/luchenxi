@@ -101,12 +101,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     if (exceptions.length) { console.log('\n未捕获异常:'); exceptions.slice(0, 10).forEach((t) => console.log('  ! ' + String(t).split('\n')[0])); }
     if (!errors.length && !exceptions.length) console.log('\n无控制台错误');
   } catch (e) {
-    console.error('探针失败：', e.message);
-  } finally {
-    clearTimeout(watchdog);
-    try { process.kill(-child.pid, 'SIGKILL'); } catch (e) { try { child.kill(); } catch (e2) {} }
-    await sleep(300);
-    try { fs.rmSync(profile, { recursive: true, force: true }); } catch (e) {}
-    process.exit(0);
+    console.error('✘ 探针失败：' + (e && e.message ? e.message : e));
+    // 审计发现：原来失败也 exit 0 → "白屏排查"工具永远显示成功
+    process.exit(1);
   }
 })();

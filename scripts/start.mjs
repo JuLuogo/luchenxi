@@ -41,6 +41,9 @@ if (!has(DIST_ENTRY) && !NO_BUILD) {
   console.log('新版界面还没有构建（web/dist 不在版本库里，这是正常的）→ 现在构建一次');
   if (!run('npm', ['run', 'build'], WEB, '构建新版界面（Vite）')) {
     console.error('\n❌ 界面构建失败（web/dist 没出来）：先排查上面的报错；旧版零构建界面已于 2026-10 删除。');
+    // 审计发现：原来只打印错误就**继续起枢纽** → npm start 仍以 0 退出，
+    // 用户拿到 404 的界面（正是这个脚本想消除的体验）。构建失败必须终止。
+    process.exit(1);
   }
 }
 

@@ -285,6 +285,13 @@ if (cargoAvailable) {
     console.log(C.b + '▶ 放置 EasyTier sidecar（教师端构建需要）' + C.x);
     const target = process.platform === 'win32' ? 'x86_64-pc-windows-msvc' : 'x86_64-unknown-linux-gnu';
     spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'fetch-easytier.mjs'), target], { cwd: ROOT, stdio: 'inherit' });
+    // 审计发现：原来不检查退出码 → sidecar 拉取失败会延后到 cargo build 才爆，
+    // 注解指向错误方向（"找不到 binaries"）。这里直接检查。
+    if (r.status !== 0) {
+      annotate('CI 失败：EasyTier sidecar 拉取失败', 'scripts/fetch-easytier.mjs 退出码 ' + r.status);
+      console.error(C.bad + '✘ EasyTier sidecar 拉取失败' + C.x);
+      process.exit(1);
+    }
   }
 
   const t0r = Date.now();
