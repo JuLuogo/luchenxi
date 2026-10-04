@@ -13,7 +13,7 @@
 
 use ci_domain::state::ClassroomState;
 use ci_domain::{
-    default_open_levels, evaluate_open_full, levels_from_labels, open_rate, show_on_stage,
+    default_open_levels, evaluate_open_full, levels_are_valid, levels_from_labels, open_rate, show_on_stage,
     ability_of_tiers, answer_key, apply_pick, auto, build_report, decayed_rate, evaluate, growth_score,
     default_open_dimensions, evaluate_open,
     option_distribution, participation_rate, polish_prompt, sanitize_polish, student_stats, student_view,
@@ -51,6 +51,8 @@ struct Fixture {
     #[serde(rename = "stagePolicy")]
     stage_policy: Vec<PolicyCase>,
     levels: Vec<LevelCase>,
+    #[serde(rename = "levelValidity")]
+    level_validity: Vec<ValidityCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -938,6 +940,14 @@ struct LevelRow {
     #[serde(rename = "partLevel")]
     part_level: String,
     rate: f64,
+}
+
+
+#[derive(Debug, Deserialize)]
+struct ValidityCase {
+    name: String,
+    levels: Vec<ci_domain::openclass::OpenLevel>,
+    expect: bool,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -2245,4 +2255,19 @@ fn levels_match_js_reference() {
         println!("  ✔ {} → {} 档", case.name, case.levels.len());
     }
     println!("\n✅ 档位可配置：{} 组用例与 JS 一致", fx.levels.len());
+}
+
+/// 档位分数校验：与 JS 一致
+///
+/// 必须严格递增且在 0–100 —— 总分是"落在不超过它的最高一档"。
+#[test]
+fn level_validity_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.level_validity.is_empty(), "基准里没有校验用例");
+    for c in &fx.level_validity {
+        assert_eq!(levels_are_valid(&c.levels), c.expect, "[{}] 是否合法", c.name);
+    }
+    // 核心性质：默认四档必须合法（否则界面一打开就报错）
+    assert!(levels_are_valid(&default_open_levels()));
+    println!("\n✅ 档位校验：{} 组用例与 JS 一致", fx.level_validity.len());
 }

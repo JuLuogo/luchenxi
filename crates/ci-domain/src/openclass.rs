@@ -99,6 +99,28 @@ pub fn levels_from_labels(labels: &[String]) -> Vec<OpenLevel> {
         .collect()
 }
 
+/// 档位分数是否合法：**严格递增且在 0–100**
+///
+/// 为什么要有这条：总分是"落在哪一档"（取 rate 不超过总分的最高一档）。
+/// 如果两档分数相同或递减，这个判断就没有意义了（总分 80 该算哪档？）。
+/// 界面上保存前会调它，服务端也用它兜底。
+pub fn levels_are_valid(levels: &[OpenLevel]) -> bool {
+    if levels.len() < 2 {
+        return false;
+    }
+    let mut prev = f64::NEG_INFINITY;
+    for l in levels {
+        if !(0.0..=100.0).contains(&l.rate) {
+            return false;
+        }
+        if l.rate <= prev {
+            return false;
+        }
+        prev = l.rate;
+    }
+    true
+}
+
 /// 一档（1 起）→ 档位名（越界取两端）
 pub fn open_level(score: u8, levels: &[OpenLevel]) -> String {
     if levels.is_empty() {
@@ -395,6 +417,52 @@ mod tests {
         // 越界取两端（多档时不会崩）
         assert_eq!(open_level(9, &lv), "优秀");
         assert_eq!(open_level(0, &lv), "待改进");
+    }
+
+    #[test]
+    fn custom_rates_must_increase() {
+        // 均匀映射的默认档位合法
+        assert!(levels_are_valid(&default_open_levels()));
+        // 自定义分数（优=95、良=85…）也合法
+        let custom = vec![
+            OpenLevel { label: "差".into(), rate: 60.0 },
+            OpenLevel { label: "中".into(), rate: 70.0 },
+            OpenLevel { label: "良".into(), rate: 85.0 },
+            OpenLevel { label: "优".into(), rate: 95.0 },
+        ];
+        assert!(levels_are_valid(&custom));
+        // 总分落在自定义档位上
+        assert_eq!(level_for_total(95, &custom), "优");
+        assert_eq!(level_for_total(88, &custom), "良");
+        // 65 分：≥ 差(60) 但 < 中(70) → 落在"差"（"取不超过总分的最高一档"就是这个意思）
+        assert_eq!(level_for_total(65, &custom), "差");
+        assert_eq!(level_for_total(70, &custom), "中");
+        assert_eq!(level_for_total(0, &custom), "差", "低于最低档也算最低档");
+        assert_eq!(level_for_total(100, &custom), "优");
+
+        // 非法：相同分数
+        let dup = vec![
+            OpenLevel { label: "甲".into(), rate: 80.0 },
+            OpenLevel { label: "乙".into(), rate: 80.0 },
+        ];
+        assert!(!levels_are_valid(&dup), "两档同分不合法（总分 80 该算哪档？）");
+        // 非法：递减
+        let desc = vec![
+            OpenLevel { label: "甲".into(), rate: 90.0 },
+            OpenLevel { label: "乙".into(), rate: 80.0 },
+        ];
+        assert!(!levels_are_valid(&desc), "递减不合法");
+        // 非法：越界 / 只有一档
+        assert!(!levels_are_valid(&[
+            OpenLevel { label: "甲".into(), rate: -1.0 },
+            OpenLevel { label: "乙".into(), rate: 50.0 },
+        ]));
+        assert!(!levels_are_valid(&[
+            OpenLevel { label: "甲".into(), rate: 50.0 },
+            OpenLevel { label: "乙".into(), rate: 101.0 },
+        ]));
+        assert!(!levels_are_valid(&[OpenLevel { label: "唯一".into(), rate: 100.0 }]), "至少两档");
+        assert!(!levels_are_valid(&[]));
     }
 
     #[test]

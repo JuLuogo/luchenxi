@@ -1641,6 +1641,36 @@ group('大屏公开展示策略');
   eq(S.get().settings.openEvalOnStage, 'smart', '默认策略是 smart');
 })();
 
+/* ================= 28. 档位分数校验 ================= */
+group('档位分数校验');
+
+(function () {
+  const O = CI.openclass;
+  ok(O.levelsAreValid(O.defaultLevels()), '默认四档合法');
+  const custom = [
+    { label: '差', rate: 60 }, { label: '中', rate: 70 },
+    { label: '良', rate: 85 }, { label: '优', rate: 95 }
+  ];
+  ok(O.levelsAreValid(custom), '自定义分数（60/70/85/95）合法');
+  // 自定义分数下"落在哪一档"
+  eq(O.levelForTotal(95, custom), '优', '95 分 → 优');
+  eq(O.levelForTotal(88, custom), '良', '88 分 → 良');
+  eq(O.levelForTotal(70, custom), '中', '70 分 → 中');
+  eq(O.levelForTotal(65, custom), '差', '65 分 → 差（取不超过它的最高一档）');
+  eq(O.levelForTotal(0, custom), '差', '低于最低档也算最低档');
+  eq(O.levelForTotal(100, custom), '优', '满分也是最高档');
+  // 非法：同分 / 递减 / 越界 / 只有一档 / 空
+  eq(O.levelsAreValid([{ label: '甲', rate: 80 }, { label: '乙', rate: 80 }]), false, '两档同分不合法');
+  eq(O.levelsAreValid([{ label: '甲', rate: 90 }, { label: '乙', rate: 80 }]), false, '递减不合法');
+  eq(O.levelsAreValid([{ label: '甲', rate: -1 }, { label: '乙', rate: 50 }]), false, '负分不合法');
+  eq(O.levelsAreValid([{ label: '甲', rate: 50 }, { label: '乙', rate: 101 }]), false, '超过 100 不合法');
+  eq(O.levelsAreValid([{ label: '唯一', rate: 100 }]), false, '只有一档不合法');
+  eq(O.levelsAreValid([]), false, '空不合法');
+  // 均匀映射生成的档位一定合法
+  ok(O.levelsAreValid(O.levelsFromLabels(['a', 'b', 'c'])), '三档均匀映射合法');
+  ok(O.levelsAreValid(O.levelsFromLabels(['a', 'b', 'c', 'd', 'e'])), '五档均匀映射合法');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

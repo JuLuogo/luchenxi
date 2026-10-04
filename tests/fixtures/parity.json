@@ -9668,5 +9668,122 @@
         }
       ]
     }
+  ],
+  "levelValidity": [
+    {
+      "name": "校验：默认四档",
+      "levels": [
+        {
+          "label": "待改进",
+          "rate": 0
+        },
+        {
+          "label": "合格",
+          "rate": 33
+        },
+        {
+          "label": "良好",
+          "rate": 67
+        },
+        {
+          "label": "优秀",
+          "rate": 100
+        }
+      ],
+      "expect": true
+    },
+    {
+      "name": "校验：自定义 60/70/85/95",
+      "levels": [
+        {
+          "label": "差",
+          "rate": 60
+        },
+        {
+          "label": "中",
+          "rate": 70
+        },
+        {
+          "label": "良",
+          "rate": 85
+        },
+        {
+          "label": "优",
+          "rate": 95
+        }
+      ],
+      "expect": true
+    },
+    {
+      "name": "校验：两档同分（非法）",
+      "levels": [
+        {
+          "label": "甲",
+          "rate": 80
+        },
+        {
+          "label": "乙",
+          "rate": 80
+        }
+      ],
+      "expect": false
+    },
+    {
+      "name": "校验：递减（非法）",
+      "levels": [
+        {
+          "label": "甲",
+          "rate": 90
+        },
+        {
+          "label": "乙",
+          "rate": 80
+        }
+      ],
+      "expect": false
+    },
+    {
+      "name": "校验：负分（非法）",
+      "levels": [
+        {
+          "label": "甲",
+          "rate": -1
+        },
+        {
+          "label": "乙",
+          "rate": 50
+        }
+      ],
+      "expect": false
+    },
+    {
+      "name": "校验：超过 100（非法）",
+      "levels": [
+        {
+          "label": "甲",
+          "rate": 50
+        },
+        {
+          "label": "乙",
+          "rate": 101
+        }
+      ],
+      "expect": false
+    },
+    {
+      "name": "校验：只有一档（非法）",
+      "levels": [
+        {
+          "label": "唯一",
+          "rate": 100
+        }
+      ],
+      "expect": false
+    },
+    {
+      "name": "校验：空（非法）",
+      "levels": [],
+      "expect": false
+    }
   ]
 }

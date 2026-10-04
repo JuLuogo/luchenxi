@@ -1234,6 +1234,23 @@ mkLevelCase('档位：三档（待改进/合格/优秀）', ['待改进', '合�
 mkLevelCase('档位：五档（优良中差+待改进）', ['差', '中', '良', '优', '特优']);
 mkLevelCase('档位：两档（达标/未达标）', ['未达标', '达标']);
 
+
+/* ---------- 用例集：档位分数校验（levelsAreValid）---------- *
+ * 必须严格递增且在 0–100 —— 总分是"落在不超过它的最高一档" */
+const validityCases = [];
+
+function mkValidCase(name, levels) {
+  validityCases.push({ name, levels, expect: CI.openclass.levelsAreValid(levels) });
+}
+
+mkValidCase('校验：默认四档', CI.openclass.defaultLevels());
+mkValidCase('校验：自定义 60/70/85/95', [{ label: '差', rate: 60 }, { label: '中', rate: 70 }, { label: '良', rate: 85 }, { label: '优', rate: 95 }]);
+mkValidCase('校验：两档同分（非法）', [{ label: '甲', rate: 80 }, { label: '乙', rate: 80 }]);
+mkValidCase('校验：递减（非法）', [{ label: '甲', rate: 90 }, { label: '乙', rate: 80 }]);
+mkValidCase('校验：负分（非法）', [{ label: '甲', rate: -1 }, { label: '乙', rate: 50 }]);
+mkValidCase('校验：超过 100（非法）', [{ label: '甲', rate: 50 }, { label: '乙', rate: 101 }]);
+mkValidCase('校验：只有一档（非法）', [{ label: '唯一', rate: 100 }]);
+mkValidCase('校验：空（非法）', []);
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
@@ -1254,7 +1271,8 @@ const payload = {
   openclass: openCases,
   polish: polishCases,
   stagePolicy: policyCases,
-  levels: levelCases
+  levels: levelCases,
+  levelValidity: validityCases
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
@@ -1268,7 +1286,7 @@ if (CHECK) {
     ' + 选项分布 ' + optionDistCases.length + ' + 学情统计 ' + statsCases.length +
     ' + 学生视图 ' + viewCases.length + ' + 公开课量规 ' + openCases.length +
     ' + 润色提示词 ' + polishCases.length + ' + 大屏策略 ' + policyCases.length +
-    ' + 档位 ' + levelCases.length + ' 组）');
+    ' + 档位 ' + levelCases.length + ' + 档位校验 ' + validityCases.length + ' 组）');
     process.exit(0);
   }
   console.error('[stale] parity.json 与 JS 参考实现不一致 —— 运行 node scripts/gen-parity-fixtures.mjs 重新生成');

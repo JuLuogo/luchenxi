@@ -79,6 +79,25 @@
     return Number(total) + 1e-9 >= lv[idx].rate;
   }
 
+  /**
+   * 档位分数是否合法：**严格递增且在 0–100**
+   *
+   * 总分是"落在哪一档"（取 rate 不超过总分的最高一档）；
+   * 两档同分或递减时这个判断没有意义（总分 80 该算哪档？）。
+   */
+  function levelsAreValid(levels) {
+    var lv = levels || [];
+    if (lv.length < 2) return false;
+    var prev = -Infinity;
+    for (var i = 0; i < lv.length; i++) {
+      var r = Number(lv[i].rate);
+      if (!isFinite(r) || r < 0 || r > 100) return false;
+      if (r <= prev) return false;
+      prev = r;
+    }
+    return true;
+  }
+
   function round1(x) { return Math.round(Number(x) * 10) / 10; }
 
   /**
@@ -184,6 +203,7 @@
     LEVELS: LEVELS,
     defaultLevels: defaultLevels,
     levelsFromLabels: levelsFromLabels,
+    levelsAreValid: levelsAreValid,
     levelOf: levelOf,
     rateOf: rateOf,
     levelForTotal: levelForTotal,

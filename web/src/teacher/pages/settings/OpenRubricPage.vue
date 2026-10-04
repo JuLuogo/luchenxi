@@ -33,23 +33,48 @@ const levelLabels = ref<string[]>(
   ((store.settings as any).openLevels || (CI as any).openclass.defaultLevels()).map((l: any) => l.label)
 );
 
-/** 当前档位名对应的分数（预览用） */
-const levelRates = computed<number[]>(() => {
+/**
+ * 每档的分数（可手动改）
+ *
+ * 默认按档位**均匀映射**（三档 0/50/100）；但有些学校评课表是"优 90-100、良 80-89"，
+ * 那就直接填自己的分数（优=95、良=85…）。
+ * **必须严格递增且在 0–100** —— 总分是"落在不超过它的最高一档"，同分/递减会让判断失去意义。
+ */
+const levelRates = ref<number[]>(
+  ((store.settings as any).openLevels || (CI as any).openclass.defaultLevels()).map((l: any) => Number(l.rate))
+);
+
+/** 当前档位（名 + 分数），预览与保存都用它 */
+function currentLevels(): { label: string; rate: number }[] {
+  return levelLabels.value
+    .map((label, i) => ({ label: String(label).trim(), rate: Number(levelRates.value[i]) }))
+    .filter((l) => !!l.label);
+}
+
+/** 按档位均匀映射填充分数（第 k 档 → (k-1)/(N-1)×100） */
+function fillUniformRates() {
   const n = levelLabels.value.length;
-  if (n === 0) return [];
-  if (n === 1) return [100];
-  return levelLabels.value.map((_, i) => Math.round((i / (n - 1)) * 100));
-});
+  levelRates.value = levelLabels.value.map((_, i) =>
+    n <= 1 ? 100 : Math.round((i / (n - 1)) * 100)
+  );
+  ElMessage.info('已按均匀映射填充（' + levelRates.value.join(' / ') + '）');
+}
 
 function addLevel() {
   levelLabels.value.push('');
+  // 新档默认给个比最后一档更高的分数，省得立刻报"不是递增"
+  const last = levelRates.value.length ? levelRates.value[levelRates.value.length - 1] : 0;
+  levelRates.value.push(Math.min(100, Math.round(last + 5)));
 }
 function delLevel(i: number) {
   if (levelLabels.value.length <= 2) { ElMessage.warning('至少保留两档'); return; }
   levelLabels.value.splice(i, 1);
+  levelRates.value.splice(i, 1);
 }
 function resetLevels() {
-  levelLabels.value = (CI as any).openclass.defaultLevels().map((l: any) => l.label);
+  const def = (CI as any).openclass.defaultLevels();
+  levelLabels.value = def.map((l: any) => l.label);
+  levelRates.value = def.map((l: any) => Number(l.rate));
   ElMessage.info('已恢复默认四档');
 }
 
@@ -70,9 +95,12 @@ function save() {
     weight: Number(d.weight) || 0,
     anchor: d.anchor.trim()
   }));
-  const labels = levelLabels.value.map((s) => s.trim()).filter(Boolean);
-  if (labels.length < 2) { ElMessage.warning('至少两档，且档位名不能为空'); return; }
-  const levels = (CI as any).openclass.levelsFromLabels(labels);
+  const levels = currentLevels();
+  if (levels.length < 2) { ElMessage.warning('至少两档，且档位名不能为空'); return; }
+  if (!(CI as any).openclass.levelsAreValid(levels)) {
+    ElMessage.warning('档位分数必须严格递增且在 0–100（总分是按"落在不超过它的最高一档"算的）');
+    return;
+  }
   CI.store.updateSettings({ openDimensions: clean, openEvalOnStage: policy.value, openLevels: levels } as any);
   ElMessage.success('已保存（权重不必和为 100，会自动按有效维度归一）');
 }
@@ -92,9 +120,8 @@ function delRow(i: number) {
 }
 
 function previewComment() {
-  const levels = (CI as any).openclass.levelsFromLabels(
-    levelLabels.value.map((s) => s.trim()).filter(Boolean)
-  );
+  const levels = currentLevels();
+  if (!(CI as any).openclass.levelsAreValid(levels)) { ElMessage.warning('先把档位分数调成递增'); return; }
   const n = levels.length;
   const ev = (CI as any).openclass.evaluate(
     rows.value.map((d, i) => ({ key: d.key, score: i === 0 ? n : Math.max(1, n - 1) })),
@@ -140,19 +167,24 @@ function previewComment() {
         <span class="sub">从低到高；分数按档位均匀映射（三档 0/50/100，四档 0/33/67/100，五档 0/25/50/75/100）</span>
         <div class="levels-actions">
           <el-button size="small" @click="addLevel">加一档</el-button>
+          <el-button size="small" @click="fillUniformRates">按均匀映射填充</el-button>
           <el-button size="small" @click="resetLevels">恢复默认四档</el-button>
         </div>
       </div>
       <div class="levels-row">
         <div v-for="(_, i) in levelLabels" :key="i" class="level-item">
-          <el-input v-model="levelLabels[i]" :placeholder="'第 ' + (i + 1) + ' 档名称'" style="width: 130px" />
-          <span class="level-rate">{{ levelRates[i] }} 分</span>
+          <el-input v-model="levelLabels[i]" :placeholder="'第 ' + (i + 1) + ' 档名称'" style="width: 120px" />
+          <el-input-number v-model="levelRates[i]" :min="0" :max="100" :step="5" controls-position="right" style="width: 110px" />
+          <span class="level-rate">分</span>
           <el-button text type="danger" size="small" @click="delLevel(i)">删</el-button>
         </div>
       </div>
       <div class="levels-hint">
-        例：三档填「待改进 / 合格 / 优秀」；五档填「差 / 中 / 良 / 优 / 特优」。
-        <b>档位名会出现在公开课评价页、大屏、学生端与导出的 CSV 里。</b>
+        例：三档填「待改进 / 合格 / 优秀」（分数 0 / 50 / 100）；五档填「差 / 中 / 良 / 优 / 特优」。
+        也可以按评课表直接填分数（如「优 95、良 85、中 75、差 60」）。
+        <b>分数必须严格递增</b> —— 总分是按「落在不超过它的最高一档」算的。
+        <br />
+        <b>档位名与分数会出现在公开课评价页、大屏、学生端与导出的 CSV 里。</b>
       </div>
     </div>
 
@@ -201,6 +233,7 @@ function previewComment() {
 .levels { margin-bottom: 18px; }
 .levels-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
 .levels-head .sub { color: var(--el-text-color-secondary); font-size: 12px; }
+.levels-row { row-gap: 8px; }
 .levels-actions { margin-left: auto; }
 .levels-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .level-item { display: flex; align-items: center; gap: 6px; }
