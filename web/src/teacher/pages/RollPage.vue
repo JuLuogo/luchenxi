@@ -16,7 +16,11 @@ const history = ref<any[]>([]);            // 本次课堂的点名顺序
 const settings = ref({ ...store.state.rollcall });
 
 /** 候选池预览（让学生知道还有多少人没被点到） */
-const pool = computed(() => CI.rollcall.candidates(store.state, { scope: settings.value.scope || 'all' }));
+// 审计发现：settings 是一次性快照 → 未点"保存设置"时，这里的"当前候选"按**未保存的**范围预览，
+// 而真正抽人（fetchPick）读的是已保存的 state.rollcall → 预览与实际抽取不一致。
+// 这里改成用已保存的设置算候选，并在下面提示"改完要保存"。
+const savedRollcall = computed(() => { void store.rev; return store.state.rollcall; });
+const pool = computed(() => CI.rollcall.candidates(store.state, { scope: (savedRollcall.value as any).scope || 'all' }));
 const roundInfo = computed(() => ({
   total: store.students.length,
   called: store.students.filter((s) => store.calledCount(s.id) > 0).length,
@@ -112,6 +116,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
           <div v-else class="unpicked">
             <div class="hint-big">按「抽一位」或空格开始</div>
             <div class="hint-small">候选池里还有 {{ roundInfo.pool }} 人</div>
+            <!-- 审计发现：未点"保存设置"时预览与真正抽取不一致（抽取读的是已保存设置） -->
+            <span class="hint">（按已保存的设置算；改了范围请先保存）</span>
           </div>
 
           <div class="judge-row">

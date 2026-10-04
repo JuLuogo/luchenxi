@@ -15,6 +15,12 @@ const store = useClassStore();
 const scope = ref('all');                 // all | teamId
 /** 数据范围：current = 只看本节课（当前试卷）｜all = 全部课次 */
 const quizScope = ref<'current' | 'all'>('current');
+/**
+ * 审计发现：选了"本节课"但**没有当前试卷**时，quizId 是 null，
+ * 而领域层把 null 当"不过滤" → 实际统计的是全部课次，界面却写着"本节课"。
+ * 这里给一个显式提示，别让老师看着"本节课"读全部课次的数据。
+ */
+const currentQuizMissing = computed(() => quizScope.value === 'current' && !(store.runtime as any).quizId);
 const scopeOpts = computed(() => ({
   quizId: quizScope.value === 'all' ? null : ((store.runtime as any).quizId || null)
 }));
@@ -261,6 +267,10 @@ function personalRate(tierKey) {
           <el-option v-for="t in store.teams" :key="t.id" :label="t.name" :value="t.id" />
         </el-select>
         <el-select v-model="quizScope" style="width: 170px" title="数据范围：本节课只统计当前试卷的流水">
+        <!-- 审计发现：没有当前试卷时"本节课"实际统计全部课次，这里显式提示 -->
+        <el-tag v-if="currentQuizMissing" size="small" type="warning" effect="plain">
+          没有当前试卷 → 实际按全部课次统计
+        </el-tag>
           <el-option label="本节课（当前试卷）" value="current" />
           <el-option label="全部课次" value="all" />
         </el-select>

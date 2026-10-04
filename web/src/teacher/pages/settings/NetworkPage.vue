@@ -145,6 +145,10 @@ function runCheck() {
       <el-col :xs="24" :md="10">
         <div class="panel">
           <h3 class="panel-title">将要执行的命令</h3>
+          <!-- 审计发现：runtime.lastArgs 存了"实际执行的参数"却从不显示 —— 老师看不到到底跑了什么 -->
+          <div v-if="runtime.lastArgs && runtime.lastArgs.length" class="hint">
+            实际执行：<code>{{ runtime.lastArgs.join(' ') }}</code>
+          </div>
           <pre class="cmd">{{ cmd }}</pre>
           <div class="hint">参数与 Rust 侧完全一致（同一套规则表，tests/net.test.js 会校验）。</div>
         </div>
