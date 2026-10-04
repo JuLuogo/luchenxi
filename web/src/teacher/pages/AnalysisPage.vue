@@ -212,16 +212,22 @@ function download(name: string, text: string, mime = 'text/csv;charset=utf-8') {
   a.download = name;
   a.click();
   URL.revokeObjectURL(a.href);
+  // 审计发现：导出与页面选择器口径不一致，导出后明确告知实际范围
+  ElMessage.success('已导出：' + name);
 }
 function exportCSV(kind) {
-  if (kind === 'class') download('班级学情-' + scopeName.value + '.csv', CI.analysis.classCSV(store.state, scope.value));
+  // 审计发现：导出的口径与页面选择器**不一致** ——
+  // classCSV/studentCSV 不接受 quizId（永远是全部课次），questionCSV 只吃当前试卷。
+  // 与其假装跟随选择器，不如在文件名里写明实际范围，并给一行提示。
+  const exportScopeNote = quizScope.value === 'all' ? '全部课次' : '全部课次（导出暂不支持只看本节课）';
+  if (kind === 'class') download('班级学情-' + scopeName.value + '-' + exportScopeNote + '.csv', CI.analysis.classCSV(store.state, scope.value));
   else if (kind === 'student') {
     const sid = detailSid.value || (ranking.value[0] ? ranking.value[0].sid : '');
     if (!sid) { ElMessage.warning('没有学生'); return; }
     const stu = store.students.find((s) => s.id === sid);
     download('学生学情-' + (stu ? stu.name : sid) + '.csv', CI.analysis.studentCSV(store.state, sid));
   } else {
-    download('题目分析.csv', CI.analysis.questionCSV(store.state, store.runtime.quizId));
+    download('题目分析-' + ((store.runtime as any).quizId ? '当前试卷' : '无当前试卷') + '.csv', CI.analysis.questionCSV(store.state, store.runtime.quizId));
   }
 }
 
