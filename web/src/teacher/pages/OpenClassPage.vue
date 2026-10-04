@@ -65,9 +65,16 @@ const busy = ref(false);
 // 量规可配置（课程政策）：从 settings 读，没配就用默认四维
 const dims = computed<any[]>(() => { void store.rev; return openDimensions(); });
 
-/** 客观题：有标准答案且选项 >= 2 */
+/**
+ * 客观题：**用领域层口径**（有选项即选择题；有答案无选项是填空题，也算客观题）
+ *
+ * 原来页面自己写"有答案且选项≥2"，与 CI.grade.typeOf 不等价 ——
+ * **有标准答案的填空题会被误排除在"只抽客观题"之外**（审计发现）。
+ */
 function isObjective(q: any) {
-  return !!(q && String(q.answer || '').trim() && (q.options || []).length >= 2);
+  if (!q) return false;
+  const t = (CI.grade as any).typeOf(q);
+  return t === 'choice' || t === 'fill';
 }
 
 /* ---------------- ① 点名 ---------------- */

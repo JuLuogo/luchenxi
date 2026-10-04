@@ -4,7 +4,7 @@
  * 所有写入都走 CI.classroom，前端只负责展示与触发，保证与旧版、学生端、大屏行为一致。
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { useClassStore } from '../../shared/class-store';
 import { CI } from '../../shared/bridge';
 import { fetchPick } from '../../shared/domain-api';
@@ -129,7 +129,13 @@ function openStage() {
   window.open('/stage?room=' + encodeURIComponent(CI.sync.room()), '_blank');
 }
 function restore() {
-  CI.classroom.restoreFromHub();
+  ElMessageBox.confirm(
+    '会用枢纽上的存档**覆盖本机的名单与分数**，确定继续？',
+    '从枢纽恢复数据',
+    { type: 'warning', confirmButtonText: '恢复', cancelButtonText: '取消' }
+  ).then(() => CI.classroom.restoreFromHub())
+   .then(() => ElMessage.success('已从枢纽恢复'))
+   .catch(() => {});
   ElMessage.success('已从枢纽恢复课堂数据');
 }
 

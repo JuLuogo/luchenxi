@@ -67,10 +67,14 @@ function openAdd() {
 }
 function confirmAdd() {
   if (!targetQuiz.value) { ElMessage.error('请选择试卷'); return; }
-  const res = store.addQuestionsToQuiz(targetQuiz.value, selected.value.slice());
+  // addQuestionsToQuiz 返回的是**数字**（实际追加了几题），不是 {added} 对象 ——
+  // 按对象读会让提示恒等于勾选数量（重复加入也报"已加入 N 道"，审计发现）
+  const added = Number(store.addQuestionsToQuiz(targetQuiz.value, selected.value.slice())) || 0;
+  const picked = selected.value.length;
   addOpen.value = false;
-  ElMessage.success(`已加入 ${(res && res.added) || selected.value.length} 道题`);
-  selected.value = [];
+  if (added === 0) ElMessage.warning(`这 ${picked} 道题都已在试卷中`);
+  else if (added < picked) ElMessage.success(`已加入 ${added} 道（${picked - added} 道已在试卷中）`);
+  else ElMessage.success(`已加入 ${added} 道题`);
 }
 function createAndAdd() {
   ElMessageBox.prompt('新试卷名称', '新建试卷并加入', { inputValue: '第 ' + (store.quizzes.length + 1) + ' 次随堂测' })

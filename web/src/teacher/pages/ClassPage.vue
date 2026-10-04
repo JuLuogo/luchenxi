@@ -139,6 +139,13 @@ function bulkDelete() {
       ElMessage.success('已删除');
     }).catch(() => {});
 }
+/** 删除一条流水前先确认（点一下就改分太危险 —— 审计发现） */
+function askRemoveRecord(rid: string) {
+  ElMessageBox.confirm('删除这条记录会改分，确定？', '删除记录', { type: 'warning' })
+    .then(() => { store.removeRecord(rid); ElMessage.success('已删除'); })
+    .catch(() => {});
+}
+
 </script>
 
 <template>
@@ -298,7 +305,7 @@ function bulkDelete() {
                 {{ r.points > 0 ? '+' : '' }}{{ r.points }}
               </span>
             </div>
-            <el-button size="small" text type="danger" @click="store.removeRecord(r.id)">删除这条</el-button>
+            <el-button size="small" text type="danger" @click="askRemoveRecord(r.id)">删除这条</el-button>
           </el-timeline-item>
         </el-timeline>
         <div v-if="!drawerRecords.length" class="empty-hint">还没有记录</div>

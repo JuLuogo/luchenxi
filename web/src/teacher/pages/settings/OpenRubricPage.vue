@@ -111,7 +111,12 @@ function reset() {
 }
 
 function addRow() {
-  rows.value.push({ key: 'd' + (rows.value.length + 1), label: '', weight: 10, anchor: '' });
+  // key 必须唯一：原来用 'd'+(length+1)，删掉中间一维再新增会撞上已存在的 key，
+  // 而公开课评价以 key 为索引（scores[d.key] / parts[].key）→ 两个维度共用一份选择（审计发现）
+  const used = new Set(rows.value.map((r) => r.key));
+  let i = rows.value.length + 1;
+  while (used.has('d' + i)) i += 1;
+  rows.value.push({ key: 'd' + i, label: '', weight: 10, anchor: '' });
 }
 
 function delRow(i: number) {

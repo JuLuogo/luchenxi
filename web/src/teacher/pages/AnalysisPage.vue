@@ -444,7 +444,11 @@ function personalRate(tierKey) {
             </el-table-column>
             <el-table-column label="综合评定" width="120">
               <template #default="{ row }">
-                <el-tag size="small" effect="plain">{{ row.level && row.level.label }}</el-tag>
+                <!-- 走 Rust 统计时 level 是**字符串**（RankRow.level: String），走本地是对象 —— 两种都要能显示。
+                 原来只读 row.level.label，Rust 路径下这一列每行都是空的（审计发现） -->
+            <el-tag size="small" effect="plain">
+              {{ typeof row.level === 'string' ? row.level : (row.level && row.level.label) || '' }}
+            </el-tag>
               </template>
             </el-table-column>
           </el-table>
