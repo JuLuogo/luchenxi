@@ -384,6 +384,27 @@
   }
   var draftText = '';
 
+  /** 学生端草稿文本（由界面传进来 —— 原来读 DOM 元素，Vue 界面里那是空壳） */
+  var draftText = '';
+
+  /** 界面调它同步草稿（填空题/主观题的输入内容） */
+  function setDraft(text) { draftText = String(text == null ? '' : text); }
+
+  /**
+   * 这道题该按哪种题型提交
+   *
+   * **不只看 q.type**：契约字段万一缺失（历史上真缺过），用 options 兜底判断，
+   * 否则选择题会被当成主观题 —— 学生选的选项根本发不出去，永远 0 分。
+   */
+  function questionKind(q) {
+    if (!q) return 'subjective';
+    if (q.type === 'choice' || q.type === 'fill' || q.type === 'subjective') return q.type;
+    // 兜底：有选项就是选择题；有标准答案没选项当填空；其余当主观题
+    if ((q.options || []).length >= 2) return 'choice';
+    if (q.hasAnswer) return 'fill';
+    return 'subjective';
+  }
+
   function submit(skip) {
     var q = question();
     if (!q) { toast('老师还没有出题'); return; }
@@ -392,17 +413,16 @@
 
     var cmd = { kind: 'answer', teamId: teamId, sid: answererId || (me() || {}).id || null, qid: q.id, skip: !!skip };
     if (!skip) {
-      if (q.type === 'choice') {
+      var kind = questionKind(q);
+      if (kind === 'choice') {
         if (!selected.length) { toast('请先选择选项'); return; }
         cmd.choice = selected.slice();
-      } else if (q.type === 'fill') {
-        var input = $('fillInput');
-        var v = input ? String(input.value || '').trim() : '';
+      } else if (kind === 'fill') {
+        var v = String(draftText || '').trim();
         if (!v) { toast('请先填写答案'); return; }
         cmd.text = v;
       } else {
-        var note = $('noteInput');
-        cmd.text = note && String(note.value || '').trim() ? String(note.value).trim() : '（口头/纸面作答）';
+        cmd.text = String(draftText || '').trim() || '（口头/纸面作答）';
       }
     }
 
@@ -486,6 +506,8 @@ function init() {
   CIStudent.toggleOption = toggleOption;
   CIStudent.draft = draft;
   CIStudent.submit = submit;
+  CIStudent.setDraft = setDraft;
+  CIStudent.questionKind = questionKind;
   CIStudent.buzz = buzz;
   CIStudent.switchTab = switchTab;
   CIStudent.saveHost = saveHost;

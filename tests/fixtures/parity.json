@@ -9785,5 +9785,48 @@
       "levels": [],
       "expect": false
     }
+  ],
+  "questionType": [
+    {
+      "name": "题型：有选项 → 选择题",
+      "options": [
+        "甲",
+        "乙"
+      ],
+      "answer": "A",
+      "expectType": "choice",
+      "expectLabel": "选择题"
+    },
+    {
+      "name": "题型：有选项也有答案 → 仍是选择题",
+      "options": [
+        "甲",
+        "乙"
+      ],
+      "answer": "AB",
+      "expectType": "choice",
+      "expectLabel": "选择题"
+    },
+    {
+      "name": "题型：无选项有答案 → 填空题",
+      "options": [],
+      "answer": "42",
+      "expectType": "fill",
+      "expectLabel": "填空题"
+    },
+    {
+      "name": "题型：都没有 → 主观题",
+      "options": [],
+      "answer": "",
+      "expectType": "subjective",
+      "expectLabel": "主观题"
+    },
+    {
+      "name": "题型：空白答案 → 主观题",
+      "options": [],
+      "answer": "   ",
+      "expectType": "subjective",
+      "expectLabel": "主观题"
+    }
   ]
 }

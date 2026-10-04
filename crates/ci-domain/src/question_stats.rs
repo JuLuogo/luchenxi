@@ -477,6 +477,10 @@ pub struct StudentQuestionView {
     pub image_url: String,
     pub tier: String,
     pub tier_label: String,
+    /// 题型：choice / fill / subjective —— 学生端据此决定提交 choice 还是 text
+    pub r#type: String,
+    /// 题型名（大屏显示用）
+    pub type_label: String,
     pub points: f64,
     pub multiple: bool,
     pub options: Vec<OptionView>,
@@ -518,6 +522,9 @@ pub fn student_view(
         image_url: q.image_url.clone(),
         tier: q.tier.clone(),
         tier_label: tier_label.to_string(),
+        // 与 JS CI.grade.typeOf/typeLabel 同口径
+        r#type: crate::grade::type_of(&q.to_grade_question()).to_string(),
+        type_label: crate::grade::type_label(&q.to_grade_question()).to_string(),
         points,
         multiple: crate::grade::parse_choice(answer).len() > 1,
         options: q

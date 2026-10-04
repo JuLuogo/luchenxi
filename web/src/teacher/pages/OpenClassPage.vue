@@ -137,9 +137,16 @@ function doDraw() {
     return;
   }
   // 用领域层的抽题（与 Rust draw.rs 同一算法、有 parity 基准）
-  const drawn = (CI.store as any).drawQuestions(store.state, { tiers: [], counts: {}, pool: bank.map((q) => q.id) });
-  const id = Array.isArray(drawn) && drawn.length ? (drawn[0].id || drawn[0]) : bank[0].id;
-  const q = bank.find((x) => x.id === id) || bank[0];
+  // 注意签名：drawQuestions(state, { count, tiers, tags, excludeIds }, rand) —— 返回题目 id 数组。
+  // 参数名写错（曾写成 counts/pool）会让 opts.count 缺失 → 恒返回 [] → 永远抽题库第一道（审计发现）
+  const drawn = CI.store.drawQuestions(store.state, {
+    count: 1,
+    tiers: tierFilter.value ? [tierFilter.value] : [],
+    tags: [],
+    excludeIds: []
+  });
+  const id = Array.isArray(drawn) && drawn.length ? drawn[0] : null;
+  const q = id ? (bank.find((x) => x.id === id) || bank[0]) : bank[Math.floor(Math.random() * bank.length)];
   question.value = q;
   // 把当前题切到这道（大屏/学生端据此显示）
   CI.store.setRuntime({ qid: q.id, quizId: store.state.currentQuizId || null });

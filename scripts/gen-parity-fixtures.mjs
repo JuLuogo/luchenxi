@@ -1251,6 +1251,21 @@ mkValidCase('校验：负分（非法）', [{ label: '甲', rate: -1 }, { label:
 mkValidCase('校验：超过 100（非法）', [{ label: '甲', rate: 50 }, { label: '乙', rate: 101 }]);
 mkValidCase('校验：只有一档（非法）', [{ label: '唯一', rate: 100 }]);
 mkValidCase('校验：空（非法）', []);
+
+/* ---------- 用例集：题型判定（grade.typeOf / typeLabel）---------- *
+ * 学生端靠它决定提交 choice 还是 text —— 缺了它选择题会被当主观题（真 bug） */
+const typeCases = [];
+
+function mkTypeCase(name, options, answer) {
+  const q = { options: options || [], answer: answer === undefined ? '' : answer };
+  typeCases.push({ name, options: q.options, answer: q.answer, expectType: CI.grade.typeOf(q), expectLabel: CI.grade.typeLabel(q) });
+}
+
+mkTypeCase('题型：有选项 → 选择题', ['甲', '乙'], 'A');
+mkTypeCase('题型：有选项也有答案 → 仍是选择题', ['甲', '乙'], 'AB');
+mkTypeCase('题型：无选项有答案 → 填空题', [], '42');
+mkTypeCase('题型：都没有 → 主观题', [], '');
+mkTypeCase('题型：空白答案 → 主观题', [], '   ');
 /* ---------- 落盘 / 校验 ---------- */
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
@@ -1272,7 +1287,8 @@ const payload = {
   polish: polishCases,
   stagePolicy: policyCases,
   levels: levelCases,
-  levelValidity: validityCases
+  levelValidity: validityCases,
+  questionType: typeCases
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';

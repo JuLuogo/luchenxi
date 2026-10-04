@@ -13,6 +13,7 @@
 
 use ci_domain::state::ClassroomState;
 use ci_domain::{
+    type_label, type_of,
     default_open_levels, evaluate_open_full, levels_are_valid, levels_from_labels, open_rate, show_on_stage,
     ability_of_tiers, answer_key, apply_pick, auto, build_report, decayed_rate, evaluate, growth_score,
     default_open_dimensions, evaluate_open,
@@ -53,6 +54,8 @@ struct Fixture {
     levels: Vec<LevelCase>,
     #[serde(rename = "levelValidity")]
     level_validity: Vec<ValidityCase>,
+    #[serde(rename = "questionType")]
+    question_type: Vec<TypeCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -948,6 +951,18 @@ struct ValidityCase {
     name: String,
     levels: Vec<ci_domain::openclass::OpenLevel>,
     expect: bool,
+}
+
+
+#[derive(Debug, Deserialize)]
+struct TypeCase {
+    name: String,
+    options: Vec<String>,
+    answer: String,
+    #[serde(rename = "expectType")]
+    expect_type: String,
+    #[serde(rename = "expectLabel")]
+    expect_label: String,
 }
 
 fn fixtures_path() -> PathBuf {
@@ -2270,4 +2285,23 @@ fn level_validity_matches_js_reference() {
     // 核心性质：默认四档必须合法（否则界面一打开就报错）
     assert!(levels_are_valid(&default_open_levels()));
     println!("\n✅ 档位校验：{} 组用例与 JS 一致", fx.level_validity.len());
+}
+
+/// 题型判定：与 JS 一致
+///
+/// 学生端靠它决定提交 choice 还是 text —— 缺了它选择题会被当主观题（真 bug）。
+#[test]
+fn question_type_matches_js_reference() {
+    let fx = load();
+    assert!(!fx.question_type.is_empty(), "基准里没有题型用例");
+    for c in &fx.question_type {
+        let q = ci_domain::grade::Question {
+            options: c.options.clone(),
+            answer: c.answer.clone(),
+            ..Default::default()
+        };
+        assert_eq!(type_of(&q), c.expect_type, "[{}] 题型", c.name);
+        assert_eq!(type_label(&q), c.expect_label, "[{}] 题型名", c.name);
+    }
+    println!("\n✅ 题型判定：{} 组用例与 JS 一致", fx.question_type.len());
 }

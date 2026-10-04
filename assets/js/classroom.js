@@ -457,6 +457,10 @@
       imageUrl: q.imageUrl || '',
       tier: q.tier,
       tierLabel: CI.store.tierOf(s, q.tier).label,
+      // 题型：**学生端与提交逻辑靠它判断该发 choice 还是 text**
+      // （缺了它，学生端会把选择题当主观题，选项根本发不出去 —— 审计发现的真 bug）
+      type: CI.grade.typeOf(q),
+      typeLabel: CI.grade.typeLabel(q),
       points: CI.store.questionPoints(s, q),
       multiple: CI.grade.parseChoice(answer).length > 1,
       options: (q.options || []).map(function (text, i) {

@@ -155,7 +155,11 @@ function genStudentSummary() {
   const sid = detailSid.value || (ranking.value[0] ? ranking.value[0].sid : '');
   if (!sid) { ElMessage.warning('还没有学生数据'); return; }
   const lines = CI.analysis.summarizeStudent(store.state, sid, scopeOpts.value);
-  summaryText.value = Array.isArray(lines) ? lines.join('\n') : String(lines);
+  // 与 genClassSummary 同一写法：summarizeStudent 返回**对象** {title, lines, text, stats}，
+  // 直接 String(obj) 会得到 "[object Object]"（审计发现）
+  summaryText.value = lines == null
+    ? ''
+    : (typeof lines === 'string' ? lines : (lines.text || (Array.isArray(lines.lines) ? lines.lines.join('\n') : '')));
   ElMessage.success('已生成个人小结');
 }
 async function copySummary() {

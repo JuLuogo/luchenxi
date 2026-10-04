@@ -382,7 +382,12 @@
     });
   }
 
-  CI.rollcall = { candidates: candidates, pick: pick, applyPick: applyPick };
+  // judge/quickFor 是**规则**（判分 + 快捷加分），所以挂到 CI.rollcall；
+// 原来只在 CI.rollUI（旧渲染层）上，Vue 点名页调 CI.rollcall.judge 会 TypeError（审计发现）
+CI.rollcall = {
+  candidates: candidates, pick: pick, applyPick: applyPick,
+  judge: judge, quickFor: quickFor, quick: quick
+};
   CI.rollUI = {
     render: render, spin: spin, judge: judge, quick: quick, quickFor: quickFor,
     bindKeys: bindKeys, currentStudent: currentStudent,

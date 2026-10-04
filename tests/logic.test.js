@@ -31,6 +31,8 @@ require(path.join(__dirname, '..', 'assets', 'js', 'classroom.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'import.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'openclass.js'));
 require(path.join(__dirname, '..', 'assets', 'js', 'polish.js'));
+// 学生端状态机：第 29 组断言要用 CIStudent（不 require 会 ReferenceError，CI 直接红）
+require(path.join(__dirname, '..', 'assets', 'js', 'student.js'));
 // bank.js / quiz.js / analysis-ui.js / admin.js 已随旧界面删除（界面统一到 Vue，见 docs/13）
 
 const CI = globalThis.CI;
@@ -1669,6 +1671,40 @@ group('档位分数校验');
   // 均匀映射生成的档位一定合法
   ok(O.levelsAreValid(O.levelsFromLabels(['a', 'b', 'c'])), '三档均匀映射合法');
   ok(O.levelsAreValid(O.levelsFromLabels(['a', 'b', 'c', 'd', 'e'])), '五档均匀映射合法');
+})();
+
+/* ================= 29. 题型判定与学生提交 ================= */
+group('题型判定与学生提交');
+
+(function () {
+  // 题型判定（学生端靠它决定发 choice 还是 text）
+  eq(CI.grade.typeOf({ options: ['甲', '乙'], answer: 'A' }), 'choice', '有选项 → 选择题');
+  eq(CI.grade.typeOf({ options: [], answer: '42' }), 'fill', '有答案无选项 → 填空题');
+  eq(CI.grade.typeOf({ options: [], answer: '' }), 'subjective', '都没有 → 主观题');
+  eq(CI.grade.typeLabel({ options: ['甲'], answer: 'A' }), '选择题', '题型名');
+
+  // studentView 必须带 type —— 缺了它学生端永远发不出选项（审计发现的真 bug）
+  S.replaceState(S.defaultState());
+  var t1 = S.get().teams[0].id;
+  S.addStudentsBulk('甲\n乙', t1);
+  var qc = S.addQuestion({ stem: '选择题', tier: 'basic', answer: 'A', options: ['x', 'y'] });
+  S.setRuntime({ qid: qc.id });
+  var view = CI.classroom.studentView(S.get(), S.question(S.get(), qc.id));
+  eq(view.type, 'choice', 'studentView 带 type（选择题）');
+  eq(view.typeLabel, '选择题', 'studentView 带 typeLabel');
+  var qs = S.addQuestion({ stem: '主观题', tier: 'advanced', answer: '', options: [] });
+  eq(CI.classroom.studentView(S.get(), S.question(S.get(), qs.id)).type, 'subjective', 'studentView 带 type（主观题）');
+
+  // 学生端的题型兜底：即使 type 缺失也要判对
+  eq(CIStudent.questionKind({ options: ['a', 'b'] }), 'choice', '兜底：有选项 → 选择题');
+  eq(CIStudent.questionKind({ options: [], hasAnswer: true }), 'fill', '兜底：有答案 → 填空题');
+  eq(CIStudent.questionKind({ options: [] }), 'subjective', '兜底：都没有 → 主观题');
+  eq(CIStudent.questionKind(null), 'subjective', '兜底：null 也不炸');
+
+  // 草稿由界面传入（原来读的是已不存在的 DOM 元素）
+  ok(typeof CIStudent.setDraft === 'function', '有 setDraft 接口（界面同步草稿）');
+  CIStudent.setDraft('我的答案');
+  eq(typeof CIStudent.setDraft, 'function', 'setDraft 可调用');
 })();
 
 /* ================= 汇总 ================= */

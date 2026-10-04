@@ -388,6 +388,29 @@ pub fn auto(q: &Question, s: &Submission) -> Option<AutoResult> {
 }
 
 /// 用于「公布答案」与教师端展示的答案串
+/// 题型：choice（有选项）/ fill（有标准答案无选项）/ subjective（都没有）
+///
+/// 与 JS `CI.grade.typeOf` 同口径 —— 学生端靠它决定提交 `choice` 还是 `text`，
+/// 大屏靠它显示题型名。缺了它选择题会被当成主观题（审计发现的真 bug）。
+pub fn type_of(q: &Question) -> &'static str {
+    if !q.options.is_empty() {
+        return "choice";
+    }
+    if !q.answer.trim().is_empty() {
+        return "fill";
+    }
+    "subjective"
+}
+
+/// 题型名（大屏/学生端显示）
+pub fn type_label(q: &Question) -> &'static str {
+    match type_of(q) {
+        "choice" => "选择题",
+        "fill" => "填空题",
+        _ => "主观题",
+    }
+}
+
 pub fn answer_key(q: &Question) -> String {
     if q.type_of() == QuestionType::Choice {
         let map = q.option_map();
@@ -663,5 +686,20 @@ mod tests {
         assert_eq!(verdict(&q, &s2), Some(Verdict::Correct));
         let s3 = Submission::from_json(&serde_json::json!({ "text": "x=1" }));
         assert_eq!(verdict(&q_fill(), &s3), Some(Verdict::Correct));
+    }
+
+    #[test]
+    fn type_of_matches_js() {
+        let mk = |opts: Vec<&str>, ans: &str| Question {
+            options: opts.into_iter().map(|s| s.to_string()).collect(),
+            answer: ans.to_string(),
+            ..Default::default()
+        };
+        assert_eq!(type_of(&mk(vec!["甲", "乙"], "A")), "choice", "有选项就是选择题");
+        assert_eq!(type_label(&mk(vec!["甲", "乙"], "A")), "选择题");
+        assert_eq!(type_of(&mk(vec![], "42")), "fill", "有答案没选项是填空题");
+        assert_eq!(type_label(&mk(vec![], "42")), "填空题");
+        assert_eq!(type_of(&mk(vec![], "")), "subjective");
+        assert_eq!(type_label(&mk(vec![], "  ")), "主观题", "空白答案算主观题");
     }
 }

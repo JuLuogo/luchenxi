@@ -74,6 +74,7 @@ pub use state::{
     ScoreRecord, Settings, Student as StateStudent, Team,
 };
 pub use grade::{
+    type_label, type_of,
     answer_key, auto, describe_submission, normalize_text, parse_choice, validate_question,
     AutoResult, Question, QuestionType, Submission, Validation, Verdict, LETTERS,
 };

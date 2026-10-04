@@ -69,8 +69,10 @@ export const useClassStore = defineStore('class', () => {
   const teamScore = (tid: string): number => CI.store.teamScore(state.value, tid);
   const studentsOf = (tid: string): Student[] => CI.store.studentsOf(state.value, tid);
   const calledCount = (sid: string): number => CI.store.calledCount(state.value, sid);
+// 领域层签名是 recordsOf(state, {sid, qid, quizId, tier, countable})：
+// 直接传 sid 会被当成 filter 对象 → 返回**全班**流水（审计发现）
   const recordsOf = (sid: string): ScoreRecord[] =>
-    (CI.store.recordsOf(state.value, sid) as ScoreRecord[]).slice().reverse();
+    (CI.store.recordsOf(state.value, { sid: sid }) as ScoreRecord[]).slice().reverse();
   const describeRecord = (rec: ScoreRecord): string => CI.store.describeRecord(state.value, rec);
   const questionPoints = (q: BankQuestion): number => CI.store.questionPoints(state.value, q);
   const lastRecord = (): ScoreRecord | null => CI.store.lastRecord(state.value);

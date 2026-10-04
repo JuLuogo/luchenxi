@@ -199,6 +199,49 @@ async function run() {
     check(meta3.optionDist[0].count === 1 && meta3.optionDist[0].correct === true, '分布里正确项被标出且计到 1 票');
     check(Array.isArray(meta3.hardestQuestions), '快照带出讲评建议（正确率最低的题）');
 
+    /* ---------- 9.4 学生端界面点提交（走真界面，不是直接调领域层） ---------- */
+    {
+      // 审计发现：student.js::submit() 因为快照里 q.type 缺失，把选择题当主观题，
+      // 学生选的选项从没发出去 → 永远 0 分。**两条 e2e 都没抓到**，因为它们直接调领域层。
+      // 这一段在**学生端页面上真的点选项、真的点提交**，然后看教师端收到什么。
+      const qc = HS.addQuestion({ stem: '界面提交题：2+2=?', tier: 'basic', answer: 'B', options: ['3', '4', '5'] });
+      HS.setRuntime({ qid: qc.id, quizId: null });
+      HC.classroom.setPhase('question');
+      await wait(1800);
+
+      const stuQ = sw.CIStudent.question();
+      check(!!stuQ, '学生端界面：拿到题目');
+      check(!!stuQ && stuQ.type === 'choice', '学生端界面：题目带 type=choice（缺了会被当成主观题）—— 实际 ' + (stuQ && stuQ.type));
+
+      // 在页面上点选项（学生端用 .opt 按钮，点第一个选项 = A）
+      const optBtns = Array.from(sw.document.querySelectorAll('.opt'));
+      check(optBtns.length >= 3, '学生端界面：渲染出 3 个选项（' + optBtns.length + '）');
+      const rightOpt = optBtns.find(function (b) { return (b.textContent || '').indexOf('4') >= 0; });
+      check(!!rightOpt, '学生端界面：找到正确选项（文案含 4）');
+      if (rightOpt) rightOpt.click();
+      await wait(400);
+
+      // 在页面上点提交（按钮文案含「提交」且不是「跳过」）
+      const btns = Array.from(sw.document.querySelectorAll('button'));
+      const submitBtn = btns.find(function (b) {
+        const txt = (b.textContent || '').trim();
+        return txt.indexOf('提交') >= 0 && txt.indexOf('跳过') < 0;
+      });
+      check(!!submitBtn, '学生端界面：找到提交按钮（' + btns.map(function (b) { return (b.textContent || '').trim(); }).filter(Boolean).slice(0, 6).join('/') + '）');
+      if (submitBtn) submitBtn.click();
+      await wait(1600);
+
+      // 教师端应收到带 choice 的作答 —— 这是本轮修的核心
+      const recs = HS.allRecords(HS.get()).filter(function (r) { return r.qid === qc.id; });
+      check(recs.length > 0, '教师端：收到学生提交（' + recs.length + ' 条）');
+      const last = recs[recs.length - 1];
+      if (last) {
+        check(last.result !== 'skip', '教师端：判定不是 skip（说明选项真的发出去了）—— 实际 ' + last.result);
+        check(last.result === 'correct', '教师端：判对（学生点了正确选项）—— 实际 ' + last.result);
+        check(last.points > 0, '教师端：判对得分（实际 ' + last.points + ' 分）');
+      }
+    }
+
     /* ---------- 9.5 公开课全链路（三端同步） ---------- */
     {
       // 公开课现场状态写进 state.classroom.open，随快照下发 —— 大屏与学生端据此同步。
