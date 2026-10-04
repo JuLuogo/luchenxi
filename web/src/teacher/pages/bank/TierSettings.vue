@@ -46,14 +46,17 @@ function remove(t) {
   ).then(() => { store.removeTier(t.key); ElMessage.success('已删除'); }).catch(() => {});
 }
 
-/** 每种题型的题量与累计得分（口径来自 store，不在界面重算） */
-function stat(t) {
-  const qs = store.bank.filter((q) => q.tier === t.key);
-  const recs = store.state.quizzes.flatMap((z) => z.records || []).filter((r) => r.tier === t.key);
+/** 每种题型的题量与累计得分（口径来自领域层，不在界面重算） */
+function stat(t: any) {
+  const qs = store.bank.filter((q: any) => q.tier === t.key);
+  // 审计发现：界面原来自己 flatMap 全部流水算"已判次数/累计得分"，与领域层口径不同
+  // （CI.store.recordsOf 会按 isCountable 排除纯手动与无题型流水）→
+  // 同一数字在"题型与权重"页与"学情分析"页会不一致。改用领域层口径。
+  const recs = CI.store.recordsOf(store.state, { tier: t.key, countable: true }) as any[];
   return {
     questions: qs.length,
     records: recs.length,
-    points: recs.reduce((a, r) => a + (r.points || 0), 0)
+    points: recs.reduce((a: number, r: any) => a + (r.points || 0), 0)
   };
 }
 

@@ -8,7 +8,7 @@
  *   · 综合分 = 掌握度 × 覆盖系数（没考过的题型不直接算 0，但要打折）
  *   · 评级 = 六边形战士 / 全面发展 / 学有余力 / 偏科尖子 / 稳步提升 / 基础待巩固 / 需要重点辅导 / 样本不足
  */
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch, onUnmounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useClassStore } from '../../shared/class-store';
 import { CI } from '../../shared/bridge';
@@ -27,7 +27,14 @@ async function loadBoard() {
   rustBoard.value = r.source === 'rust' ? r.board : null;
 }
 onMounted(loadBoard);
-watch(() => store.rev, () => { loadBoard(); });
+// 审计发现：原来每次记分（rev++）都发一个请求、无防抖 → 老师连点判分时持续打请求。
+// 加 400ms 防抖 + 卸载时清掉；失败也由 loadBoard 内部标注来源。
+let boardTimer: ReturnType<typeof setTimeout> | null = null;
+watch(() => store.rev, () => {
+  if (boardTimer) clearTimeout(boardTimer);
+  boardTimer = setTimeout(() => { boardTimer = null; loadBoard(); }, 400);
+});
+onUnmounted(() => { if (boardTimer) clearTimeout(boardTimer); });
 const board = computed<any>(() => rustBoard.value || CI.analysis.abilityBoard(store.state));
 
 const current = computed(() => {

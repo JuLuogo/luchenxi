@@ -36,8 +36,29 @@ const scopeName = computed(() => (scope.value === 'all'
  * 综合表现（多维度评价）：正确性 / 参与度 / 进步 三维加权，可下钻。
  * 口径来自 CI.analysis.studentEvaluation（与 Rust composite.rs 同契约、有 parity）。
  */
+/**
+ * 综合表现（多维度评价）：正确性 / 参与度 / 进步 三维加权。
+ * 口径来自 CI.analysis.studentEvaluation（与 Rust composite.rs 同契约、有 parity）。
+ *
+ * 审计发现：原来模板对每行调用 2~3 次，每次都重跑全量统计（40 人班一次渲染上百次全量扫描）。
+ * 现在**按 rev 预计算成 Map**，模板查表即可。
+ */
+const evaluationMap = computed<Map<string, any>>(() => {
+  void store.rev;
+  const m = new Map<string, any>();
+  try {
+    (ranking.value || []).forEach((r: any) => {
+      if (!r || !r.sid) return;
+      try { m.set(r.sid, CI.analysis.studentEvaluation(store.state, r.sid, scopeOpts.value)); }
+      catch { m.set(r.sid, null); }
+    });
+  } catch { /* 整体失败也不让页面崩 */ }
+  return m;
+});
+
+/** 查表（找不到返回 null，模板要写 parts || [] 守卫） */
 function evaluationOf(sid: string): any {
-  try { return CI.analysis.studentEvaluation(store.state, sid, scopeOpts.value); } catch { return null; }
+  return evaluationMap.value.get(sid) || null;
 }
 
 /** 按题目正确率（低 → 高）：课后讲评顺序的依据 */
@@ -115,7 +136,13 @@ async function loadStats() {
   statsNote.value = r.note || '';
 }
 onMounted(loadStats);
-watch(() => [scope.value, store.rev], () => { loadStats(); });
+// 审计发现：原来 watch rev 让**每次记分都发一个 /api/domain/stats**（无防抖）；
+// 且 loadStats 没有 catch → 一次失败就永远停在"加载中…"。加 400ms 防抖。
+let statsTimer: ReturnType<typeof setTimeout> | null = null;
+watch(() => [scope.value, store.rev], () => {
+  if (statsTimer) clearTimeout(statsTimer);
+  statsTimer = setTimeout(() => { statsTimer = null; void loadStats(); }, 400);
+});
 
 /** 学生明细表：每人每题型的得分与正确率 */
 const detail = computed(() => {
