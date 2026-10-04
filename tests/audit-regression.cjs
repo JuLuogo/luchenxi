@@ -118,8 +118,13 @@ console.log('\n=== F. 脚本不再静默失败 ===');
   check(/无法验证本仓库的枢纽/.test(read('scripts/doctor.mjs')), 'doctor 端口占用如实报告');
   check(/sidecar 拉取失败/.test(read('scripts/ci-local.mjs')), 'ci-local 检查 sidecar 退出码');
   check(/process\.exit\(1\)/.test(read('tests/probe.js')), 'probe.js 失败即非 0');
+  // 注意：doctor 的退出码是**环境相关**的 —— 0 = 全部通过，1 = 有项待处理
+  // （CI 上缺 JDK/Android SDK/MSVC 等本来就会 1）。当初的 bug 是**崩溃**：
+  // Windows 上退出码是 -1073740791（0xC0000409，libuv 断言 abort）。
+  // 所以这里断言的是"正常退出"，不是"必须为 0"——后者是环境相关的坏断言。
   const d = spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'doctor.mjs')], { cwd: ROOT, encoding: 'utf8' });
-  check(d.status === 0, 'doctor 退出码 0（不再崩溃）—— 实际 ' + d.status);
+  check(d.status === 0 || d.status === 1,
+    'doctor 正常退出（0=全通过 / 1=有项待处理），不是崩溃码 —— 实际 ' + d.status);
 }
 
 console.log('\n=== G. 新增的永久守卫都在 CI 里 ===');
