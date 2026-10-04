@@ -61,8 +61,16 @@ const nodeHub = read('sync-server.js');
 });
 
 // 2d. dump 通道不得广播（安全约束）
-const dumpBlock = nodeHub.slice(nodeHub.indexOf("case 'dump'"), nodeHub.indexOf("case 'request'"));
-ok(dumpBlock.indexOf('broadcast') < 0, 'dump 分支不广播（只回教师端）');
+// 审计发现：原来用 indexOf("case 'dump'") 切片，而 sync-server.js 里是 `msg.type === 'dump'`
+// → 两个 indexOf 都是 -1 → 切出空串 → `.indexOf("broadcast") < 0` 恒真（等于没断言）
+const dumpStart = nodeHub.indexOf("msg.type === 'dump'");
+const dumpEnd = nodeHub.indexOf("request-dump", dumpStart);
+ok(dumpStart >= 0 && dumpEnd > dumpStart, "能定位到 dump 分支（切不出这一段说明断言失效）");
+const dumpBlock = dumpStart >= 0 && dumpEnd > dumpStart ? nodeHub.slice(dumpStart, dumpEnd) : "";
+ok(dumpBlock.length > 0, "dump 分支切片非空（长度 " + dumpBlock.length + "）");
+ok(dumpBlock.indexOf("broadcast") < 0, "dump 分支不广播（只回教师端）");
+// 反向确认：这一段里确实有 dump 的写入逻辑（否则切错地方也会"通过"）
+ok(dumpBlock.indexOf("room.dump = msg.payload") >= 0, "切到的确实是 dump 写入分支");
 
 /* ================= 3. Rust 枢纽（hub.rs） ================= */
 group('Rust 枢纽（apps/teacher）');

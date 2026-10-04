@@ -38,7 +38,9 @@ async function copy(text, label) {
 }
 
 const addresses = computed(() => {
-  const list = (info.value && info.value.addresses) || [];
+    // 注意：/health 返回的字段名是 **ips**（Rust 与 Node 两端都是），不是 addresses ——
+    // 写错的话"本机其它地址"永远不显示（审计发现）
+  const list = (info.value && info.value.ips) || [];
   return list.length ? list : [];
 });
 </script>

@@ -316,7 +316,12 @@ export async function gradeWithRust(cmd: {
           customPoints: q.points ?? null,
           result: g.result,
           rank
-        }
+        },
+        // **必须把题型表与计分设置一起发上去**：Rust 侧不传就回落默认值 ——
+        // 老师改过的题型权重、halfRatio、名次加分会在 Rust 路径上全部失效，
+        // 同一份数据"走 Rust"和"走本地"得分不同（审计发现）
+        tiers: (CI.store.get() as { tiers?: unknown }).tiers,
+        settings: (CI.store.get() as { settings?: unknown }).settings
       })
     });
     const sc = await sRes.json();

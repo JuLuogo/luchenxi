@@ -162,13 +162,13 @@ function runCheck() {
         <div v-if="check" class="panel">
           <h3 class="panel-title">自检结果</h3>
           <el-table :data="check.items || []" size="small">
-            <el-table-column prop="label" label="项" min-width="120" />
+            <el-table-column prop="name" label="项" min-width="120" />
             <el-table-column label="结果" width="80">
               <template #default="{ row }">
-                <el-tag :type="row.ok ? 'success' : 'warning'" size="small">{{ row.ok ? '通过' : '注意' }}</el-tag>
+                <el-tag :type="row.pass ? 'success' : 'warning'" size="small">{{ row.pass ? '通过' : '注意' }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="hint" label="说明" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="detail" label="说明" min-width="160" show-overflow-tooltip />
           </el-table>
         </div>
       </el-col>
