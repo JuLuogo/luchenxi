@@ -176,7 +176,28 @@ try {
     await run('location.hash = "#/"');
     await sleep(3000);
     const homeText = await run('document.body.innerText');
-    ok(typeof homeText === 'string' && homeText.includes('冒烟同学') === false || true, '概览页正常渲染');
+    // 原来这里是 `(A && B) || true` —— 恒真，等于没断言（审计发现）。
+    // 概览页曾经因为 counts 调用写错而整页白屏，所以这条要真的断言到东西：
+    // 它必须渲染出课程名或概览区块文案。
+    ok(typeof homeText === 'string' && homeText.length > 30,
+      '概览页正常渲染（有内容，不是白屏）—— 长度 ' + (typeof homeText === 'string' ? homeText.length : '?')),
+
+    // ⑤ 响应式桥：**不切路由**，在当前页改数据，看界面跟不跟 ——
+    // 审计发现 class-store 的 state 是 computed（返回同一个对象引用）→ 通知链断掉，
+    // 界面只在切路由（重新挂载）时才更新。原来 checkFlow 恰好靠切路由断言，绕过了这个 bug。
+    await run('location.hash = "#/class"');
+    await sleep(3000);
+    const beforeClass = await run('document.body.innerText');
+    await run(`(function(){
+      var S = window.CI.store;
+      S.addStudent('原地更新同学', S.get().teams[0].id);
+      return true;
+    })()`);
+    await sleep(1500);
+    const afterClass = await run('document.body.innerText');
+    ok(typeof afterClass === 'string' && afterClass.includes('原地更新同学'),
+      '原地更新：加学生后当前页立刻显示（不靠切路由）');
+    ok(afterClass !== beforeClass, '原地更新：页面文本确实变了');
 
     ok(logs.length === 0, '整条流程控制台无报错' + (logs.length ? '：' + String(logs[0]).slice(0, 200) : ''));
     await send('Target.closeTarget', { targetId: t2.targetId });
@@ -187,6 +208,7 @@ try {
   await checkPage('admin.html', '教师端', '#/analysis', true);   // 学情分析页（统计最重的页面）
   await checkPage('admin.html', '教师端', '#/classroom', true);  // 课堂协同页
   await checkPage('admin.html', '教师端', '#/open', true);   // 公开课（不能出问题的场景）
+
   await checkPage('admin.html', '教师端', '#/settings/rubric', true);   // 公开课量规（维度/档位/展示策略）
   await checkPage('admin.html', '教师端', '#/settings/ai', true);       // AI 润色（默认关闭）
   await checkPage('student.html', '课堂小组端', '', false);

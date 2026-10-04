@@ -9,7 +9,7 @@
  * 见 `@/bindings/generated`（specta 从 Rust 生成）。
  */
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed, ref, shallowRef, triggerRef } from 'vue';
 import { CI } from './bridge';
 import type {
   BankQuestion,
@@ -25,13 +25,21 @@ type Timer = ReturnType<typeof setTimeout> | null;
 export const useClassStore = defineStore('class', () => {
   /* ---------- 响应式桥 ---------- */
   const rev = ref(0);
+  /**
+   * 领域层状态 → 响应式
+   *
+   * **必须是 shallowRef + triggerRef，不能用 computed**：
+   * 领域层是**原地改**同一个对象（`CI.store.get()` 每次返回同一个引用），
+   * 而 computed 在值"没变"（同一个引用）时不会 bump 依赖版本 ——
+   * 通知链会断在这一层，界面只在切路由（重新挂载）时才更新。
+   * （审计用真实 Vue 渲染器实测过：改数据后渲染次数仍是 1。）
+   */
+  const state = shallowRef<ClassroomState>(CI.store.get() as ClassroomState);
   CI.store.on('change', () => {
+    state.value = CI.store.get() as ClassroomState;
+    // 同一个对象引用也要显式通知 —— 这是这条桥能工作的关键
+    triggerRef(state);
     rev.value += 1;
-  });
-
-  const state = computed<ClassroomState>(() => {
-    void rev.value; // 依赖版本号触发重算
-    return CI.store.get() as ClassroomState;
   });
 
   /* ---------- 派生数据 ---------- */
@@ -42,9 +50,11 @@ export const useClassStore = defineStore('class', () => {
   const teams = computed<Team[]>(() =>
     (state.value.teams || []).slice().sort((a, b) => (a.order || 0) - (b.order || 0))
   );
-  const students = computed<Student[]>(() => state.value.students || []);
-  const bank = computed<BankQuestion[]>(() => state.value.bank || []);
-  const quizzes = computed(() => state.value.quizzes || []);
+  // 注意：这些列表要**返回副本**（.slice()）—— 领域层原地 push 时数组引用不变，
+  // 返回同一个数组会让下游组件收不到更新（与 state 那条同理）
+  const students = computed<Student[]>(() => (state.value.students || []).slice());
+  const bank = computed<BankQuestion[]>(() => (state.value.bank || []).slice());
+  const quizzes = computed(() => (state.value.quizzes || []).slice());
   const runtime = computed(() => state.value.runtime || ({} as ClassroomState['runtime']));
   const logs = computed(() => (state.value.logs || []).slice(-200).reverse());
 
