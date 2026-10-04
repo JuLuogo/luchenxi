@@ -16,13 +16,19 @@ const ci = fs.readFileSync(path.join(ROOT, 'scripts/ci-local.mjs'), 'utf8');
 const ciMentions = (name) => ci.includes(name);
 
 /* ② tests/ 下的可独立运行测试 */
+/**
+ * 需要**运行中的枢纽**才能跑的测试 —— 它们由 CI 的 withHub/withRustHub 负责，
+ * 单独跑必然失败（不是代码问题，是环境问题）。审计时要把它们分开看。
+ */
+const NEEDS_HUB = ['fix-hub-verify.cjs'];
 const testFiles = fs.readdirSync(path.join(ROOT, 'tests'))
   .filter((f) => /\.(js|mjs|cjs)$/.test(f) && !/^(shot|_|run-smoke|ci-status|probe|audit)/.test(f))
   .sort();
+const standalone = testFiles.filter((f) => !NEEDS_HUB.includes(f));
 
-console.log('=== 逐个跑测试（' + testFiles.length + ' 个）===\n');
+console.log('=== 逐个跑测试（' + standalone.length + ' 个可独立运行；另有 ' + NEEDS_HUB.length + ' 个需要枢纽）===\n');
 const rows = [];
-for (const f of testFiles) {
+for (const f of standalone) {
   const t0 = Date.now();
   const r = spawnSync(process.execPath, [path.join('tests', f)], { cwd: ROOT, encoding: 'utf8', timeout: 600000 });
   const ms = Date.now() - t0;
@@ -43,6 +49,7 @@ const failed = rows.filter((r) => !r.ok);
 const notInCi = rows.filter((r) => !r.inCi);
 console.log('\n=== 汇总 ===');
 console.log('  通过 ' + (rows.length - failed.length) + ' / ' + rows.length);
+  if (NEEDS_HUB.length) console.log('  （需枢纽、由 CI 负责：' + NEEDS_HUB.join(', ') + '）');
 if (failed.length) {
   console.log('  ❌ 失败：' + failed.map((r) => r.f).join(', '));
 }
