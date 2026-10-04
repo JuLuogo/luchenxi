@@ -197,6 +197,9 @@ class CDP {
     .map(function(e){ return e.responseStatus + ' ' + e.name; })`);
   if (missing && missing.length) {
     console.log('\n资源加载失败：');
+  // 审计发现：404 原来只打印、退出码不看它 → 截图全错也绿
+  console.error('✘ 有 ' + missing.length + ' 个资源加载失败（截图不可信）');
+  process.exitCode = 1;
     missing.slice(0, 10).forEach((m) => console.log('  · ' + m));
   }
 

@@ -188,18 +188,19 @@ class CDP {
       if (/SMOKE (DONE|FAILED)/.test(text)) break;
     }
 
-    const consoleErrors = cdp.events
-      .filter((e) => e.method === 'Log.entryAdded' && e.params.entry.level === 'error')
-      .map((e) => e.params.entry.text);
-    const exceptions = cdp.events
+const consoleErrors = cdp.events
+  .filter((ev) => ev.method === 'Log.entryAdded' && ev.params.entry.level === 'error')
+  .map((ev) => ({ text: ev.params.entry.text, url: ev.params.entry.url || '' }));
+const exceptions = cdp.events
       .filter((e) => e.method === 'Runtime.exceptionThrown')
       .map((e) => (e.params.exceptionDetails.exception && e.params.exceptionDetails.exception.description) || e.params.exceptionDetails.text);
+
 
     console.log('\n================ 端到端冒烟结果 ================');
     console.log(text || '（未获取到测试输出）');
     if (consoleErrors.length) {
       console.log('\n-- 浏览器控制台错误 --');
-      consoleErrors.slice(0, 20).forEach((t) => console.log('  ! ' + t));
+  consoleErrors.slice(0, 20).forEach((c) => console.log('  ! ' + (c && c.text ? c.text : c) + (c && c.url ? '  ← ' + c.url : '')));
     }
     if (exceptions.length) {
       console.log('\n-- 未捕获异常 --');
@@ -207,7 +208,28 @@ class CDP {
     }
 
     const failed = /SMOKE FAILED/.test(text) || /FAIL ::/.test(text) || !/SMOKE DONE/.test(text);
-    exitCode = failed ? 1 : 0;
+
+    // 审计发现：控制台错误与未捕获异常原来**只打印不参与判定** →
+    // 应用里抛异常但用例走完照样绿（而 ui-vue.test.mjs 把控制台错误算失败，标准不一致）。
+    // 注意要放在 failed 声明**之后**（放前面会踩 TDZ：Cannot access before initialization）。
+    // 分类：只放行**已知良性**，其余一律计入失败（默认严格）。
+    //   · favicon 404 —— 浏览器自动请求，页面里没放图标，无害
+    //   · 409 Conflict —— 这两条 e2e **故意**测"过期 rev 被拒"那条路径（协议正确行为）
+    const BENIGN = [
+      (c) => /favicon/i.test(c.url),
+      (c) => /409 \(Conflict\)/.test(c.text),
+      // 探针探测"枢纽有没有领域端点"：打 Node 枢纽时必然 404（它不实现 /api/domain/*），
+      // 这是**设计内的探测失败**，之后应用正确回退本地实现。浏览器会自动记这条错误，无法避免。
+      (c) => /404/.test(c.text) && /\/api\/domain\//.test(c.url)
+    ];
+    const realErrors = consoleErrors.filter((c) => !BENIGN.some((f) => f(c)));
+    const consoleBad = realErrors.length + exceptions.length;
+    if (consoleBad > 0) {
+      console.log('  · 控制台错误/异常 ' + consoleBad + ' 条（计入失败）');
+      realErrors.slice(0, 10).forEach((c) => console.log('    ! ' + c.text + '  ← ' + c.url));
+      exceptions.slice(0, 10).forEach((t) => console.log('    ! ' + String(t).split('\n')[0].slice(0, 160)));
+    }
+    exitCode = (failed || consoleBad > 0) ? 1 : 0;
     console.log('\n' + (failed ? '❌ 端到端冒烟未通过' : '✅ 端到端冒烟全部通过'));
   } catch (e) {
     console.error('运行失败：', e.message);

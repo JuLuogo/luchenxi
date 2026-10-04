@@ -198,10 +198,15 @@ ok(/PRAGMA foreign_keys = ON/.test(schema), 'schema 启用外键');
 group('GitHub Actions 工作流');
 
 let YAML = null;
-try { YAML = require('yaml'); } catch (e) { /* 未安装则跳过解析校验 */ }
+try { YAML = require('yaml'); } catch (e) { /* 见下面的失败记录 */ }
 
 let Ajv = null;
-try { Ajv = require('ajv'); } catch (e) { /* 未安装则跳过 schema 校验 */ }
+try { Ajv = require('ajv'); } catch (e) { /* 见下面的失败记录 */ }
+
+// 审计发现：缺依赖时只写注释、**不记失败** → 后面所有 workflow 语义断言整体跳过，
+// 而 CI 仍然全绿（约 20 条断言凭空消失）。缺依赖要显式失败，不能静默降级。
+ok(!!YAML, '依赖 yaml 可用（缺了会让 workflow 解析校验整块跳过）');
+ok(!!Ajv, '依赖 ajv 可用（缺了会让 workflow schema 校验整块跳过）');
 
 const WORKFLOW_SCHEMA = 'packages/schema/github-workflow.schema.json';
 let workflowValidator = null;

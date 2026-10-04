@@ -21,8 +21,10 @@ function eq(a, b, label) {
 function group(n) { console.log('\n== ' + n + ' =='); }
 
 if (!hubdb.available) {
-  console.log('⚠ 当前 Node 不支持 node:sqlite，跳过（需要 Node 22+）');
-  process.exit(0);
+  // 审计发现：原来这里 exit 0 —— 整层 SQLite 持久化测试**静默跳过**，
+  // "全部通过"是假的（CI 固定 Node 24，真不可用说明环境不对，应当红）。
+  console.error('✘ 当前 Node 不支持 node:sqlite（需要 Node 22+）—— 持久化测试无法运行');
+  process.exit(1);
 }
 
 /* ---------- 造一份与前端一致的 state ---------- */

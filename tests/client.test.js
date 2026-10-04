@@ -105,7 +105,12 @@ ok(/schema\.sql/.test(syncUi), 'sync-ui 同时把 SQLite schema 给 Rust 侧');
    —— 否则又回到"网页版是新界面、客户端还是旧脸"的分裂状态 */
 Object.keys(APPS).forEach((app) => {
   const uiDir = path.join(ROOT, 'apps', app, 'ui');
-  if (!fs.existsSync(uiDir)) return;
+  // 审计发现：原来 ui/ 不存在就直接 return —— "客户端打包的必须是 Vue 产物"整组断言
+  // **静默消失**且不记失败。套壳分裂正是这个文件要拦的回归，所以缺失要算失败。
+  if (!fs.existsSync(uiDir)) {
+    ok(false, app + '/ui 目录存在（缺了说明 prepare-ui/sync-ui 没跑，客户端会打包出空壳）');
+    return;
+  }
   APPS[app].entry.forEach((html) => {
     const text = fs.readFileSync(path.join(uiDir, html), 'utf8');
     ok(text.includes('./assets/'), app + '/' + html + ' 引用 Vite 产物（./assets/）');
