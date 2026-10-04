@@ -89,13 +89,12 @@ const timerText = computed(() => {
 });
 
 /** 签到：已入座队伍 / 全部队伍 */
+/** 签到：已入座队伍 / 全部队伍（**口径来自领域层**，不在界面重算） */
 const checkin = computed<{ seated: number; total: number; rate: number }>(() => {
   void tick.value;
-  const teams = store.teams || [];
-  const online: Record<string, boolean> = {};
-  (presence.value.teams || []).forEach((t: any) => { if (t.online) online[t.teamId] = true; });
-  const seated = teams.filter((t) => online[t.id]).length;
-  return { seated, total: teams.length, rate: teams.length ? Math.round((seated / teams.length) * 100) : 0 };
+  // 审计发现：这里原来自己用 presence+teams 重算，而 CI.classroom.checkinStats(s)
+  // 返回的就是同一个东西 → 命中"界面不重算规则/统计"的硬约定，将来必分叉
+  return CI.classroom.checkinStats(store.state) as { seated: number; total: number; rate: number };
 });
 
 function toggleAccepting() {  const on = !accepting.value;

@@ -123,7 +123,8 @@ function teamNameOf(tid) {
         <h2>排行榜与导出</h2>
         <div class="desc">
           {{ store.students.length }} 名学生 · {{ store.teams.length }} 支队伍 ·
-          记录 {{ store.state.quizzes.reduce((a, z) => a + (z.records || []).length, 0) }} 条
+          <!-- 口径统一走领域层 allRecords（Dashboard 用的就是它）：审计发现这里自己 reduce，两种算法会分叉 -->
+          记录 {{ CI.store.allRecords(store.state).length }} 条
         </div>
       </div>
       <div class="actions">

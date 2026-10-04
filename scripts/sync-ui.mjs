@@ -118,7 +118,7 @@ for (const name of names) {
   // 入口自检：确认拷进来的 html 真的引用了 assets（否则说明构建产物不对）
   for (const f of cfg.html) {
     const p = path.join(out, f);
-    if (!fs.existsSync(p)) continue;
+    if (!fs.existsSync(p)) { console.error('✘ 缺少入口 ' + p + '（web/dist 不完整）—— 客户端会打包出缺入口的空壳'); process.exit(1); }
     const html = fs.readFileSync(p, 'utf8');
     if (!html.includes('./assets/')) {
       console.error('✘ ' + cfg.out + '/' + f + ' 没有引用 ./assets/ —— 构建产物不对');

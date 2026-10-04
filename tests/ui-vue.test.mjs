@@ -45,7 +45,24 @@ await new Promise((r) => server.listen(PORT, '127.0.0.1', r));
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-uivue-'));
-const chrome = spawn('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', [
+// 审计发现：这里原来**硬编码 Windows 的 Chrome 路径**（run-smoke.js 有跨平台候选表，这里没有）
+// → 在 ubuntu CI 上必然起不来，Vue 覆盖形同虚设。改成同一份候选表。
+const CANDIDATES = [
+  process.env.CHROME_PATH || '',
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  '/usr/bin/chromium-browser', '/usr/bin/chromium',
+  '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/snap/bin/chromium',
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+].filter(Boolean);
+const browserPath = CANDIDATES.find((c) => fs.existsSync(c));
+if (!browserPath) {
+  console.error('✘ 找不到 Chrome/Chromium —— 设 CHROME_PATH 指定；Vue 冒烟无法运行');
+  process.exit(1);   // 明确失败：找不到浏览器不等于"通过"
+}
+const chrome = spawn(browserPath, [
   '--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=9579',
   '--user-data-dir=' + profile, 'about:blank'
 ], { stdio: 'ignore', detached: true });
@@ -60,6 +77,11 @@ try {
   for (let i = 0; i < 40 && !version; i++) {
     try { const r = await fetch('http://127.0.0.1:9579/json/version'); if (r.ok) version = await r.json(); } catch { /* 等 */ }
     if (!version) await sleep(300);
+  }
+  // 起不来时 version 是 null —— 原来直接读 .webSocketDebuggerUrl 会抛 TypeError，
+  // 报错信息看不出"是浏览器没起来"。这里给明确信息。
+  if (!version) {
+    throw new Error('浏览器没起来（CDP 端口 9579 无响应）：' + browserPath);
   }
   ws = new WebSocket(version.webSocketDebuggerUrl, { perMessageDeflate: false, maxPayload: 64 * 1024 * 1024 });
   await new Promise((res, rej) => { ws.on('open', res); ws.on('error', rej); });

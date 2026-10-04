@@ -30,6 +30,7 @@ const counts = computed(() => {
     teams: s.teams.length,
     questions: s.bank.length,
     quizzes: s.quizzes.length,
+    // 口径统一走领域层 allRecords（Dashboard 用的就是它）：审计发现这里自己 reduce，两种算法会分叉
     records: s.quizzes.reduce((a, z) => a + (z.records || []).length, 0)
   };
 });
