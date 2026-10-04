@@ -146,11 +146,31 @@ function askRemoveRecord(rid: string) {
     .catch(() => {});
 }
 
+
+/** 课程名（顶栏与导出文件名都用它）—— 内联编辑，改完立即生效 */
+const courseName = ref<string>((store.settings as any).courseName || '');
+function saveCourseName(v: string) {
+  store.updateSettings({ courseName: String(v || '').trim() || '课堂积分' });
+  ElMessage.success('课程名已更新');
+}
 </script>
 
 <template>
   <div>
     <div class="page-head">
+      <!-- 课程名：AboutPage 早就说「可在这里改」，但控件一直不存在（审计发现） -->
+      <div class="course-row">
+        <span class="course-label">课程名</span>
+        <el-input
+          v-model="courseName"
+          class="course-input"
+          maxlength="40"
+          show-word-limit
+          placeholder="如：24机械高考公开课"
+          @change="saveCourseName"
+        />
+        <span class="hint">顶栏与导出的报告文件名都用它</span>
+      </div>
       <div>
         <h2>班级与积分</h2>
         <div class="desc">
@@ -326,4 +346,7 @@ function askRemoveRecord(rid: string) {
 .filters { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
 .ops { display: flex; flex-wrap: wrap; gap: 0 2px; white-space: nowrap; }
 .rec { display: flex; justify-content: space-between; gap: 10px; }
+.course-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.course-label { color: var(--el-text-color-secondary); font-size: 13px; }
+.course-input { max-width: 320px; }
 </style>

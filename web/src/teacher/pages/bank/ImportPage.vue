@@ -82,7 +82,9 @@ function downloadTemplate() {
   const sample = store.tiers.map((t, i) => ({
     stem: `【${t.label}示例】请替换为真实题干${i + 1}`,
     tier: t.key,
-    answer: t.key === 'improve' ? '' : '参考答案',
+    // 审计发现：原来写死题型 key improve 来判断主观题留空答案 —— 题型可改名换 key，换过就错。
+    // 改成按「权重最大的题型」（约定为提升/主观题）判断，不依赖具体 key。
+    answer: t.key === ((store.tiers[store.tiers.length - 1] || {}) as any).key ? '' : '参考答案',
     options: [],
     tags: ['示例'],
     source: '',

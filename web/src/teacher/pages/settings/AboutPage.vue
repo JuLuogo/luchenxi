@@ -57,7 +57,7 @@ onMounted(() => {
           <el-descriptions :column="1" border size="small">
             <el-descriptions-item label="课程名">{{ settings.courseName }}</el-descriptions-item>
           </el-descriptions>
-          <div class="hint">课程信息可在「班级与积分」页顶部修改（第二批开放内联编辑）。</div>
+          <div class="hint">课程信息（课程名）可在「班级与积分」页顶部直接编辑，改完立即生效（顶栏与导出的报告文件名都用它）。</div>
         </div>
 
         <div class="panel">

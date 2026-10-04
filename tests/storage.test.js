@@ -9,6 +9,21 @@
 'use strict';
 
 const fs = require('fs');
+
+/**
+ * 轮询等待条件成立（带超时）
+ *
+ * 审计发现：这里原来用 setTimeout(1300/2400) **猜**退避时长 ——
+ * CI 负载高时 1s 退避可能超过 1.3s，断言会随机红。改成轮询。
+ */
+async function waitFor(fn, ms = 6000, step = 50) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) {
+    try { if (fn()) return true; } catch (e) { /* 还没好 */ }
+    await new Promise((r) => setTimeout(r, step));
+  }
+  return false;
+}
 const path = require('path');
 const vm = require('vm');
 
@@ -244,13 +259,11 @@ function makeEnv(opts) {
     ok(env6.CI.storage.describe().indexOf('重试中') >= 0, 'describe() 显示重试中');
 
     // 退避 1s 后自动重试 → 第 2 次仍失败
-    await new Promise((r) => setTimeout(r, 1300));
-    ok(env6.CI.storage.status().attempts >= 2, '自动重试发生了（累计 ' + env6.CI.storage.status().attempts + ' 次）');
+  ok(await waitFor(() => env6.CI.storage.status().attempts >= 2), '自动重试发生了（累计 ' + env6.CI.storage.status().attempts + ' 次）');
     ok(env6.CI.storage.isDirty() === true, '仍失败时保持 dirty');
 
     // 第 3 次成功（退避 2s 后）
-    await new Promise((r) => setTimeout(r, 2400));
-    eq(env6.CI.storage.isDirty(), false, '最终写入成功后 dirty 清除');
+  ok(await waitFor(() => env6.CI.storage.isDirty() === false), '最终写入成功后 dirty 清除');
     eq(env6.CI.storage.status().attempts, 0, '成功后失败计数清零');
     eq(env6.CI.storage.warning(), '', '成功后不再有警示');
     eq(attempts >= 3, true, '至少尝试了 3 次（实际 ' + attempts + '）');
