@@ -1829,6 +1829,35 @@ group('样本不足要显式标注 + 口头作答入口');
     '两页模板里的可见文案没有 Markdown 星号（注释里的不算）');
 })();
 
+/* ================= 34. 计分规则对学生可见（审计 Top 8 第 3 位） ================= */
+group('计分规则对学生可见');
+
+(function () {
+  /* 学生只看到"我得了多少分"，不知道分怎么来 —— 改权重后无法复核，
+     任何主观分都会变成新的不信任源（课堂派已验证的做法是发布考核标准）。 */
+  ok(typeof CIStudent.rules === 'function', '学生端有 rules() 访问器（只读规则）');
+  const r = CIStudent.rules();
+  ok(Array.isArray(r.tiers), 'rules() 返回题型权重表');
+  eq(typeof r.halfRatio, 'number', 'halfRatio 是数字（半对系数）');
+  eq(typeof r.wrongPenalty, 'number', 'wrongPenalty 是数字（答错扣分）');
+  eq(typeof r.minSample, 'number', 'minSample 是数字（评级门槛）');
+
+  /* 规则要跟着老师设置走（不是写死的文案） */
+  const s0 = S.defaultState();
+  const saved = S.get();
+  S.replaceState(s0);
+  S.updateSettings({ halfRatio: 0.25, wrongPenalty: 2 });
+  // 直接验领域层设置生效（学生端读的是同一份快照的 settings）
+  eq(S.get().settings.halfRatio, 0.25, '老师改半对系数后设置里确实变了');
+  eq(S.get().settings.wrongPenalty, 2, '老师改答错扣分后设置里确实变了');
+  S.replaceState(saved);
+
+  /* 界面：学生端有「计分规则」页，且没有 Markdown 星号 */
+  const stuApp = fs.readFileSync(path.join(__dirname, '..', 'web', 'src', 'student', 'App.vue'), 'utf8');
+  ok(/计分规则/.test(stuApp), '学生端有「计分规则」页');
+  ok(/rulesInfo/.test(stuApp), '页面读的是 rules()（不是写死的数字）');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

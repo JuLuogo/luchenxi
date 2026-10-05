@@ -21,6 +21,12 @@ const tab = ref('qa');          // qa | score
 
 /** 公开课现场状态：被点到时弹「到你了」 */
 /** 待补交条数（断网时提交会排队）—— 领域层维护队列，这里定时读一眼 */
+/** 计分规则（只读）：来自学生端收到的快照，改动实时同步 */
+const rulesInfo = computed(() => {
+  try { return (CIStudent as any).rules ? (CIStudent as any).rules() : { tiers: [], halfRatio: 0.5, wrongPenalty: 0, fastBonus: 0, buzzRankBonuses: [], minSample: 5 }; }
+  catch { return { tiers: [], halfRatio: 0.5, wrongPenalty: 0, fastBonus: 0, buzzRankBonuses: [], minSample: 5 }; }
+});
+
 const pending = ref(0);
 onMounted(() => {
   const tick = () => {
@@ -304,6 +310,26 @@ function switchTeam() {
 
         <!-- 我们组 -->
         <van-tab title="我们组" name="team">
+      <!-- 计分规则（只读）：学生只看到分数、不知道分怎么来，是"不信任"的源头 -->
+      <van-tab title="计分规则" name="rules">
+        <van-cell-group inset title="题型与权重">
+          <van-cell
+            v-for="r in rulesInfo.tiers"
+            :key="r.key"
+            :title="r.label"
+            :value="'每题 ' + r.weight + ' 分'"
+          />
+        </van-cell-group>
+        <van-cell-group inset title="计分细节">
+          <van-cell title="部分正确（半对）" :value="'按 ' + Math.round(rulesInfo.halfRatio * 100) + '% 计分'" />
+          <van-cell title="答错扣分" :value="rulesInfo.wrongPenalty > 0 ? ('扣 ' + rulesInfo.wrongPenalty + ' 分') : '不扣分'" />
+          <van-cell title="抢答加分" :value="rulesInfo.fastBonus > 0 ? ('+' + rulesInfo.fastBonus + ' 分') : (rulesInfo.buzzRankBonuses.length ? '按名次加分' : '暂未开启')" />
+          <van-cell title="评级所需最少作答" :value="rulesInfo.minSample + ' 次'" />
+        </van-cell-group>
+        <div class="rules-note">
+          规则由老师设置，改动后会实时同步到这里 —— 你可以随时核对分数是怎么来的。
+        </div>
+      </van-tab>
           <div class="pane">
             <div class="mini-title">选谁作答（老师点名时按这个报）</div>
             <div class="member-list">
@@ -425,4 +451,5 @@ function switchTeam() {
 .board .q-stem { font-size: var(--fs-3xl); }
 .board .opt { font-size: var(--fs-2xl); }
 .why { margin-top: var(--sp-2); font-size: var(--fs-sm); color: #92400e; background: #fffbeb; border-radius: var(--radius); padding: var(--sp-2) var(--sp-2); line-height: 1.6; }
+.rules-note { padding: var(--sp-3) var(--sp-4); color: var(--text-tertiary); font-size: var(--fs-xs); line-height: var(--lh-base); }
 </style>

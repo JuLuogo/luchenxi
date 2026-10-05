@@ -569,6 +569,30 @@ loadQueue();   // 刷新页面也不丢：把上次没发出去的读回来
   }
 
   /** Vue 侧读取的完整状态（每次收快照 / 提交后都会变） */
+  /**
+   * 计分规则（只读，给学生看）—— 审计 Top 8 第 3 位。
+   *
+   * 为什么：学生只看到"我得了多少分"，不知道分怎么来；改权重后无法复核，
+   * 任何主观分都会变成新的不信任源（课堂派已验证的做法是"发布考核标准"）。
+   *
+   * 数据来自学生端已经收到的快照，不需要新端点。
+   */
+  function rules() {
+    var s = payload || {};
+    var st = s.settings || {};
+    var tiers = (s.tiers || []).map(function (t) {
+      return { key: t.key, label: t.label, weight: t.weight };
+    });
+    return {
+      tiers: tiers,
+      halfRatio: typeof st.halfRatio === 'number' ? st.halfRatio : 0.5,
+      wrongPenalty: Number(st.wrongPenalty) || 0,
+      fastBonus: Number(st.fastBonus) || 0,
+      buzzRankBonuses: (st.buzzRankBonuses || []).slice(),
+      minSample: Number(st.minSample) || 5
+    };
+  }
+
   function stateSnapshot() {
     return {
       room: room,
@@ -589,6 +613,7 @@ loadQueue();   // 刷新页面也不丢：把上次没发出去的读回来
   CIStudent.init = init;
   CIStudent.on = on;
   CIStudent.state = stateSnapshot;
+  CIStudent.rules = rules;
   CIStudent.question = question;
   CIStudent.teams = teams;
   CIStudent.students = students;

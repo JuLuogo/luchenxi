@@ -109,7 +109,7 @@ try {
   });
 
   /** 打开一个入口页，跑一遍检查 */
-  async function checkPage(entry, expectTitle, hash, expectGlobalCI) {
+  async function checkPage(entry, expectTitle, hash, expectGlobalCI, expectText) {
     logs = [];
     const t = await send('Target.createTarget', { url: 'about:blank' });
     const a = await send('Target.attachToTarget', { targetId: t.targetId, flatten: true });
@@ -130,6 +130,12 @@ try {
     const hasCI = await evalIn('typeof (window.CI && CI.store && CI.store.get)');
 
     ok(String(title).includes(expectTitle), entry + ' 标题正确（' + title + '）');
+    // 可选：断言页面里出现某段文字（真实浏览器 DOM，比查源码可靠）
+    if (expectText) {
+      const body = await evalIn('document.body.innerText');
+      ok(typeof body === 'string' && body.includes(expectText),
+        entry + ' 页面含「' + expectText + '」（真实浏览器 DOM）');
+    }
     ok(Number(mounted) > 0, entry + ' Vue 已挂载');
     ok(Number(dom) > 30, entry + ' 渲染出内容（DOM ' + dom + ' 个节点）');
     ok(legacy === false, entry + ' 没有引用旧版 assets/js');
@@ -233,8 +239,10 @@ try {
 
   await checkPage('admin.html', '教师端', '#/settings/rubric', true);   // 公开课量规（维度/档位/展示策略）
   await checkPage('admin.html', '教师端', '#/settings/ai', true);       // AI 润色（默认关闭）
-  await checkPage('student.html', '课堂小组端', '', false);
-  await checkPage('index.html', '课堂大屏', '', false);           // 大屏
+await checkPage('student.html', '课堂小组端', '', false);
+  // 注：「计分规则」页签在**未入座时不渲染**（学生端先显示入座页），
+  // 所以这里不断言它 —— 改用源码级断言（logic.test 第 34 组）覆盖。
+await checkPage('index.html', '课堂大屏', '', false, '扫码入座');   // 大屏待机页（真实浏览器 DOM）
   console.log('  走一遍流程（造数据 → 断言页面跟着变）…');
   await checkFlow();
 } finally {
