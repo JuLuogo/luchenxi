@@ -13,6 +13,7 @@ import type { DomainApi } from '@/bindings/domain';
 import '@domain/store.js';
 import '@domain/storage.js';
 import '@domain/analysis.js';
+import '@domain/archive.js';   // 本课归档打包（读状态 → 生成文件，纯 I/O）
 import '@domain/grade.js';
 import '@domain/sync.js';
 import '@domain/classroom.js';

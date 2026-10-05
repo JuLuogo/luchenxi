@@ -32,6 +32,7 @@ const EXPECT = [
   ['assets/js/classroom.js', 'CI.classroom', ['handleCmd', 'setPhase', 'studentView', 'setOpenState', 'pushOpenRecord']],
   ['assets/js/import.js', 'CI.bankImport', ['parse']],
   ['assets/js/import.js', 'CI.rosterImport', ['parse', 'groupByTeam']],
+  ['assets/js/archive.js', 'CI.archive', ['build', 'stamp', 'daysSinceArchive']],
   ['assets/js/openclass.js', 'CI.openclass', ['evaluate', 'comment', 'levelsAreValid']],
   ['assets/js/polish.js', 'CI.polish', ['prompt', 'sanitize']]
 ];

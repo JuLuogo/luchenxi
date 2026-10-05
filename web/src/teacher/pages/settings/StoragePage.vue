@@ -101,6 +101,31 @@ async function factory() {
     '恢复初始状态', { type: 'error', confirmButtonText: '我已备份，确认清空' }
   ).then(() => { store.factoryReset(); ElMessage.success('已恢复初始状态'); }).catch(() => {});
 }
+
+/** 上次归档提示：超过 7 天就提醒（老师最容易忘这件事） */
+const archiveHint = computed(() => {
+  const days = (CI as any).archive ? (CI as any).archive.daysSinceArchive() : null;
+  if (days === null) return '还没有归档过';
+  if (days === 0) return '今天已归档';
+  return '上次归档 ' + days + ' 天前';
+});
+
+/** 导出本课归档包（文件名带日期与课名，直接能归档/发送） */
+function exportArchive() {
+  try {
+    const pack = (CI as any).archive.build(store.state);
+    const blob = new Blob([pack.json], { type: 'application/json;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = pack.name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    (CI as any).archive.noteArchived();
+    ElMessage.success('已导出 ' + pack.name + '（' + pack.summary.students + ' 人 · ' + pack.summary.records + ' 条流水）');
+  } catch (e) {
+    ElMessage.error('归档失败：' + ((e as Error).message || e));
+  }
+}
 </script>
 
 <template>
@@ -118,6 +143,15 @@ async function factory() {
     </div>
 
     <div class="panel">
+      <!-- 本课归档（审计 C8）：教师机是主库，换电脑/重装/清缓存就丢；
+           听课老师与家长要的是"一份能发出去的东西" -->
+      <div class="archive-row">
+        <el-button type="primary" @click="exportArchive">导出本课归档</el-button>
+        <span class="hint">
+          一个文件带走这节课：数据 + 课堂报告 + 每人小结与错题
+          <template v-if="archiveHint">（{{ archiveHint }}）</template>
+        </span>
+      </div>
       <h3 class="panel-title">
         当前存储后端
         <el-tag v-if="status.degraded" type="danger" size="small">已降级</el-tag>
@@ -173,4 +207,5 @@ async function factory() {
 
 <style scoped>
 .hint { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-top: var(--sp-3); }
+.archive-row { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-3); }
 </style>

@@ -37,6 +37,7 @@ const CLASSIFY = {
   'sync.js': { kind: 'transport', why: 'WS 客户端：连接/重连/命令队列' },
   'net.js': { kind: 'transport', why: '组网探测与 EasyTier 参数' },
   'storage.js': { kind: 'adapter', why: 'localStorage / SQLite / 内存三态适配' },
+  'archive.js': { kind: 'adapter', why: '本课归档打包（读状态 → 生成文件，纯 I/O）' },
   'student.js': { kind: 'transport', why: '学生端连接状态机与本地草稿' }
 };
 
