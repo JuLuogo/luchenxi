@@ -1906,6 +1906,56 @@ group('公开投影不泄露全班数据');
   ok(json.includes(S.get().teams[0].name), '含队名（大屏要显示队伍榜）');
 })();
 
+/* ================= 36. 广播内容不含个人成绩（docs/16 §6.1，第 2 步） ================= */
+group('广播内容不含个人成绩');
+
+(function () {
+  /* 教师端 `sync.js::snapshot()` 就是**广播内容** —— 它原来带 students[].score/rank/level
+     等一整张"全班排名表"，等于把每个人的分数发给每个学生（打开控制台就能看）。
+     而 docs/09 写着"个人成绩只发给学生自己的手机"、大屏也早就拿掉了个人榜。 */
+  ok(typeof CI.sync.snapshot === 'function', '有 snapshot（广播内容的唯一来源）');
+
+  S.replaceState(S.defaultState());
+  const st = S.get();
+  const t1 = st.teams[0].id, t2 = st.teams[1].id;
+  S.addStudentsBulk('甲同学\n乙同学', t1);
+  S.addStudentsBulk('丙同学\n丁同学', t2);
+  S.addQuestion({ stem: '题干', tier: 'basic', answer: 'A', options: ['x', 'y'], note: '解析' });
+  const q = S.get().bank[0];
+  S.setRuntime({ qid: q.id });
+  const stuA = S.get().students[0];
+  CI.classroom.handleCmd({ kind: 'answer', id: 'bc1', teamId: t1, sid: stuA.id, qid: q.id, choice: ['A'] }, false, null);
+
+  const snap = CI.sync.snapshot();
+  ok(snap && typeof snap === 'object', 'snapshot 返回对象');
+
+  /* ① 身份字段还在（学生端要显示本队成员、大屏点名要高亮谁） */
+  ok(Array.isArray(snap.students) && snap.students.length === 4, 'students 仍在（4 人）');
+  ok(snap.students.every((x) => 'id' in x && 'name' in x && 'teamId' in x), 'students 保留身份字段');
+
+  /* ② 个人成绩一个都不能有 */
+  const keys = new Set();
+  snap.students.forEach((x) => Object.keys(x).forEach((k) => keys.add(k)));
+  ['score', 'rank', 'level', 'correctRate', 'creditRate', 'attempts', 'correct', 'weakTiers'].forEach((bad) => {
+    ok(!keys.has(bad), 'students 里没有 ' + bad + '（个人成绩不下发）');
+  });
+
+  /* ③ 最近动态不带姓名（只留队伍与得分） */
+  const recent = (snap.meta && snap.meta.recent) || [];
+  ok(recent.length > 0, '最近动态还在（课堂瞬间要公开）');
+  ok(recent.every((r) => !('name' in r)), '最近动态里没有学生姓名');
+  ok(recent.every((r) => 'teamName' in r), '最近动态用队名代替（公开的是队伍表现）');
+
+  /* ④ 能力榜只有班级与队伍，没有个人行 */
+  const ab = snap.meta && snap.meta.ability;
+  ok(!ab || !('students' in ab), '能力榜不含个人行（大屏雷达只读 class/teams）');
+
+  /* ⑤ 整份 JSON 里不该出现任何个人成绩数值（用名字反查附近有无分数） */
+  const json = JSON.stringify(snap);
+  ok(!/"score":\s*\d/.test(json.split('"students"')[1] ? json.split('"students"')[1].split('"meta"')[0] : ''),
+    'students 段里没有任何 score 数值');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

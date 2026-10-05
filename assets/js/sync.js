@@ -288,16 +288,36 @@
       }),
       students: stuRows.map(function (r) {
         var stats = null;
-        try { stats = CI.analysis.studentStats(s, r.sid); } catch (e) { stats = null; }
-        return {
-          id: r.sid, name: r.name, teamId: r.teamId, teamName: r.teamName, color: teamColor(s, r.teamId),
-          score: r.score, attempts: r.attempts, correct: r.correct,
-          creditRate: r.creditRate, correctRate: r.correctRate,
-          rank: r.rank, level: r.level.label, rolls: r.rolls,
-          weakTiers: (stats && stats.weak ? stats.weak : []).map(function (k) { return CI.store.tierOf(s, k).label; })
-        };
+          /*
+           * **广播里不带个人成绩**（审计发现，docs/16 §6.1）：
+           * 原来是 r.score / attempts / correct / creditRate / correctRate / rank / level / weakTiers
+           * —— 等于把**全班排名表**发给每个学生（打开控制台就能看）。
+           * 而 docs/09 写着"个人成绩只发给学生自己的手机"、大屏也早就拿掉了个人榜。
+           *
+           * 只保留身份字段：学生端要显示本队成员、大屏点名要高亮谁。
+           * 个人成绩走"学生自己的手机"（后续单独下发）与教师机本地。
+           */
+          return {
+            id: r.sid, name: r.name, teamId: r.teamId, teamName: r.teamName,
+            color: teamColor(s, r.teamId)
+          };
       }),
-      meta: Object.assign({
+      /*
+       * 广播内容的组装：**先合并、后清洗**。
+       *
+       * 注意顺序 —— `Object.assign({...}, cls.metaPayload())` 里**后者覆盖前者**，
+       * 所以清洗必须放在合并**之后**（我第一版放在里面，被 metaPayload 的 ability 覆盖了，
+       * 测试当场抓到）。
+       *
+       * 清洗掉的三处个人数据（审计发现，docs/16 §6.1）：
+       *   · ability.students —— 每个学生的姓名与分数（最大一处）
+       *   · hardestQuestions[].missers —— 没答对的学生姓名
+       *   · （recent 已在上面单独处理：去掉姓名，只留队名）
+       */
+      meta: (function () {
+        var fields = {
+        /* 能力榜里的个人行（姓名+分数）与"谁没答对"的姓名都不下发 ——
+           大屏雷达只读 ability.class / ability.teams，讲评建议只显示人数 */
         // 公开课现场状态：大屏与学生端据此同步显示（点名放大 / 题干 / 判定 / 四维评价）
         open: (s.classroom && s.classroom.open) ? s.classroom.open : null,
         // 评价要不要在大屏公开：**由教师端用领域层算好随快照下发**，
@@ -319,17 +339,33 @@
         })(),
         question: question,
         tierWeights: s.tiers.map(function (t) { return { key: t.key, label: t.label, weight: t.weight, color: t.color }; }),
+        /* 最近动态：**不带学生姓名**（个人成绩只发给学生自己的手机）——
+           只保留"哪个队、什么题型、什么结果、多少分"，那才是公开的课堂瞬间 */
         recent: all.slice(-8).reverse().map(function (r) {
-          var stu = CI.store.student(s, r.sid);
+          var tm = CI.store.team(s, r.teamId);
           return {
-            name: stu ? stu.name : '?',
+            teamName: tm ? tm.name : '',
             tier: r.tier ? CI.store.tierOf(s, r.tier).label : '',
             result: CI.store.RESULT_LABEL[r.result] || r.result,
             points: r.points,
             at: r.at
           };
         })
-      }, cls && cls.metaPayload ? cls.metaPayload() : {})
+        };
+        var m = Object.assign(fields, cls && cls.metaPayload ? cls.metaPayload() : {});
+        /* 清洗：能力榜只留班级与队伍（大屏雷达只读这两个） */
+        if (m.ability) m.ability = { class: m.ability.class || null, teams: m.ability.teams || [] };
+        /* 清洗：讲评建议只留人数，不留"谁没答对"的姓名 */
+        if (Array.isArray(m.hardestQuestions)) {
+          m.hardestQuestions = m.hardestQuestions.map(function (x) {
+            return {
+              qid: x.qid, stem: x.stem, tierLabel: x.tierLabel,
+              attempts: x.attempts, correctRate: x.correctRate, missCount: x.missCount
+            };
+          });
+        }
+        return m;
+      })()
     };
   }
 
