@@ -14,6 +14,6 @@
     { "id": "leaderboard_alias", "title": "leaderboard 作为 v2 兼容别名等价于 state" },
     { "id": "room_isolation", "title": "房间之间互不串数据" },
     { "id": "room_name_sanitize", "title": "非法房间号被清洗为 [A-Za-z0-9_-]{1,32}，不会路径穿越" },
-    { "id": "http_api", "title": "HTTP 面：/health、/api/state 读写、/api/stats、/api/backup 导出、/api/restore 导入（含坏格式 400 与空房 404）" }
+    { "id": "http_api", "title": "HTTP 面：/health、/api/state 读写（GET 读、PUT 写、**过期 rev → 409**）、/api/stats、/api/backup 导出、/api/restore 导入（坏格式 400、**GET 被 405 拒绝** 与空房 404）" }
   ]
 }

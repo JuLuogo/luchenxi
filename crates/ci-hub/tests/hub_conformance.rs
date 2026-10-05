@@ -181,6 +181,7 @@ async fn welcome_fields() {
     assert_eq!(w["hasDump"], json!(false));
     assert_eq!(w["hostOnline"], json!(true), "host 连上后 hostOnline=true");
     assert!(w["serverTime"].is_number());
+
     host.close().await;
 }
 
@@ -493,6 +494,33 @@ async fn http_api() {
     let (code, _) = http_post(h.port, &format!("/api/restore?room={}", r), "\"just-a-string\"").await;
     assert_eq!(code, 400, "非对象备份体被拒");
 
+    // PUT /api/state：写路径（与 POST /api/restore 不同，要走 rev 规则）
+    let (code, body) = http_put(
+        h.port,
+        &format!("/api/state?room={}", r),
+        &serde_json::to_string(&json!({ "state": { "courseName": "PUT 推的课" }, "dump": { "courseName": "PUT 推的课", "students": [], "quizzes": [] }, "rev": 100 })).unwrap(),
+    ).await;
+    assert_eq!(code, 200, "PUT /api/state 200：{}", body);
+    let (_, body) = http_get(h.port, &format!("/api/state?room={}", r)).await;
+    let after: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(after["dump"]["courseName"], json!("PUT 推的课"), "PUT 写入生效");
+    assert!(after["rev"].as_i64().unwrap_or(0) >= 100, "rev 采纳客户端给的水位");
+
+    // 过期写入（rev 比枢纽低）必须 409，而不是静默覆盖 ——
+    // 这是"老设备一提交就把新数据抹掉"的防线（Node 侧 hub-spec 已覆盖，这里补齐）
+    let (code, body) = http_put(
+        h.port,
+        &format!("/api/state?room={}", r),
+        &serde_json::to_string(&json!({ "state": { "courseName": "过期的课" }, "dump": { "courseName": "过期的课", "students": [], "quizzes": [] }, "rev": 1 })).unwrap(),
+    ).await;
+    assert_eq!(code, 409, "过期 rev 被拒（409），实际 {}：{}", code, body);
+    let (_, body) = http_get(h.port, &format!("/api/state?room={}", r)).await;
+    let kept: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(kept["dump"]["courseName"], json!("PUT 推的课"), "过期写入没有覆盖新数据");
+
+    // 方法校验：读端点不该接受写方法（GET /api/restore 是最容易被误触发的形状）
+    let (code, _) = http_get(h.port, &format!("/api/restore?room={}", r)).await;
+    assert_eq!(code, 405, "GET /api/restore 被拒（405）");
     host.close().await;
     stage.close().await;
 }
@@ -517,6 +545,26 @@ async fn http_post(port: u16, path: &str, body: &str) -> (u16, String) {
     let mut s = tokio::net::TcpStream::connect(("127.0.0.1", port)).await.expect("连接");
     let req = format!(
         "POST {} HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+        path,
+        body.as_bytes().len(),
+        body
+    );
+    s.write_all(req.as_bytes()).await.unwrap();
+    let mut buf = Vec::new();
+    s.read_to_end(&mut buf).await.unwrap();
+    let text = String::from_utf8_lossy(&buf).to_string();
+    let status = text.lines().next().unwrap_or("").split_whitespace().nth(1).unwrap_or("0").parse().unwrap_or(0);
+    let body = text.split("\r\n\r\n").nth(1).unwrap_or("").to_string();
+    (status, body)
+}
+
+/// 极简 HTTP PUT（带 JSON 体）—— PUT /api/state 是**写路径**，与 POST /api/restore 不同：
+/// 前者是教师端推全量状态，要遵守 rev 规则（过期写入必须 409）。
+async fn http_put(port: u16, path: &str, body: &str) -> (u16, String) {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let mut s = tokio::net::TcpStream::connect(("127.0.0.1", port)).await.expect("连接");
+    let req = format!(
+        "PUT {} HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
         path,
         body.as_bytes().len(),
         body
