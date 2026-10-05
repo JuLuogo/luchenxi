@@ -1858,6 +1858,54 @@ group('计分规则对学生可见');
   ok(/rulesInfo/.test(stuApp), '页面读的是 rules()（不是写死的数字）');
 })();
 
+/* ================= 35. 公开投影：学生/大屏该看到什么（docs/16 §6.1） ================= */
+group('公开投影不泄露全班数据');
+
+(function () {
+  /* 背景：枢纽原来把**完整 state** 广播给每个连接 —— 学生打开控制台就能读到
+     全班所有人的分数、错题、评语。而大屏早就拿掉了个人榜、docs/09 也写着
+     "个人成绩只发给学生自己的手机"。两者自相矛盾。 */
+  ok(typeof CI.classroom.publicPayload === 'function', '有 publicPayload（公开投影）');
+
+  /* 造一份有"别人数据"的课堂：两个队、多个学生、有流水、有题库 */
+  S.replaceState(S.defaultState());
+  const st = S.get();
+  const t1 = st.teams[0].id;
+  const t2 = st.teams[1].id;
+  S.addStudentsBulk('甲同学\n乙同学', t1);
+  S.addStudentsBulk('丙同学\n丁同学', t2);
+  S.addQuestion({ stem: '机密题干', tier: 'basic', answer: 'A', options: ['x', 'y'], note: '机密解析' });
+  const q = S.get().bank[0];
+  S.setRuntime({ qid: q.id });
+  const stuA = S.get().students[0];
+  CI.classroom.handleCmd({ kind: 'answer', id: 'pp1', teamId: t1, sid: stuA.id, qid: q.id, choice: ['A'] }, false, null);
+
+  const pub = CI.classroom.publicPayload(S.get());
+  ok(pub && typeof pub === 'object', 'publicPayload 返回对象');
+
+  /* ① 够用：大屏/学生端要的字段都在 */
+  ok(pub.meta && typeof pub.meta === 'object', '含 meta（大屏/学生端据此决定显示什么）');
+  ok('phase' in pub.meta && 'optionDist' in pub.meta, 'meta 里有 phase 与选项分布');
+  ok('question' in pub, '含 question（当前题目）');
+  ok(pub.rules && Array.isArray(pub.rules.tiers), '含 rules（计分规则，学生可核对）');
+  ok(Array.isArray(pub.teams), '含 teams（队伍聚合）');
+  ok(pub.teams.every((t) => 'id' in t && 'name' in t && 'score' in t), '队伍只含 id/name/score');
+
+  /* ② 不泄露：**别人的姓名与明细一个都不能有** */
+  ok(!('bank' in pub), '不含 bank（题库 —— 含答案，学生不该拿到）');
+  ok(!('students' in pub), '不含 students（全班名单）');
+  ok(!('quizzes' in pub), '不含 quizzes（全量流水）');
+  const json = JSON.stringify(pub);
+  ok(!json.includes('机密解析'), '不含题目解析（未公布时）');
+  ok(!json.includes('乙同学') && !json.includes('丙同学') && !json.includes('丁同学'),
+    '**不含其他学生的姓名**（这是本次修复的核心）');
+  ok(!json.includes(S.get().students[1].id) && !json.includes(S.get().students[2].id),
+    '不含**其他**学生的个人 id（被点到的那个学生除外 —— 点名环节本来就要公开显示他）');
+
+  /* ③ 队名与队分可以有（大屏要显示队伍榜，那不是个人隐私） */
+  ok(json.includes(S.get().teams[0].name), '含队名（大屏要显示队伍榜）');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

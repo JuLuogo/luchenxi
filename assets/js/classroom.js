@@ -920,6 +920,95 @@
     };
   }
 
+  /**
+   * 公开投影：**team（学生）与 stage（大屏）该看到的东西**。
+   *
+   * 为什么需要它（审计发现，docs/16 §6.1）：枢纽原来把**完整 state** 广播给每个连接 ——
+   * 学生打开控制台就能读到全班所有人的分数、错题、评语。而大屏早就拿掉了个人榜、
+   * docs/09 也写着「个人成绩只发给学生自己的手机」。两者自相矛盾。
+   *
+   * 这里**不新造概念**：`metaPayload()` 算的正是"大屏/学生端该显示什么"，
+   * 再补上当前题目的学生视图、计分规则、本队信息即可。
+   *
+   * 关键约束：**不能包含** bank（题库）、students（全班名单）、quizzes（全量流水）、
+   * 以及任何其他学生的姓名与成绩。
+   */
+  function publicPayload(s) {
+    // metaPayload() 自己读 store（历史签名无参）—— 传 s 会被忽略，别写成 metaPayload(s)
+    var meta = metaPayload();
+    /*
+     * 清洗：metaPayload 是给"教师机自己的大屏"设计的，里面有两处个人数据要剔掉 ——
+     *   ① hardestQuestions[].missers —— 没答对的学生**姓名**（测试实测确认会泄露）
+     *   ② （保留）sid / sidName —— 被点到的那个学生，点名环节就是要公开显示他
+     * 大屏界面早已不显示 missers（第 299 行改成只显示人数），所以剔掉不影响显示。
+     */
+    /*
+     * 能力榜（ability）也带个人数据：ability.students[] 里有**每个学生的姓名与分数** ——
+     * 实测确认这是最大的一处泄露。而大屏的雷达只读 ability.class 与 ability.teams
+     * （StageRadar.vue 第 19/28/31 行），**不读 students** —— 所以个人行可以整块剔掉。
+     */
+    if (meta && meta.ability) {
+      meta = Object.assign({}, meta, {
+        ability: { class: meta.ability.class || null, teams: meta.ability.teams || [] }
+      });
+    }
+    if (meta && Array.isArray(meta.hardestQuestions)) {
+      meta = Object.assign({}, meta, {
+        hardestQuestions: meta.hardestQuestions.map(function (x) {
+          return {
+            qid: x.qid, stem: x.stem, tierLabel: x.tierLabel,
+            attempts: x.attempts, correctRate: x.correctRate, missCount: x.missCount
+            /* 注意：**不带 missers** */
+          };
+        })
+      });
+    }
+    var q = currentQuestion(s);
+    var teamId = (box(s).teamId) || null;
+    return {
+      /* 大屏/学生端判断"现在显示什么"所需的一切（复用已有投影，避免两套口径） */
+      meta: meta,
+      /* 当前题目：走 studentView（它已经过滤掉未公布时的答案） */
+      question: studentView(s, q),
+      /* 计分规则（只读）：学生要能核对分数是怎么来的（审计 Top 8 第 3 位） */
+      rules: (function () {
+        var st = s.settings || {};
+        return {
+          tiers: (s.tiers || []).map(function (t) { return { key: t.key, label: t.label, weight: t.weight }; }),
+          halfRatio: typeof st.halfRatio === 'number' ? st.halfRatio : 0.5,
+          wrongPenalty: Number(st.wrongPenalty) || 0,
+          fastBonus: Number(st.fastBonus) || 0,
+          buzzRankBonuses: (st.buzzRankBonuses || []).slice(),
+          minSample: Number(st.minSample) || 5
+        };
+      })(),
+      /* 队伍（只有队名与总分，没有个人明细） */
+      teams: (s.teams || []).map(function (t) {
+        return { id: t.id, name: t.name, score: teamScore(s, t.id) };
+      }),
+      /* 学生自己的队伍与身份（用于"我们组"） */
+      myTeamId: teamId,
+      /* 阶段与计时（大屏要） */
+      phase: meta.phase,
+      timerEndsAt: meta.timerEndsAt
+    };
+  }
+
+  /** 队伍总分（只看队伍聚合，不暴露个人明细） */
+  function teamScore(s, teamId) {
+    try {
+      var rows = CI.store.teamScores ? CI.store.teamScores(s) : null;
+      if (rows) {
+        var hit = rows.filter(function (r) { return r.id === teamId || r.teamId === teamId; })[0];
+        if (hit) return hit.score;
+      }
+      /* 兜底：从流水里按队伍累加（不返回任何个人字段） */
+      return CI.store.allRecords(s).reduce(function (a, r) {
+        return r.teamId === teamId ? a + (r.points || 0) : a;
+      }, 0);
+    } catch (err) { return 0; }
+  }
+
   CI.classroom = {
     handleCmd: handleCmd, metaPayload: metaPayload,
     PHASES: PHASES, PHASE_LABEL: PHASE_LABEL, phase: phase, setPhase: setPhase,
@@ -933,6 +1022,7 @@
     setOpenState: setOpenState, clearOpenState: clearOpenState,
     pushOpenRecord: pushOpenRecord, clearOpenRecords: clearOpenRecords,
     studentView: studentView,
+  publicPayload: publicPayload,
     checkinStats: checkinStats,
     focusBuzz: focusBuzz, loadRemoteState: loadRemoteState, applyRemote: applyRemote,
     pickAnswerer: pickAnswerer, currentQuestion: currentQuestion, box: box,
