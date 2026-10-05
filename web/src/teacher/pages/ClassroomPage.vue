@@ -374,7 +374,7 @@ onUnmounted(() => { window.removeEventListener('keydown', onKey); clearInterval(
 .qmeta { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-left: var(--sp-2); }
 .qbtns { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 .muted { color: var(--ci-text-weak); }
-.join { font-family: ui-monospace, Consolas, monospace; font-size: var(--fs-xs); color: #334155; word-break: break-all; margin-bottom: var(--sp-2); }
+.join { font-family: ui-monospace, Consolas, monospace; font-size: var(--fs-xs); color: var(--c-text); word-break: break-all; margin-bottom: var(--sp-2); }
 /* 课堂节奏：计时器与签到 */
 .timer-row, .checkin-row { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-2); }
 .timer-label { font-size: var(--fs-xs); color: var(--el-text-color-secondary); flex: none; }
@@ -386,7 +386,7 @@ onUnmounted(() => { window.removeEventListener('keydown', onKey); clearInterval(
 .presence-row .ago { margin-left: auto; color: var(--ci-text-weak); font-size: var(--fs-xs); }
 .dot-ok, .dot-off { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .dot-ok { background: var(--ci-ok); }
-.dot-off { background: #cbd5e1; }
+.dot-off { background: var(--c-line-strong); }
 .buzz-row { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) 0; border-bottom: 1px dashed var(--ci-line); font-size: var(--fs-sm); }
 .buzz-team { font-weight: 600; }
 .buzz-who { color: var(--ci-text-weak); }
@@ -400,6 +400,6 @@ onUnmounted(() => { window.removeEventListener('keydown', onKey); clearInterval(
 .feed-row { display: flex; gap: var(--sp-2); padding: var(--sp-1) 0; font-size: var(--fs-sm); border-bottom: 1px dashed var(--ci-line); }
 .feed-row .ago { margin-left: auto; color: var(--ci-text-weak); font-size: var(--fs-xs); white-space: nowrap; }
 .k-answer .feed-text { color: #0f766e; }
-.k-buzz .feed-text { color: #b45309; }
+.k-buzz .feed-text { color: var(--c-warn); }
 .k-system .feed-text { color: #6b7280; }
 </style>

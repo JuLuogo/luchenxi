@@ -41,7 +41,7 @@ const issues = computed(() => {
   return map;
 });
 
-const tierOf = (key) => store.tiers.find((t) => t.key === key) || { label: key, color: '#cbd5e1', weight: 0 };
+const tierOf = (key) => store.tiers.find((t) => t.key === key) || { label: key, color: 'var(--c-line-strong)', weight: 0 };
 
 async function removeOne(q) {
   await ElMessageBox.confirm('删除这道题？已加入的试卷会同时移除它。', '删除题目', { type: 'warning' })
@@ -148,7 +148,7 @@ function exportBank() {
         <el-table-column label="题干" min-width="300">
           <template #default="{ row }">
             <div class="stem">
-              <el-icon v-if="issues.has(row.id)" color="#ef4444" :title="issues.get(row.id).join('；')">
+              <el-icon v-if="issues.has(row.id)" color="var(--c-bad)" :title="issues.get(row.id).join('；')">
                 <WarningFilled />
               </el-icon>
               {{ row.stem }}

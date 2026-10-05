@@ -152,7 +152,7 @@ function tierName(key) {
 }
 function tierColor(key) {
   const t = store.tiers.find((x) => x.key === key);
-  return t ? t.color : '#cbd5e1';
+  return t ? t.color : 'var(--c-line-strong)';
 }
 </script>
 

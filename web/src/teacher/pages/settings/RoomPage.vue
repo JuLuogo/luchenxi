@@ -104,7 +104,7 @@ const addresses = computed(() => {
 
 <style scoped>
 .hint { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-top: var(--sp-2); }
-.addr { font-family: ui-monospace, Consolas, monospace; font-size: var(--fs-xs); color: #334155; }
+.addr { font-family: ui-monospace, Consolas, monospace; font-size: var(--fs-xs); color: var(--c-text); }
 .qr-panel { text-align: center; }
 .qr { width: 220px; height: 220px; image-rendering: pixelated; }
 .qr-fallback { border: 1px dashed var(--ci-line); border-radius: var(--radius); padding: var(--sp-4); background: #fbfbfd; }

@@ -204,7 +204,7 @@ function bindShortcuts() {
 .shell { height: 100vh; }
 
 .side {
-  background: #fff;
+  background: var(--c-surface);
   border-right: 1px solid var(--ci-line);
   display: flex;
   flex-direction: column;
@@ -220,7 +220,7 @@ function bindShortcuts() {
 .brand.mini { justify-content: center; padding: var(--sp-4) 0; }
 .logo {
   width: 32px; height: 32px; border-radius: var(--radius);
-  background: var(--ci-brand); color: #fff;
+  background: var(--ci-brand); color: var(--c-surface);
   display: grid; place-items: center;
   font-weight: 700;
 }
@@ -230,7 +230,7 @@ function bindShortcuts() {
 .menu { border-right: none; }
 
 .top {
-  background: #fff;
+  background: var(--c-surface);
   border-bottom: 1px solid var(--ci-line);
   display: flex;
   align-items: center;
@@ -247,7 +247,7 @@ function bindShortcuts() {
   gap: var(--sp-2);
   font-size: var(--fs-xs);
   color: var(--ci-text-weak);
-  background: #f7f8fa;
+  background: var(--c-bg);
   border: 1px solid var(--ci-line);
   border-radius: 999px;
   padding: var(--sp-1) var(--sp-2);
@@ -257,7 +257,7 @@ function bindShortcuts() {
   white-space: nowrap;
 }
 .chip-bad { color: var(--ci-bad); border-color: #fecaca; background: #fef2f2; }
-.dot { width: 7px; height: 7px; border-radius: 50%; background: #cbd5e1; display: inline-block; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c-line-strong); display: inline-block; }
 .dot-ok { background: var(--ci-ok); }
 .dot-bad { background: var(--ci-bad); }
 .dot-wait { background: var(--ci-warn); }

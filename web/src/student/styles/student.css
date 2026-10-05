@@ -1,6 +1,6 @@
 /* 学生端（移动）基础样式：安全区、字号、点击反馈 */
 :root {
-  --van-primary-color: #4f46e5;
+  --van-primary-color: var(--c-brand);
 }
 
 * { box-sizing: border-box; }
@@ -9,7 +9,7 @@ html, body, #app { height: 100%; margin: 0; }
 
 body {
   font-family: system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  background: #f7f8fa;
+  background: var(--c-bg);
   -webkit-tap-highlight-color: transparent;
   padding-bottom: env(safe-area-inset-bottom);
 }

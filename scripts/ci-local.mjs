@@ -186,6 +186,9 @@ const NODE_TESTS = [
   // 领域层调用参数守卫：**"少传参数"是本项目历史上最高频的 bug**（已出现 4 次），
   // 这类错误不会让编译失败，只在特定路径上炸
   ['领域层调用参数守卫（少传参数检测）', 'tests/arity.test.js'],
+  // 图表颜色守卫：canvas 解析不了 CSS 变量 —— 颜色迁移时把 ECharts 配置也换了，
+  // 雷达图渲染成黑白扭曲图形（靠截图才发现，不会让任何测试变红）
+  ['图表颜色守卫（canvas 用不了 CSS 变量）', 'tests/canvas-token-guard.test.js'],
   // 审计回归：逐条回答「当初那个 bug 现在还在不在」（51 项，覆盖这一轮修过的每一类问题）
   ['审计回归（逐条复核修过的 bug）', 'tests/audit-regression.cjs'],
   ['v5 工作区结构（crate 划分 / 依赖方向 / 迁移进度）', 'tests/v5-workspace.test.js'],

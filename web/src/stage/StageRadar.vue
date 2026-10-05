@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { token } from '../styles/token-value';
 /**
  * 大屏能力雷达（浅色主题）：全班 + 各队叠加对比，一眼看出哪队"基础薄弱 / 拔高强"。
  * 参考 ClassDojo 的"技能矩阵"与希沃的多维度评价：不只给分数，而是给出维度画像与文案评价。
@@ -30,21 +31,21 @@ function option() {
       value: props.ability.class.axes.map((a) => a.rate),
       areaStyle: { opacity: 0.06 },
       lineStyle: { width: 2, type: 'dashed' },
-      itemStyle: { color: '#8b93a1' }
+      itemStyle: { color: token('--c-text-3') }
     });
   }
   return {
     backgroundColor: 'transparent',
     tooltip: { trigger: 'item' },
-    legend: { bottom: 0, textStyle: { color: '#5b6472', fontSize: 14 }, data: series.map((s) => s.name) },
+    legend: { bottom: 0, textStyle: { color: token('--c-text-2'), fontSize: 14 }, data: series.map((s) => s.name) },
     radar: {
       indicator: axes.map((a) => ({ name: a.label, max: 100 })),
       radius: '64%',
       splitNumber: 4,
-      axisName: { color: '#1a1d24', fontSize: 16, fontWeight: 600 },
-      axisLine: { lineStyle: { color: '#e6e8ec' } },
-      splitLine: { lineStyle: { color: '#e6e8ec' } },
-      splitArea: { areaStyle: { color: ['#ffffff', '#fbfcfd'] } }
+      axisName: { color: token('--c-text'), fontSize: 16, fontWeight: 600 },
+      axisLine: { lineStyle: { color: token('--c-line') } },
+      splitLine: { lineStyle: { color: token('--c-line') } },
+      splitArea: { areaStyle: { color: [token('--c-surface'), '#fbfcfd'] } }
     },
     series: [{ type: 'radar', data: series }]
   };
@@ -99,12 +100,12 @@ onBeforeUnmount(() => {
 .grades { display: flex; flex-direction: column; justify-content: center; gap: var(--sp-3); }
 .grade-row {
   display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-xl);
-  background: #fff; border: 1px solid var(--c-line); border-radius: var(--r-md);
+  background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-md);
   padding: var(--sp-2) var(--sp-4); box-shadow: var(--sh-1);
 }
 .class-row { background: var(--c-surface-2); }
 .badge {
-  width: 38px; height: 38px; border-radius: var(--radius-lg); color: #fff;
+  width: 38px; height: 38px; border-radius: var(--radius-lg); color: var(--c-surface);
   display: grid; place-items: center; font-weight: 800; font-size: var(--fs-base); flex: none;
 }
 .gname { font-weight: 700; }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { token } from '../../styles/token-value';
 /**
  * 数据分析 · 学情分析
  * 数字全部来自 CI.analysis（与旧版同一口径）；图表用 ECharts，本页懒加载。
@@ -103,9 +104,9 @@ const barOption = computed<any>(() => ({
   yAxis: { type: 'value', name: '人次' },
   series: [
     { name: '答对', type: 'bar', stack: 'a', itemStyle: { color: '#10b981' }, data: tierRows.value.map((t) => t.correct) },
-    { name: '半对', type: 'bar', stack: 'a', itemStyle: { color: '#f59e0b' }, data: tierRows.value.map((t) => t.half) },
-    { name: '答错', type: 'bar', stack: 'a', itemStyle: { color: '#ef4444' }, data: tierRows.value.map((t) => t.wrong) },
-    { name: '跳过', type: 'bar', stack: 'a', itemStyle: { color: '#cbd5e1' }, data: tierRows.value.map((t) => t.skip) }
+    { name: '半对', type: 'bar', stack: 'a', itemStyle: { color: token('--c-warn') }, data: tierRows.value.map((t) => t.half) },
+    { name: '答错', type: 'bar', stack: 'a', itemStyle: { color: token('--c-bad') }, data: tierRows.value.map((t) => t.wrong) },
+    { name: '跳过', type: 'bar', stack: 'a', itemStyle: { color: token('--c-line-strong') }, data: tierRows.value.map((t) => t.skip) }
   ]
 }));
 
@@ -120,7 +121,7 @@ const rateOption = computed<any>(() => ({
     barWidth: 34,
     label: { show: true, position: 'top', formatter: '{c}%' },
     itemStyle: {
-      color: (p) => (p.value >= 80 ? '#10b981' : (p.value >= 50 ? '#f59e0b' : '#ef4444')),
+      color: (p) => (p.value >= 80 ? '#10b981' : (p.value >= 50 ? token('--c-warn') : token('--c-bad'))),
       borderRadius: [6, 6, 0, 0]
     },
     data: tierRows.value.map((t) => t.rate)
@@ -539,8 +540,8 @@ function personalRate(tierKey) {
 .tier-mini { margin-top: var(--sp-4); }
 .tm-row { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-2); font-size: var(--fs-xs); }
 .tm-label { color: var(--ci-text-weak); }
-.missers { font-size: var(--fs-xs); color: #b45309; }
-.eval-score { font-weight: 700; color: #4f46e5; cursor: help; }
+.missers { font-size: var(--fs-xs); color: var(--c-warn); }
+.eval-score { font-weight: 700; color: var(--c-brand); cursor: help; }
 .eval-score i { font-size: var(--fs-xs); color: var(--el-text-color-secondary); font-style: normal; }
 .empty-hint { color: var(--el-text-color-secondary); font-size: var(--fs-sm); padding: var(--sp-2) 0; }
 </style>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { token } from '../../styles/token-value';
 /**
  * 能力评价面板：按题型画雷达 + 综合评级 + 文字评价（个人 / 队伍 / 全班）。
  *
@@ -66,7 +67,7 @@ const radarOption = computed<any>(() => {
     name: '全班平均',
     areaStyle: { opacity: cur && cur.id !== 'all' ? 0.06 : 0.28 },
     lineStyle: { width: cur && cur.id !== 'all' ? 1.5 : 3, type: cur && cur.id !== 'all' ? 'dashed' : 'solid' },
-    itemStyle: { color: '#6366f1' }
+    itemStyle: { color: token('--c-brand-2') }
   });
   return {
     tooltip: { trigger: 'item' },
@@ -75,8 +76,8 @@ const radarOption = computed<any>(() => {
       indicator: axes.map((a) => ({ name: a.label, max: 100 })),
       radius: '62%',
       splitNumber: 4,
-      axisName: { color: '#475569', fontSize: 12 },
-      splitArea: { areaStyle: { color: ['#ffffff', '#f8fafc'] } }
+      axisName: { color: token('--c-text-2'), fontSize: 12 },
+      splitArea: { areaStyle: { color: [token('--c-surface'), '#f8fafc'] } }
     },
     series: [{ type: 'radar', data: series }]
   };
@@ -177,7 +178,7 @@ async function copyComment() {
             <el-progress
               :percentage="a.rate"
               :stroke-width="12"
-              :color="a.rate >= 80 ? '#10b981' : (a.rate >= 50 ? '#f59e0b' : '#ef4444')"
+              :color="a.rate >= 80 ? '#10b981' : (a.rate >= 50 ? 'var(--c-warn)' : 'var(--c-bad)')"
             />
             <span class="axis-meta">{{ a.correct }}/{{ a.attempts }} 次</span>
           </div>
@@ -204,8 +205,8 @@ async function copyComment() {
       </el-table-column>
       <el-table-column label="评级" width="130">
         <template #default="{ row }">
-          <el-tag size="small" :style="{ background: row.grade.color, color: '#fff', border: 'none' }">
-            {{ row.grade.short }} · {{ row.grade.label }}
+          <el-tag size="small" :style="{ background: row.grade.color, color: 'var(--c-surface)', border: 'none' }">
+            <template v-if="row.grade.short">{{ row.grade.short }} · </template>{{ row.grade.label }}
           </el-tag>
         </template>
       </el-table-column>
@@ -239,7 +240,7 @@ async function copyComment() {
 <style scoped>
 .grade-card { display: flex; gap: var(--sp-4); align-items: center; border: 1px solid var(--ci-line); border-radius: var(--radius-lg); padding: var(--sp-4); }
 .grade-badge {
-  width: 64px; height: 64px; border-radius: var(--radius-lg); color: #fff;
+  width: 64px; height: 64px; border-radius: var(--radius-lg); color: var(--c-surface);
   display: grid; place-items: center; font-size: var(--fs-2xl); font-weight: 800; flex: none;
 }
 .grade-main { flex: 1; min-width: 0; }

@@ -62,7 +62,7 @@ const steps = computed(() => ([
         <div class="panel step" :class="{ done: s.done }" @click="router.push(s.to)">
           <div class="step-title">
             <el-icon v-if="s.done" color="#10b981"><CircleCheckFilled /></el-icon>
-            <el-icon v-else color="#cbd5e1"><CircleClose /></el-icon>
+            <el-icon v-else color="var(--c-line-strong)"><CircleClose /></el-icon>
             <span>{{ s.title }}</span>
           </div>
           <div class="step-desc">{{ s.desc }}</div>

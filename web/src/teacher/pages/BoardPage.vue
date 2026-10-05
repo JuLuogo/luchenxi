@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { token } from '../../styles/token-value';
 /**
  * 数据分析 · 排行榜与导出
  * 榜单一律取 CI.analysis.ranking / teamRanking（口径与旧版一致）；
@@ -38,7 +39,7 @@ const personOption = computed<any>(() => {
     series: [{
       type: 'bar',
       barWidth: 14,
-      itemStyle: { color: '#6366f1', borderRadius: [0, 6, 6, 0] },
+      itemStyle: { color: token('--c-brand-2'), borderRadius: [0, 6, 6, 0] },
       label: { show: true, position: 'right' },
       data: top.map((r) => r.score)
     }]
@@ -171,7 +172,7 @@ function teamNameOf(tid) {
                 <el-tag
                   v-if="abilityOf.get(row.sid)"
                   size="small"
-                  :style="{ background: abilityOf.get(row.sid).grade.color, color: '#fff', border: 'none' }"
+                  :style="{ background: abilityOf.get(row.sid).grade.color, color: 'var(--c-surface)', border: 'none' }"
                 >{{ abilityOf.get(row.sid).grade.short }} · {{ abilityOf.get(row.sid).grade.label }}</el-tag>
                 <span v-else>—</span>
               </template>
@@ -199,7 +200,7 @@ function teamNameOf(tid) {
                 <el-tag
                   v-if="teamAbilityOf.get(row.teamId)"
                   size="small"
-                  :style="{ background: teamAbilityOf.get(row.teamId).grade.color, color: '#fff', border: 'none' }"
+                  :style="{ background: teamAbilityOf.get(row.teamId).grade.color, color: 'var(--c-surface)', border: 'none' }"
                 >{{ teamAbilityOf.get(row.teamId).grade.short }} · {{ teamAbilityOf.get(row.teamId).grade.label }}</el-tag>
                 <span v-else>—</span>
               </template>

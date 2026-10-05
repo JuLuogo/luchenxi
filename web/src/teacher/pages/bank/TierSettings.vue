@@ -11,9 +11,9 @@ import { CI } from '../../../shared/bridge';
 const store = useClassStore();
 const dialog = ref(false);
 const editing = ref('');
-const form = ref({ label: '', weight: 3, color: '#4f46e5', desc: '' });
+const form = ref({ label: '', weight: 3, color: 'var(--c-brand)', desc: '' });
 
-const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#ec4899', '#64748b'];
+const COLORS = ['#10b981', '#3b82f6', 'var(--c-warn)', 'var(--c-bad)', '#8b5cf6', '#14b8a6', '#ec4899', '#64748b'];
 
 function openNew() {
   editing.value = '';

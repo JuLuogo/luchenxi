@@ -183,7 +183,7 @@ function runCheck() {
 <style scoped>
 .cmd {
   background: #0f172a;
-  color: #e2e8f0;
+  color: var(--c-line);
   border-radius: var(--radius);
   padding: var(--sp-3);
   font-size: var(--fs-xs);
@@ -194,5 +194,5 @@ function runCheck() {
 }
 .hint { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-top: var(--sp-2); }
 .guide { color: var(--ci-text); font-size: var(--fs-sm); line-height: 2; padding-left: var(--sp-4); margin: 0; }
-.guide code { background: #f1f5f9; padding: var(--sp-1) var(--sp-1); border-radius: var(--radius-sm); }
+.guide code { background: var(--c-bg); padding: var(--sp-1) var(--sp-1); border-radius: var(--radius-sm); }
 </style>
