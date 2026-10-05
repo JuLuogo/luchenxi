@@ -276,15 +276,33 @@ async fn health(State(st): State<HubState>) -> impl IntoResponse {
     }))
 }
 
-async fn api_get_state(State(st): State<HubState>, Query(q): Query<RoomQuery>) -> impl IntoResponse {
+async fn api_get_state(
+    State(st): State<HubState>,
+    Query(q): Query<RoomQuery>,
+    headers: axum::http::HeaderMap,
+) -> impl IntoResponse {
     let room = safe_room(q.room);
+    // **dump 只发给回环请求**：它是完整存档（含答案与全量流水）。
+    // 教师机自己就是枢纽，它的请求来自 127.0.0.1；学生/大屏/别的设备在局域网里，
+    // 只给轻量 state。与 WS 侧"只有 host 能取 dump"同一思路（审计发现 HTTP 侧漏了）。
+    let from_loopback = headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.starts_with("127.") || s.starts_with("::1"))
+        .unwrap_or(true);
     let rooms = st.rooms.read().await;
     match rooms.get(&room) {
-        Some(r) => Json(json!({
-            "ok": true, "room": room, "rev": r.rev, "updatedAt": r.updated_at,
-            "storage": "sqlite", "state": r.state, "dump": r.dump
-        })),
-        None => Json(json!({ "ok": true, "room": room, "rev": 0, "updatedAt": 0, "state": null, "dump": null })),
+        Some(r) => {
+            let mut body = json!({
+                "ok": true, "room": room, "rev": r.rev, "updatedAt": r.updated_at,
+                "storage": "sqlite", "state": r.state
+            });
+            if from_loopback {
+                body["dump"] = json!(r.dump);
+            }
+            Json(body)
+        }
+        None => Json(json!({ "ok": true, "room": room, "rev": 0, "updatedAt": 0, "state": null })),
     }
 }
 

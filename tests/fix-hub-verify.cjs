@@ -66,6 +66,40 @@ const check = (ok, label, extra) => {
   // 判定：冒名者不应收到转发给 host 的 cmd 流（这里用"是否收到命令回执"间接判断）
   check(!evilGotCmd, '冒名者收不到教师端命令流', evilGotCmd ? '收到了！' : '未收到');
 
+  console.log('\n=== ③.5 GET /api/state 的 dump 只发给回环请求 ===');
+  {
+    // 审计发现：GET /api/state 原来**无鉴权返回完整存档 dump**（含答案与全量流水）——
+    // 同局域网的学生手机直接 GET 就能拿到答案。WS 侧却严格保证只有 host 能取 dump。
+    // 先造一个房间：CI 的枢纽用临时数据目录，default 房间本来是空的，
+    // 空房间走的是「没有数据」分支（本来就不该有 dump），断言会假失败。
+    await fetch(BASE + '/api/state?room=default', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state: { students: [{ id: 's1', name: '验证' }] }, rev: 1 })
+    }).catch(() => null);
+    const loop = await fetch(BASE + '/api/state?room=default').then((r) => r.json()).catch(() => null);
+    check(!!loop && 'dump' in loop, '回环请求能拿到 dump（教师机自己要靠它恢复）');
+    // 用本机非回环地址模拟"局域网设备"
+    const ips = [];
+    try {
+      const os = require('os');
+      Object.values(os.networkInterfaces()).forEach((list) => (list || []).forEach((x) => {
+        if (x.family === 'IPv4' && !x.internal) ips.push(x.address);
+      }));
+    } catch (e) { /* 忽略 */ }
+    if (ips.length) {
+      const lan = await fetch('http://' + ips[0] + ':' + new URL(BASE).port + '/api/state?room=default')
+        .then((r) => r.json()).catch(() => null);
+      if (lan === null) {
+        // 连不上也是**通过**：说明枢纽只绑了回环（比绑 0.0.0.0 更安全），局域网根本够不到。
+        check(true, '局域网请求够不到枢纽（只绑回环）—— 比绑 0.0.0.0 更安全');
+      } else {
+        check(!('dump' in lan), '局域网请求**拿不到** dump（不泄答案）—— 用 ' + ips[0] + ' 测');
+      }
+    } else {
+      console.log('  · 本机没有非回环 IPv4，跳过局域网断言');
+    }
+  }
+  
   console.log('\n=== ④ dump 不会被当 state 广播 ===');
   const secret = 'SECRET_ANSWER_' + Date.now();
   teacher.send(JSON.stringify({ type: 'dump', room, payload: { quizzes: [{ records: [{ note: secret }] }], answerKey: secret } }));

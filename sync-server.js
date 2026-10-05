@@ -122,7 +122,7 @@ function getRoom(id, create) {
         room.dump = raw.dump || null;
         room.rev = Number(raw.rev) || 0;
         room.updatedAt = Number(raw.updatedAt) || 0;
-        if (db) { try { db.saveRoom(key, { rev: room.rev, state: room.payload, dump: room.dump }); } catch (e) { /* 迁移失败不阻塞 */ } }
+        db.saveRoom(room.id, { rev: room.rev, state: room.payload, dump: room.dump });
       }
     } catch (e) { /* 无历史快照 */ }
   }
@@ -440,10 +440,15 @@ async function handleApi(req, res, urlPath, query) {
   try {
     if (urlPath === '/api/state') {
       if (req.method === 'GET') {
+        // **dump 只发给回环请求**：它是完整存档（含答案与全量流水）。教师机自己就是枢纽，
+        // 它的请求来自 127.0.0.1；学生/大屏/别的设备在局域网里，只给轻量 state。
+        // 与 WS 侧「只有 host 能取 dump」同一思路（审计发现 HTTP 侧漏了）。
+        const loopback = /^(127\.|::1$|::ffff:127\.)/.test(String(req.socket.remoteAddress || ""));
         return sendJSON(res, {
           ok: true, room: roomId, rev: room.rev, updatedAt: room.updatedAt,
           storage: db ? 'sqlite' : 'memory',
-          state: room.payload, dump: room.dump
+          state: room.payload,
+          ...(loopback ? { dump: room.dump } : {})
         });
       }
       if (req.method === 'PUT' || req.method === 'POST') {

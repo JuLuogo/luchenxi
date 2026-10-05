@@ -398,6 +398,9 @@
   CI.sync = {
     init: init, push: push, snapshot: snapshot, pushDump: sendDump, requestDump: requestDump,
     host: host, setHost: setHost, room: room, setRoom: setRoom,
+  // 枢纽基址：**单一来源**（domain-api.ts 的 Rust 优先判定也用它 —— 审计发现那边原来自己实现，
+  // 缺了 tauri.localhost / file:// 的处理，导致桌面端 Rust 路径永久失效）
+  hubBase: hubBase,
     joinURL: joinURL, qrURL: qrURL, serverInfo: function () { return serverInfo; },
     sameOrigin: sameOrigin, reconnect: reconnect, refreshServerInfo: fetchServerInfo,
     state: function () { return ws ? ws.readyState : -1; },
