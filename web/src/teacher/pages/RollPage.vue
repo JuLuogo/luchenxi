@@ -125,6 +125,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
             <el-button size="large" type="warning" :disabled="!current" @click="judge('half')">半对 2</el-button>
             <el-button size="large" type="danger" :disabled="!current" @click="judge('wrong')">答错 3</el-button>
             <el-button size="large" :disabled="!current" @click="judge('skip')">跳过 4</el-button>
+            <!-- 审计发现：这四个按钮没说"学生没设备也能用" —— 老师会以为必须先有学生端提交。
+                 一个班只有几台设备时，这一步直接决定能不能用。 -->
+            <div class="hint oral-hint">学生没带设备时：让他口头回答，听完直接点上面四个按钮判分（不依赖学生端提交）</div>
           </div>
 
           <div class="quick-row">
@@ -193,4 +196,5 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 .quick-row .label { color: var(--ci-text-weak); font-size: var(--fs-sm); }
 .history { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .hint { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-left: var(--sp-2); }
+.oral-hint { margin-top: var(--sp-2); }
 </style>

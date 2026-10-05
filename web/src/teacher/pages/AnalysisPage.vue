@@ -160,6 +160,12 @@ const detail = computed(() => {
   return { sid, stats, summary: CI.analysis.summarizeStudent(store.state, sid, scopeOpts.value) };
 });
 
+/** 样本门槛（来自领域层设置）：低于它的百分比不该被当真 */
+const minSample = computed(() => {
+  void store.rev;
+  return Number((store.settings as any).minSample) || 5;
+});
+
 const overall = computed(() => {
   const t = classStats.value.total || {};
   return {
@@ -266,6 +272,11 @@ function personalRate(tierKey) {
         <h2>学情分析</h2>
         <div class="desc">
           当前范围：<b>{{ scopeName }}</b> · 作答 {{ overall.attempts }} 人次 · 正确率 {{ overall.rate }}% · 累计得分 {{ overall.earned }}
+          <!-- 审计发现：这里原来无条件显示百分比 —— 1 次作答也报"正确率 100%"，
+               而 50 人班多数学生达不到样本门槛（默认 5），老师会据此下判断。 -->
+          <el-tag v-if="overall.attempts < minSample" size="small" type="warning" effect="plain" class="ml">
+            样本不足：{{ overall.attempts }} 次作答（建议 ≥{{ minSample }}）—— 百分比仅供参考
+          </el-tag>
         </div>
       </div>
       <div class="actions">
@@ -544,4 +555,5 @@ function personalRate(tierKey) {
 .eval-score { font-weight: 700; color: var(--c-brand); cursor: help; }
 .eval-score i { font-size: var(--fs-xs); color: var(--el-text-color-secondary); font-style: normal; }
 .empty-hint { color: var(--el-text-color-secondary); font-size: var(--fs-sm); padding: var(--sp-2) 0; }
+.ml { margin-left: var(--sp-2); }
 </style>

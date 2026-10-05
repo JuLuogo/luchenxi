@@ -1801,6 +1801,34 @@ group('大屏不点名 + 投屏适配');
   ok(!/font-size:\s*150px/.test(stageSrc), '点名姓名不再硬编码 150px');
 })();
 
+/* ================= 33. 样本不足与口头作答（审计 C3 / C2） ================= */
+group('样本不足要显式标注 + 口头作答入口');
+
+(function () {
+  const analysis = fs.readFileSync(path.join(__dirname, '..', 'web', 'src', 'teacher', 'pages', 'AnalysisPage.vue'), 'utf8');
+  const roll = fs.readFileSync(path.join(__dirname, '..', 'web', 'src', 'teacher', 'pages', 'RollPage.vue'), 'utf8');
+
+  /* 50 人班多数学生达不到样本门槛（默认 5），界面却按百分比呈现 —— 老师会据此下判断 */
+  ok(/样本不足/.test(analysis), '学情页在样本不足时显式标注（不是闷头显示百分比）');
+  ok(/minSample/.test(analysis), '标注用的是领域层的 minSample（不是界面自己拍一个数）');
+  eq(S.get().settings.minSample, 5, '领域层默认门槛是 5 次（调研：少于 5 题的分类极不稳定）');
+
+  /* 一个班只有几台设备时，老师要能"口头答完直接判分" */
+  ok(/口头回答/.test(roll), '点名页说明了「学生没设备也能口头判分」');
+  ok(/judge\('correct'\)/.test(roll) && /judge\('skip'\)/.test(roll), '四个判分按钮都在（答对/半对/答错/跳过）');
+
+  /* 界面文案里不该出现 Markdown 星号（Element Plus 不渲染 Markdown，会直接显示星号） */
+  /* 只看**模板里的可见文案**：Element Plus 不渲染 Markdown，星号会原样显示。
+     注释里的星号（解释用的强调）不算 —— 这也是"断言要查行为不要查文本"的教训。 */
+  const visibleStars = (src) => {
+    const tpl = src.slice(src.indexOf('<template>'), src.indexOf('</template>'));
+    const noComments = tpl.replace(/<!--[\s\S]*?-->/g, '');   // HTML 注释 Vue 会去掉，不算可见
+    return (noComments.match(/\*\*[^*]+\*\*/g) || []);
+  };
+  eq(visibleStars(analysis).length + visibleStars(roll).length, 0,
+    '两页模板里的可见文案没有 Markdown 星号（注释里的不算）');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {
