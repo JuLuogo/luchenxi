@@ -55,7 +55,11 @@ console.log('\n=== C. 学生端：5 处 ===');
 {
   const stu = read('assets/js/student.js');
   check(/return new Promise/.test(stu) && /resolve\(\{ ok/.test(stu), 'testHub 返回 Promise<{ok,text}>');
-  check(/if \(!sent\) \{ toast\('未连接教师机/.test(stu), '发送失败不假装成功');
+  // 行为**故意升级**了（审计 Top 8 第 1 位）：原来「发不出去就拒绝」（学生会以为没交），
+  // 现在「发不出去就排队，连上自动补交」—— 更好，所以断言也跟着改成查排队机制。
+  check(/function sendOrQueue/.test(stu) && /function flushQueue/.test(stu),
+    '发送失败不再丢：排队 + 重连自动补发（sendOrQueue / flushQueue）');
+  check(/if \(cmd\.id\) \{/.test(read('assets/js/classroom.js')), '教师端按 cmd.id 幂等去重（补发不会记两次）');
   check(/buzzed = \{ qid/.test(stu), 'buzz 记下已抢答状态');
   check(/function syncQuestion/.test(stu), '换题清空本地作答（syncQuestion）');
   const cls = read('assets/js/classroom.js');

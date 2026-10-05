@@ -183,6 +183,9 @@ run('应用图标齐备（PNG/ICO/ICNS）', ['-e', `
 // 1) 纯 Node 断言（八组）
 const NODE_TESTS = [
   ['逻辑断言（教师端 + 多端协同）', 'tests/logic.test.js'],
+  // 领域层加载自检：**语法通过 ≠ 导出正常** —— 我零散改 student.js 时模块静默坏掉，
+  // node --check 通过、require 也不抛错，但 CIStudent 一个导出都没有，功能全静默失效。
+  ['领域层模块加载自检（导出是否还在）', 'tests/domain-load-check.cjs'],
   // 领域层调用参数守卫：**"少传参数"是本项目历史上最高频的 bug**（已出现 4 次），
   // 这类错误不会让编译失败，只在特定路径上炸
   ['领域层调用参数守卫（少传参数检测）', 'tests/arity.test.js'],

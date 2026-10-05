@@ -20,6 +20,17 @@ const textDraft = ref('');
 const tab = ref('qa');          // qa | score
 
 /** 公开课现场状态：被点到时弹「到你了」 */
+/** 待补交条数（断网时提交会排队）—— 领域层维护队列，这里定时读一眼 */
+const pending = ref(0);
+onMounted(() => {
+  const tick = () => {
+    try { pending.value = (CIStudent as any).pendingCount ? (CIStudent as any).pendingCount() : 0; }
+    catch { pending.value = 0; }
+  };
+  tick();
+  setInterval(tick, 2000);
+});
+
 const open = computed<any>(() => {
   void st.value;
   try { return (CIStudent as any).openState ? (CIStudent as any).openState() : null; } catch { return null; }
@@ -136,6 +147,15 @@ function switchTeam() {
         <span class="conn" :class="{ on: st.connected }">{{ st.connected ? '已连接' : '未连接' }}</span>
       </template>
     </van-nav-bar>
+
+    <!-- 断网时提交会排队，这里告诉学生"没丢，联网自动补交"（审计 Top 8 第 1 位） -->
+    <van-notice-bar
+      v-if="pending > 0"
+      left-icon="warning-o"
+      wrapable
+      :scrollable="false"
+      text="网络不稳：已缓存待补交，连上教师机后会自动补发（不会丢）"
+    />
 
     <!-- 公开课：被点到时最显眼的提示（学生不用猜老师叫的是谁） -->
     <div v-if="open && open.mine" class="open-me" :class="{ done: !!open.verdict }">

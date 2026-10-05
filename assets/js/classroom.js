@@ -252,8 +252,24 @@
    * @param pre **预算好的判定**（Rust 核心给的 result/ratio/points/expected）——
    *            有它就用它，没有再走本地判分（回退路径，也是测试里的路径）
    */
+  /** 已处理过的命令 id（幂等）：学生端断网补发会原样重发同一条命令 */
+  var seenCmdIds = {};
+
   function handleCmd(cmd, backlog, pre) {
     if (!cmd || !cmd.kind) return null;
+    // **按命令 id 幂等**：学生端断网重连后会**补发**排队的命令（原样重发），
+    // 同一条命令只该处理一次。业务去重（sid+qid）挡得住重复作答，
+    // 但换一种命令就挡不住 —— 幂等键是通用语义，放在最前面。
+    if (cmd.id) {
+      if (seenCmdIds[cmd.id]) return { kind: cmd.kind, dup: true, idempotent: true };
+      seenCmdIds[cmd.id] = Date.now();
+      // 只留最近 200 条，别让它无限涨
+      var ids = Object.keys(seenCmdIds);
+      if (ids.length > 200) {
+        ids.sort(function (a, b) { return seenCmdIds[a] - seenCmdIds[b]; });
+        ids.slice(0, ids.length - 200).forEach(function (k) { delete seenCmdIds[k]; });
+      }
+    }
     var s = CI.store.get();
     var q = currentQuestion(s);
 

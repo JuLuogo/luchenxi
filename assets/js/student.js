@@ -76,6 +76,7 @@
   }
   var toastTimer = null;
   function toast(msg) {
+    if (!doc) return;   // 无 DOM 时直接返回（Node 逻辑测试里没有 document）
     var t = $('toast');
     if (!t) return;
     t.textContent = msg;
@@ -216,6 +217,8 @@
       return;
     }
     ws.onopen = function () {
+    // 连上就把断网期间排队的补发出去（幂等 id 保证不会被记两次）
+    setTimeout(flushQueue, 300);
       retry = 0;
       setConn('on', '已连接');
       if (teamId) hello();
@@ -254,6 +257,66 @@
     if (!ws || ws.readyState !== 1) { toast('还没连上老师端'); return false; }
     try { ws.send(JSON.stringify(obj)); return true; } catch (e) { return false; }
   }
+
+  /* ------------------------------------------------------------------ *
+   * 断网排队 + 重连补发（审计 Top 8 第 1 位）
+   * ------------------------------------------------------------------ *
+   * 网络抖一下，学生点提交就丢了 —— 界面只从已连接变成未连接，教师端没有待确认条目，
+   * 学生以为交了。同行普遍如此（在线即断即失），而本地部署恰恰能吃这个红利。
+   *
+   * 每条命令带幂等 id：补发多次也只会被记一次。
+   */
+  var QUEUE_KEY = 'ci_student_queue';
+  var pending = [];
+
+  /** 从 localStorage 读回上次没发出去的（刷新页面也不丢） */
+  function loadQueue() {
+    try {
+      var saved = root.localStorage.getItem(QUEUE_KEY);
+      if (saved) pending = JSON.parse(saved) || [];
+    } catch (err) { pending = []; }
+    if (!Array.isArray(pending)) pending = [];
+  }
+
+  function saveQueue() {
+    try { root.localStorage.setItem(QUEUE_KEY, JSON.stringify(pending.slice(-50))); } catch (err) { /* 存不下就算了 */ }
+  }
+
+  /** 给命令补一个幂等 id（没有才补） */
+  function withId(obj) {
+    if (obj && obj.type === 'cmd' && obj.cmd && !obj.cmd.id) {
+      obj.cmd.id = 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+    return obj;
+  }
+
+  /** 发得出去就发；发不出去就排队（sent=已送达，queued=已受理） */
+  function sendOrQueue(obj) {
+    withId(obj);
+    if (send(obj)) return { sent: true, queued: false };
+    pending.push(obj);
+    saveQueue();
+    notify();
+    return { sent: false, queued: true };
+  }
+
+  /** 连上之后把排队的补发出去（幂等 id 保证不会被记两次） */
+  function flushQueue() {
+    if (!pending.length) return 0;
+    var sent = 0;
+    var rest = [];
+    pending.forEach(function (obj) {
+      if (send(obj)) sent += 1; else rest.push(obj);
+    });
+    pending = rest;
+    saveQueue();
+    notify();
+    if (sent) toast('已自动补交 ' + sent + ' 条');
+    return sent;
+  }
+
+  /** 待补交条数（界面显示用） */
+  function pendingCount() { return pending.length; }
 
   function hello() {
     send({ type: 'cmd', cmd: { kind: 'hello', teamId: teamId, label: teamName() } });
@@ -454,8 +517,9 @@
     }
 
     // **发送失败不能假装成功**：断线时界面照常显示"已提交"，学生不会重试、老师收不到（审计发现）
-    var sent = send({ type: 'cmd', cmd: cmd });
-    if (!sent) { toast('未连接教师机，请重试'); notify(); return; }
+    // 发不出去就排队：断网也能交，联网后自动补交
+    var r = sendOrQueue({ type: 'cmd', cmd: cmd });
+    if (!r.sent && !r.queued) { toast('发送失败，请重试'); notify(); return; }
     submitted = { qid: q.id, at: Date.now(), text: cmd.text || null };
     toast(skip ? '已提交：跳过' : '已提交，等待判定');
     notify();     // 旧 renderQA() 已删
@@ -478,6 +542,7 @@
   function addClass(id, cls) { var e = $(id); if (e && e.classList) e.classList.add(cls); }
   function removeClass(id, cls) { var e = $(id); if (e && e.classList) e.classList.remove(cls); }
 function init() {
+loadQueue();   // 刷新页面也不丢：把上次没发出去的读回来
     if (boardMode) doc.body.className = 'board-mode';
     connect();
     render();
@@ -539,6 +604,9 @@ function init() {
   CIStudent.toggleOption = toggleOption;
   CIStudent.draft = draft;
   CIStudent.submit = submit;
+CIStudent.sendOrQueue = sendOrQueue;
+CIStudent.flushQueue = flushQueue;
+CIStudent.pendingCount = pendingCount;
   CIStudent.setDraft = setDraft;
   CIStudent.syncQuestion = syncQuestion;
   CIStudent.questionKind = questionKind;

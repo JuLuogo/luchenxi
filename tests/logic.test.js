@@ -1738,6 +1738,53 @@ group('学生端状态机修复');
   eq(CI.classroom.metaPayload().reveal, true, '公布了当前题 → meta.reveal 为 true');
 })();
 
+/* ================= 31. 断网排队与幂等（审计 Top 8 第 1 位） ================= */
+group('断网排队与幂等');
+
+(function () {
+  // ① 学生端：发不出去的命令要排队（不是丢掉）
+  ok(typeof CIStudent.pendingCount === 'function', '有 pendingCount（界面要显示待补交条数）');
+  ok(typeof CIStudent.flushQueue === 'function', '有 flushQueue（连上后自动补发）');
+  const before = CIStudent.pendingCount();
+  // 当前没连上（Node 环境没有 ws），提交应当进队列
+  const r = CIStudent.sendOrQueue({ type: 'cmd', cmd: { kind: 'answer', qid: 'q1', teamId: 't1' } });
+  eq(r.sent, false, '没连接时发不出去（sent=false）');
+  eq(r.queued, true, '但**已受理**（queued=true）—— 不能丢');
+  eq(CIStudent.pendingCount(), before + 1, '待补交条数 +1');
+  // ② 幂等 id：同一条命令重复入队应当带同一个 id（补发不会被记两次）
+  const cmd = { kind: 'answer', qid: 'q2', teamId: 't1' };
+  CIStudent.sendOrQueue({ type: 'cmd', cmd: cmd });
+  ok(!!cmd.id, '命令被补上幂等 id');
+  const id1 = cmd.id;
+  CIStudent.sendOrQueue({ type: 'cmd', cmd: cmd });
+  eq(cmd.id, id1, '同一条命令的 id 不会被改（幂等键稳定）');
+  // 没连接时 flush 应当一条都发不出去（且不丢）
+  const n0 = CIStudent.pendingCount();
+  const sent = CIStudent.flushQueue();
+  eq(sent, 0, '没连接时补发 0 条');
+  eq(CIStudent.pendingCount(), n0, '补发失败的命令仍在队列里（不丢）');
+
+  // ③ 教师端：同一条命令（id 相同）只处理一次
+  S.replaceState(S.defaultState());
+  const t1 = S.get().teams[0].id;
+  S.addStudentsBulk('甲\n乙', t1);
+  S.addQuestion({ stem: '幂等题', tier: 'basic', answer: 'A', options: ['x', 'y'] });
+  const q = S.get().bank[0];
+  S.setRuntime({ qid: q.id });
+  const stu = S.get().students[0];
+  const once = { kind: 'answer', id: 'cmd_fixed_1', teamId: t1, sid: stu.id, qid: q.id, choice: ['A'] };
+  const r1 = CI.classroom.handleCmd(once, false, null);
+  ok(!!r1, '第一次处理有结果');
+  const recs1 = S.allRecords(S.get()).length;
+  const r2 = CI.classroom.handleCmd(once, false, null);
+  eq(r2 && r2.idempotent, true, '第二次（同 id）被识别为幂等重复');
+  eq(S.allRecords(S.get()).length, recs1, '重复补发**没有**多记一条流水');
+  // 换一个 id 的同一份作答：业务去重仍应挡住（不重复加分）
+  const twice = { kind: 'answer', id: 'cmd_fixed_2', teamId: t1, sid: stu.id, qid: q.id, choice: ['A'] };
+  CI.classroom.handleCmd(twice, false, null);
+  eq(S.allRecords(S.get()).length, recs1, '换 id 的重复作答被业务去重挡住');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {
