@@ -1956,6 +1956,54 @@ group('广播内容不含个人成绩');
     'students 段里没有任何 score 数值');
 })();
 
+/* ================= 37. 名单文件导入（审计 Top 8 第 6 位） ================= */
+group('名单文件导入');
+
+(function () {
+  /* 痛点：50 人名单只能在文本框粘贴重建。而 addStudentsBulk 按**任意空白/逗号**切分 ——
+     "张三,红队" 会变成两个学生，所以必须有一个按行解析的名单解析器。 */
+  ok(CI.rosterImport && typeof CI.rosterImport.parse === 'function', '有 rosterImport.parse（领域层解析）');
+
+  /* ① 基本：姓名,队伍 */
+  const r1 = CI.rosterImport.parse('张三,红队\n李四,蓝队');
+  eq(r1.length, 2, '两行两人');
+  eq(r1[0].name, '张三', '姓名解析正确');
+  eq(r1[0].team, '红队', '队伍解析正确');
+
+  /* ② 分隔符：制表符 / 中文逗号 / 分号 / 空格 / 竖线 */
+  eq(CI.rosterImport.parse('王五\t红队')[0].team, '红队', '制表符');
+  eq(CI.rosterImport.parse('王五，红队')[0].team, '红队', '中文逗号');
+  eq(CI.rosterImport.parse('王五;红队')[0].team, '红队', '分号');
+  eq(CI.rosterImport.parse('王五 红队')[0].team, '红队', '空格');
+  eq(CI.rosterImport.parse('王五|红队')[0].team, '红队', '竖线');
+
+  /* ③ 只有姓名：队伍留空（用默认队） */
+  const r3 = CI.rosterImport.parse('赵六');
+  eq(r3.length, 1, '只有姓名也能解析');
+  eq(r3[0].team, '', '队伍留空（由界面决定默认队）');
+
+  /* ④ 表头自动跳过（老师从 Excel 导出的第一行通常是表头） */
+  const r4 = CI.rosterImport.parse('姓名,队伍\n张三,红队');
+  eq(r4.length, 1, '表头被跳过（只留 1 人）');
+  eq(r4[0].name, '张三', '跳过表头后第一个是张三');
+  eq(CI.rosterImport.parse('name,team\nA,B').length, 1, '英文表头也跳过');
+
+  /* ⑤ 脏数据：BOM / 引号 / 空行 / 多余空格 / 重复 */
+  const r5 = CI.rosterImport.parse('\uFEFF"张三" , 红队 \n\n   \n张三,红队');
+  eq(r5.length, 1, 'BOM、引号、空行、重复都被处理（只剩 1 条）');
+  eq(r5[0].name, '张三', '去掉引号与空格');
+
+  /* ⑥ 分组统计（界面显示"将新增 红队 2 人、蓝队 1 人"） */
+  const g = CI.rosterImport.groupByTeam(CI.rosterImport.parse('A,红队\nB,红队\nC,蓝队\nD'));
+  eq(g.length, 3, '分组后 3 组（红队 / 蓝队 / 未指定 —— 界面再过滤出命名组）');
+  eq(g.filter((x) => !x.team)[0].count, 1, '未指定队伍的单独一组（界面提示时不计入「命名组」）');
+  eq(g.filter((x) => x.team === '红队')[0].count, 2, '红队 2 人');
+
+  /* ⑦ 空输入不炸 */
+  eq(CI.rosterImport.parse('').length, 0, '空字符串返回空数组');
+  eq(CI.rosterImport.parse(null).length, 0, 'null 也不炸');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

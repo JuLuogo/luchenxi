@@ -50,6 +50,35 @@ const bulkOpen = ref(false);
 const bulkText = ref('');
 const bulkTeam = ref('');
 
+/** 名单文件输入（隐藏的 input） */
+const rosterFile = ref<HTMLInputElement | null>(null);
+
+/**
+ * 从文件读名单 → 填进文本框（让老师**先看一眼再确认**，不直接落库）
+ *
+ * 解析走领域层 CI.rosterImport.parse（支持 姓名,队伍 / 制表符 / 空格，自动跳表头）。
+ * 之所以不直接添加：文件可能选错、表头可能没识别对，让老师过目一遍更稳。
+ */
+async function onRosterFile(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const rows = (CI as any).rosterImport.parse(text);
+    if (!rows.length) { ElMessage.warning('文件里没解析出名单（每行一人，姓名,队伍）'); return; }
+    const groups = (CI as any).rosterImport.groupByTeam(rows);
+    bulkText.value = rows.map((r: any) => r.team ? r.name + ',' + r.team : r.name).join('\n');
+    const named = groups.filter((g: any) => g.team);
+    ElMessage.success('已读入 ' + rows.length + ' 人' +
+      (named.length ? '（' + named.map((g: any) => g.team + ' ' + g.count + ' 人').join('、') + '）' : ''));
+  } catch (err) {
+    ElMessage.error('读取文件失败：' + ((err as Error).message || err));
+  } finally {
+    input.value = '';   // 允许重复选同一个文件
+  }
+}
+
 function openBulk() {
   bulkText.value = '';
   bulkTeam.value = store.teams[0] ? store.teams[0].id : '';
@@ -294,6 +323,12 @@ function saveCourseName(v: string) {
             :rows="8"
             placeholder="每行一个姓名，或用空格/逗号分隔，例如：&#10;张三 李四 王五&#10;赵六"
           />
+          <!-- 从文件导入（审计 Top 8 第 6 位）：50 人名单不该靠手打 -->
+          <div class="roster-file">
+          <input ref="rosterFile" type="file" accept=".csv,.txt,.tsv,text/csv,text/plain" style="display:none" @change="onRosterFile" />
+          <el-button size="small" @click="(rosterFile as any)?.click()">从文件导入（CSV / TXT）</el-button>
+          <span class="hint">每行一人：姓名,队伍（也支持制表符/空格分隔；会自动跳过表头）</span>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -349,4 +384,5 @@ function saveCourseName(v: string) {
 .course-row { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3); }
 .course-label { color: var(--el-text-color-secondary); font-size: var(--fs-sm); }
 .course-input { max-width: 320px; }
+.roster-file { margin-top: var(--sp-2); display: flex; align-items: center; gap: var(--sp-2); }
 </style>

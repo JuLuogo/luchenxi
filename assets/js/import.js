@@ -111,5 +111,71 @@
     }).filter(Boolean);
   }
 
+
+  /* ------------------------------------------------------------------ *
+   * 名单解析（文件导入用）
+   * ------------------------------------------------------------------ *
+   * 为什么单独写：`store.addStudentsBulk` 按**任意空白/逗号**切分，
+   * 所以 "张三,红队" 会变成两个学生。名单文件是**成对**的，必须按行解析。
+   *
+   * 支持：`姓名,队伍` / `姓名\t队伍` / `姓名 队伍` / 只有姓名；
+   * 自动跳过表头（姓名/学生/名字/队伍/组别/分组…）、BOM、空行、首尾引号。
+   * 这是**输入规范化**，不是计分规则 —— 不需要 Rust 孪生。
+   */
+  var HEADER_WORDS = ['姓名', '名字', '学生', '队员', '队伍', '组别', '分组', '小组', 'name', 'team', 'group'];
+
+  function looksLikeHeader(name, team) {
+    var a = String(name || '').trim().toLowerCase();
+    var b = String(team || '').trim().toLowerCase();
+    return HEADER_WORDS.indexOf(a) >= 0 && (!b || HEADER_WORDS.indexOf(b) >= 0);
+  }
+
+  /** 去掉 BOM 与首尾引号 */
+  function cleanCell(x) {
+    return String(x == null ? '' : x)
+      .replace(/^\uFEFF/, '')
+      .replace(/^["\']+|["\']+$/g, '')
+      .trim();
+  }
+
+  /**
+   * 解析名单文本 → [{ name, team }]（team 为空串表示"未指定，用默认队"）
+   * @param {string} text 文件内容或粘贴的文本
+   */
+  function parseRoster(text) {
+    var out = [];
+    var seen = {};
+    String(text == null ? '' : text).split(/\r?\n/).forEach(function (line) {
+      // 按"逗号/制表/分号/竖线"切；只有一列时再按空格切一次（最多两列）
+      var cells = line.split(/[,\uFF0C\t;\uFF1B|]/).map(cleanCell).filter(function (x) { return x !== ''; });
+      if (cells.length === 1) {
+        var bySpace = cleanCell(line).split(/\s+/).filter(Boolean);
+        if (bySpace.length === 2) cells = bySpace;
+      }
+      if (!cells.length) return;                       // 空行
+      if (looksLikeHeader(cells[0], cells[1])) return;  // 表头
+      var name = cleanCell(cells[0]);
+      var team = cells.length > 1 ? cleanCell(cells[1]) : '';
+      if (!name) return;
+      // 同名去重（同一份文件里重复粘贴很常见）
+      var key = name + '|' + team;
+      if (seen[key]) return;
+      seen[key] = true;
+      out.push({ name: name, team: team });
+    });
+    return out;
+  }
+
+  /** 把解析结果按队伍分组（界面显示"将新增 3 队 12 人"） */
+  function groupByTeam(rows) {
+    var map = {};
+    (rows || []).forEach(function (r) {
+      var k = r.team || '';
+      map[k] = (map[k] || 0) + 1;
+    });
+    return Object.keys(map).map(function (k) { return { team: k, count: map[k] }; });
+  }
+
   CI.bankImport = { parse: parse, TIER_PREFIXES: TIER_PREFIXES };
+  CI.rosterImport = { parse: parseRoster, groupByTeam: groupByTeam };
 })(typeof window !== 'undefined' ? window : globalThis);
