@@ -411,13 +411,13 @@ function readBody(req, limit) {
     const chunks = [];
     req.on('data', (c) => {
       size += c.length;
-      if (size > (limit || 16 * 1024 * 1024)) { reject(new Error('请求体过大')); req.destroy(); return; }
+      if (size > (limit || 16 * 1024 * 1024)) { reject(Object.assign(new Error('请求体过大'), { status: 413 })); req.destroy(); return; }
       chunks.push(c);
     });
     req.on('end', () => {
       const text = Buffer.concat(chunks).toString('utf8');
       if (!text) return resolve(null);
-      try { resolve(JSON.parse(text)); } catch (e) { reject(new Error('JSON 解析失败：' + e.message)); }
+      try { resolve(JSON.parse(text)); } catch (e) { reject(Object.assign(new Error('JSON 解析失败：' + e.message), { status: 400 })); }
     });
     req.on('error', reject);
   });
@@ -484,6 +484,10 @@ async function handleApi(req, res, urlPath, query) {
     }
 
     if (urlPath === '/api/backup') {
+      // 方法校验（审计发现：原来没有 —— GET /api/restore 这类「用 GET 触发写操作」可达）
+      if (!(req.method === 'GET')) {
+        return sendJSON(res, { ok: false, message: '备份（读）只支持 GET' }, 405);
+      }
       if (!db) return sendJSON(res, { ok: false, message: '当前未启用 SQLite' }, 501);
       const backup = db.exportBackup(roomId);
       if (!backup) return sendJSON(res, { ok: false, message: '该房间还没有数据' }, 404);
@@ -491,6 +495,10 @@ async function handleApi(req, res, urlPath, query) {
     }
 
     if (urlPath === '/api/restore') {
+      // 方法校验（审计发现：原来没有 —— GET /api/restore 这类「用 GET 触发写操作」可达）
+      if (!(req.method === 'POST')) {
+        return sendJSON(res, { ok: false, message: '恢复（写）只支持 POST' }, 405);
+      }
       const body = await readBody(req);
       const state = body && body.state ? body.state : body;
       if (!state || typeof state !== 'object') return sendJSON(res, { ok: false, message: '备份格式不正确' }, 400);
@@ -506,6 +514,10 @@ async function handleApi(req, res, urlPath, query) {
     }
 
     if (urlPath === '/api/stats') {
+      // 方法校验（审计发现：原来没有 —— GET /api/restore 这类「用 GET 触发写操作」可达）
+      if (!(req.method === 'GET')) {
+        return sendJSON(res, { ok: false, message: '统计（读）只支持 GET' }, 405);
+      }
       if (!db) return sendJSON(res, { ok: false, message: '当前未启用 SQLite' }, 501);
       return sendJSON(res, {
         ok: true, room: roomId,
@@ -518,7 +530,9 @@ async function handleApi(req, res, urlPath, query) {
 
     return sendJSON(res, { ok: false, message: '未知接口：' + urlPath }, 404);
   } catch (e) {
-    return sendJSON(res, { ok: false, message: e.message }, 500);
+    // 审计发现：原来一律 500 —— 但"JSON 解析失败"是请求错了（400），
+    // "请求体过大"是 413。500 会让客户端以为可以重试，而重试永远不会成功。
+    return sendJSON(res, { ok: false, message: e.message }, Number(e && e.status) || 500);
   }
 }
 

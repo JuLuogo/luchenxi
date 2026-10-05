@@ -269,7 +269,9 @@ async fn health(State(st): State<HubState>) -> impl IntoResponse {
         "port": st.port,
         "rooms": rooms,
         "ips": ips,
-        "qrcode": false,
+        // 审计发现：这里原来硬编码 false，但本枢纽**实现了** /qr.png ——
+        // 客户端据此误判「枢纽不支持二维码」（classroom.js 与 net.js 都读它）
+        "qrcode": true,
         "storage": "sqlite",
         "db": "classroom.db",
         "counts": counts

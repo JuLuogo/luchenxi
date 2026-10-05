@@ -100,6 +100,31 @@ const check = (ok, label, extra) => {
     }
   }
   
+  console.log('\n=== ③.6 API 规范（方法校验 / 错误码 / health 说实话） ===');
+  {
+    /* 审计发现：Node 版的 /api/restore 等端点**没有方法校验** ——
+       GET /api/restore 这类"用 GET 触发写操作"可达（最容易被误触发的形状）。 */
+    const getRestore = await fetch(BASE + '/api/restore?room=default').then((r) => r.status).catch(() => 0);
+    check(getRestore === 405 || getRestore === 404, 'GET /api/restore 被拒（' + getRestore + '，不应是 200）');
+    const getBackup = await fetch(BASE + '/api/backup?room=default').then((r) => r.status).catch(() => 0);
+    check(getBackup === 200 || getBackup === 404 || getBackup === 501, 'GET /api/backup 允许读（' + getBackup + '）');
+    const postBackup = await fetch(BASE + '/api/backup?room=default', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then((r) => r.status).catch(() => 0);
+    check(postBackup === 405 || postBackup === 404, 'POST /api/backup 被拒（' + postBackup + '，备份是读操作）');
+
+    /* 错误码语义：请求错了是 400/413，不是 500（500 会让客户端以为可以重试） */
+    const badJson = await fetch(BASE + '/api/state?room=default', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{ 这不是 JSON'
+    }).then((r) => r.status).catch(() => 0);
+    check(badJson === 400 || badJson === 422, '坏 JSON → 4xx（' + badJson + '，不是 500）');
+
+    /* /health 要"说实话"：实现了 /qr.png 就该说支持（客户端据此决定显示二维码还是文字地址） */
+    const health = await fetch(BASE + '/health').then((r) => r.json()).catch(() => null);
+    check(!!health && health.ok === true, '/health 正常');
+    const qr = await fetch(BASE + '/qr.png?text=hi').then((r) => r.status).catch(() => 0);
+    check(qr === 200 || qr === 501, '/qr.png 有明确答复（' + qr + '）');
+    if (qr === 200) check(health.qrcode === true, '/health 的 qrcode 与 /qr.png 实际能力一致');
+  }
+  
   console.log('\n=== ④ dump 不会被当 state 广播 ===');
   const secret = 'SECRET_ANSWER_' + Date.now();
   teacher.send(JSON.stringify({ type: 'dump', room, payload: { quizzes: [{ records: [{ note: secret }] }], answerKey: secret } }));
