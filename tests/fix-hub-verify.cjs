@@ -141,6 +141,55 @@ const check = (ok, label, extra) => {
   evil.close(); teacher.close(); late.close();
   await sleep(200);
 
+  console.log('\n=== ③.7 按角色下发：team 只收到本队成员 ===');
+  {
+    /* 审计发现：广播给 team 的 state 里带**全班名单** ——
+       一个学生打开控制台就能看到「这个班有哪些人、谁在哪个队」。
+       docs/09 写着「个人成绩只发给学生自己的手机」；姓名课上会念，
+       但完整花名册不该发给每个学生。 */
+    const room2 = 'scope-' + Date.now().toString(36);
+    // 与教师端 App 一致：**在 URL 里声明角色**（`?role=host`）——
+    // hub 级的 hello 提权会被防冒名守卫拒绝（那是**正确**的，测试原来写错了）
+    const host2 = new WebSocket(WS + '/ws?room=' + room2 + '&role=host');
+    await new Promise((res) => host2.on('open', res));
+    await sleep(300);
+    host2.send(JSON.stringify({ type: 'state', rev: 1, payload: {
+      courseName: '裁剪测试',
+      students: [
+        { id: 'a1', name: '甲同学', teamId: 'T1' },
+        { id: 'a2', name: '乙同学', teamId: 'T1' },
+        { id: 'b1', name: '丙同学', teamId: 'T2' },
+        { id: 'b2', name: '丁同学', teamId: 'T2' }
+      ]
+    } }));
+    await sleep(400);
+
+    const teamMsgs = [];
+    const team2 = new WebSocket(WS + '/ws?room=' + room2 + '&role=team');
+    team2.on('message', (d) => { try { teamMsgs.push(JSON.parse(d.toString())); } catch (e) { /* 忽略 */ } });
+    await new Promise((res) => team2.on('open', res));
+    // 队伍身份仍用 hello 声明（URL 里只有角色 —— 与真实学生端一致）
+    team2.send(JSON.stringify({ type: 'hello', teamId: 'T1' }));
+    await sleep(700);
+    const st1 = teamMsgs.filter((m) => m.type === 'state').pop();
+    const list1 = (st1 && st1.payload && st1.payload.students) || [];
+    check(list1.length === 2 && list1.every((s) => s.teamId === 'T1'),
+      'team 只收到本队成员', '收到 ' + list1.length + ' 人（应 2 人）');
+    check(!JSON.stringify(st1 || {}).includes('丙同学'), 'team 收不到别队成员的姓名');
+
+    const stageMsgs = [];
+    const stage2 = new WebSocket(WS + '/ws?room=' + room2 + '&role=stage');
+    stage2.on('message', (d) => { try { stageMsgs.push(JSON.parse(d.toString())); } catch (e) { /* 忽略 */ } });
+    await new Promise((res) => stage2.on('open', res));
+    await sleep(700);
+    const st2 = stageMsgs.filter((m) => m.type === 'state').pop();
+    const list2 = (st2 && st2.payload && st2.payload.students) || [];
+    check(list2.length === 4, '大屏看全量（它是教室公共屏）', '收到 ' + list2.length + ' 人（应 4 人）');
+
+    host2.close(); team2.close(); stage2.close();
+    await sleep(200);
+  }
+
   console.log('\n----------------------------------------');
   if (fails.length) {
     console.log('❌ 失败 ' + fails.length + ' 项 / 通过 ' + pass + ' 项');
