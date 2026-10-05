@@ -193,9 +193,36 @@ function pushPresence(room) {
   return msg;
 }
 
+/**
+ * 按角色裁剪 state：**team 只看到本队成员**，stage / host 看全量。
+ *
+ * 为什么（审计发现）：广播给 team 的 state 里带**全班名单** ——
+ * 一个学生打开控制台就能看到「这个班有哪些人、谁在哪个队」。
+ * docs/09 写着「个人成绩只发给学生自己的手机」；姓名课上会念，
+ * 但完整花名册不该发给每个学生。
+ *
+ * 与 Rust 版（`Room::state_for`）**同口径** —— 两版必须一致，有黑盒测试盯着。
+ */
+function stateFor(ws, payload) {
+  if (!ws || ws.role !== 'team' || !ws.teamId || !payload) return payload;
+  if (!Array.isArray(payload.students)) return payload;
+  return Object.assign({}, payload, {
+    students: payload.students.filter((s) => s && s.teamId === ws.teamId)
+  });
+}
+
+/** 按角色逐个广播 state（每条连接拿到的是裁剪后的版本） */
+function broadcastState(room, except) {
+  if (!room.payload) return;
+  room.clients.forEach((c) => {
+    if (c === except) return;
+    send(c, { type: 'state', room: room.id, rev: room.rev, payload: stateFor(c, room.payload) });
+  });
+}
+
 function pushState(ws, room) {
   if (!room.payload) return false;
-  return send(ws, { type: 'state', room: room.id, rev: room.rev, payload: room.payload });
+  return send(ws, { type: 'state', room: room.id, rev: room.rev, payload: stateFor(ws, room.payload) });
 }
 
 /* ------------------------------------------------------------------ *
@@ -257,7 +284,7 @@ wss.on('connection', (ws, req) => {
       room.rev += 1;
       room.updatedAt = Date.now();
       saveRoomSoon(room);
-      broadcast(room, { type: 'state', room: room.id, rev: room.rev, payload: room.payload }, ws);
+      broadcastState(room, ws);
       broadcast(room, { type: 'leaderboard', room: room.id, rev: room.rev, payload: room.payload }, ws);
       return;
     }
@@ -274,7 +301,7 @@ wss.on('connection', (ws, req) => {
       room.rev = clientRev > 0 ? Math.max(room.rev, clientRev) : room.rev + 1;
       room.updatedAt = Date.now();
       saveRoomSoon(room);
-      broadcast(room, { type: 'state', room: room.id, rev: room.rev, payload: room.payload }, ws);
+      broadcastState(room, ws);
       // 学生端/大屏之外的订阅者：保留 leaderboard 兼容
       return;
     }
@@ -477,7 +504,7 @@ async function handleApi(req, res, urlPath, query) {
         room.updatedAt = Date.now();
         saveRoomNow(room);
         // 让已连接的大屏/学生端立刻看到新数据
-        if (room.payload) broadcast(room, { type: 'state', room: roomId, rev: room.rev, payload: room.payload });
+        broadcastState(room, undefined);
         return sendJSON(res, { ok: true, room: roomId, rev: room.rev, updatedAt: room.updatedAt, counts: safeStats() });
       }
       return sendJSON(res, { ok: false, message: '不支持的方法' }, 405);
@@ -509,7 +536,7 @@ async function handleApi(req, res, urlPath, query) {
       room.rev += 1;
       room.updatedAt = Date.now();
       saveRoomNow(room);
-      broadcast(room, { type: 'state', room: roomId, rev: room.rev, payload: room.payload });
+      broadcastState(room, undefined);
       return sendJSON(res, { ok: true, room: roomId, rev: room.rev, counts: safeStats() });
     }
 

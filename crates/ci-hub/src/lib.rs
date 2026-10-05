@@ -161,6 +161,46 @@ impl Room {
         }
     }
 
+    /// 按角色裁剪 state：**team 只看到本队成员**，stage / host 看全量。
+    ///
+    /// 为什么（审计发现）：广播给 team 的 state 里带**全班名单** ——
+    /// 一个学生打开控制台就能看到「这个班有哪些人、谁在哪个队」。
+    /// docs/09 写着「个人成绩只发给学生自己的手机」；姓名课上会念，
+    /// 但完整花名册不该发给每个学生。
+    ///
+    /// 为什么在枢纽裁而不是教师端：一份 state 要发给所有人，
+    /// 教师端发不出「每人不同」的版本。
+    /// 为什么 stage 不裁：它是教室公共屏（且已拿掉个人分数），没有队伍身份可裁。
+    pub fn state_for(&self, id: u64, payload: &Value) -> Value {
+        let c = match self.clients.get(&id) {
+            Some(c) => c,
+            None => return payload.clone(),
+        };
+        if c.role != "team" {
+            return payload.clone();
+        }
+        let team = match c.team_id.as_deref() {
+            Some(t) => t,
+            None => return payload.clone(),
+        };
+        let mut out = payload.clone();
+        if let Some(list) = out.get_mut("students").and_then(|v| v.as_array_mut()) {
+            list.retain(|s| s.get("teamId").and_then(|v| v.as_str()) == Some(team));
+        }
+        out
+    }
+
+    /// 按角色逐个发送 state（每条连接拿到的是**裁剪后**的版本）
+    pub fn broadcast_state(&self, room: &str, rev: i64, payload: &Value, except: Option<u64>) {
+        for (id, c) in self.clients.iter() {
+            if Some(*id) == except {
+                continue;
+            }
+            let p = self.state_for(*id, payload);
+            let _ = c.tx.send(json!({ "type": "state", "room": room, "rev": rev, "payload": p }));
+        }
+    }
+
     /// 在线小组状态（对应 Node 版 presenceList：**断开只把 online 置 false，不移除条目**）
     pub fn presence(&self) -> Value {
         let mut teams: Vec<Value> = Vec::new();
@@ -367,7 +407,8 @@ async fn api_put_state(
     if payload.is_some() {
         let rooms = st.rooms.read().await;
         if let Some(r) = rooms.get(&room) {
-            r.broadcast(json!({ "type": "state", "room": room, "rev": rev, "payload": payload }), None);
+            // payload 是 Option（上面 if payload.is_some() 守着），取出来给裁剪用
+            r.broadcast_state(&room, rev, payload.as_ref().unwrap(), None);
         }
     }
     (
@@ -449,7 +490,7 @@ async fn api_restore(
     {
         let rooms = st.rooms.read().await;
         if let Some(r) = rooms.get(&room) {
-            r.broadcast(json!({ "type": "state", "room": room, "rev": rev, "payload": state }), None);
+            r.broadcast_state(&room, rev, &state, None);
         }
     }
     (axum::http::StatusCode::OK, Json(json!({ "ok": true, "room": room, "rev": rev })))
@@ -614,7 +655,7 @@ async fn handle_client_message(st: &HubState, room_id: &str, client_id: u64, rol
             let rooms = st.rooms.read().await;
             if let Some(r) = rooms.get(room_id) {
                 // 广播给除自己以外的所有人（教师端自己的界面由前端负责渲染）
-                r.broadcast(json!({ "type": "state", "room": room_id, "rev": rev, "payload": payload }), Some(client_id));
+                r.broadcast_state(room_id, rev, &payload, Some(client_id));
             }
         }
 
@@ -645,6 +686,7 @@ async fn handle_client_message(st: &HubState, room_id: &str, client_id: u64, rol
             // dump 只在 host 与枢纽之间往返：这里**不广播**，只回执给教师端自己
             let rooms = st.rooms.read().await;
             if let Some(r) = rooms.get(room_id) {
+                // 这是**给 host 的回执**（dump 只在 host 与枢纽之间往返），不需要按角色裁剪
                 r.send_to(client_id, json!({ "type": "state", "room": room_id, "rev": rev, "payload": state }));
             }
         }
@@ -653,7 +695,10 @@ async fn handle_client_message(st: &HubState, room_id: &str, client_id: u64, rol
             let rooms = st.rooms.read().await;
             if let Some(r) = rooms.get(room_id) {
                 match (&r.state, r.rev) {
-                    (Some(p), rev) => r.send_to(client_id, json!({ "type": "state", "room": room_id, "rev": rev, "payload": p })),
+                    (Some(p), rev) => {
+                        let scoped = r.state_for(client_id, &p);
+                        r.send_to(client_id, json!({ "type": "state", "room": room_id, "rev": rev, "payload": scoped }));
+                    }
                     (None, _) => drop(rooms),
                 }
             }
@@ -742,7 +787,8 @@ async fn handle_client_message(st: &HubState, room_id: &str, client_id: u64, rol
                     "hasState": state.is_some(), "hasDump": r.dump.is_some(), "hostOnline": r.host_online()
                 }));
                 if let Some(p) = state {
-                    r.send_to(client_id, json!({ "type": "state", "room": room_id, "rev": rev, "payload": p }));
+                    let scoped = r.state_for(client_id, &p);
+                    r.send_to(client_id, json!({ "type": "state", "room": room_id, "rev": rev, "payload": scoped }));
                 }
             }
             broadcast_presence(st, room_id).await;
