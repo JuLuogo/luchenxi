@@ -208,6 +208,11 @@ try {
       '学情分析页渲染出学生姓名（Vue 跟着数据更新）');
     ok(typeof analysisText === 'string' && (analysisText.includes('综合表现') || analysisText.includes('题型')),
       '学情分析页渲染出统计区块');
+      // 趋势（审计 B7）：答「这几周是进步还是退步」—— 面板在页面下方，
+      // 截图截不到，所以用 DOM 文本断言（真实浏览器）
+      ok(typeof analysisText === 'string' && analysisText.includes('趋势'), '学情页有「趋势」面板');
+      ok(typeof analysisText === 'string' && analysisText.includes('按天') && analysisText.includes('按课次'),
+        '趋势面板有「按天 / 按课次」两种口径');
 
     // ③ 切到课堂协同页（最重的一页）
     await run('location.hash = "#/classroom"');

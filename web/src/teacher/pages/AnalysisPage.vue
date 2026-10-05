@@ -128,6 +128,70 @@ const rateOption = computed<any>(() => ({
   }]
 }));
 
+/** 趋势口径：按天 / 按课次（领域层算，界面不重算 —— 与 Rust 有 parity） */
+const trendBy = ref<'day' | 'quiz'>('day');
+/**
+ * 趋势数据
+ *
+ * 审计 B7：原来只有「本节课 / 全部课次」两档，答不了「这几周是进步还是退步」。
+ * `tzOffsetMin` 必须传：领域层要用它把时间戳切成"本地的那一天"（Rust 侧同契约）。
+ */
+const trendRows = computed<any[]>(() => {
+  void store.rev;
+  try {
+    const opts: any = { by: trendBy.value, tzOffsetMin: new Date().getTimezoneOffset() };
+    const sc = scope.value;
+    if (sc && sc !== 'all') opts.teamId = sc;
+    if (detailSid.value) opts.studentId = detailSid.value;
+    return (CI.analysis as any).trend(store.state, opts) || [];
+  } catch { return []; }
+});
+
+/**
+ * 进步 / 持平 / 退步：把趋势按前后两半比正确率
+ *
+ * 为什么不用斜率：桶数常常只有 2–5 个，斜率没有统计意义；
+ * 前后半段对比与领域层 `growthScore` 的思路一致（"和自己比"），老师也更好解释。
+ */
+const trendVerdict = computed(() => {
+  const rows = trendRows.value.filter((r: any) => r.attempts > 0);
+  if (rows.length < 2) return null;
+  const mid = Math.ceil(rows.length / 2);
+  const avg = (list: any[]) => list.reduce((a, r) => a + r.rate, 0) / (list.length || 1);
+  const early = avg(rows.slice(0, mid));
+  const late = avg(rows.slice(mid));
+  const diff = Math.round(late - early);
+  return {
+    early: Math.round(early), late: Math.round(late), diff,
+    label: diff >= 8 ? '进步' : (diff <= -8 ? '退步' : '基本持平'),
+    kind: diff >= 8 ? 'up' : (diff <= -8 ? 'down' : 'flat')
+  };
+});
+
+// ECharts option 是第三方配置形状：边界处用 any
+const trendOption = computed<any>(() => ({
+  grid: { left: 40, right: 16, top: 24, bottom: 28 },
+  tooltip: { trigger: 'axis' },
+  xAxis: {
+    type: 'category',
+    data: trendRows.value.map((r: any) => r.label),
+    axisLabel: { color: token('--c-text-2'), fontSize: 12 }
+  },
+  yAxis: {
+    type: 'value', max: 100, name: '正确率 %',
+    axisLabel: { color: token('--c-text-2'), fontSize: 12 },
+    splitLine: { lineStyle: { color: token('--c-line') } }
+  },
+  series: [{
+    type: 'line', smooth: true, symbolSize: 7,
+    // 颜色走 token()（canvas 解析不了 CSS 变量 —— 踩过，有守卫盯着）
+    itemStyle: { color: token('--c-brand') },
+    lineStyle: { color: token('--c-brand'), width: 2 },
+    areaStyle: { opacity: 0.08 },
+    data: trendRows.value.map((r: any) => r.rate)
+  }]
+}));
+
 /**
  * 统计来源（docs/14 P4）：优先 Rust 核心（/api/domain/stats），不可达时回退本地参考实现。
  * 拿到异步结果前先用本地同步实现渲染，拿到后替换 —— 页面不会白屏。
@@ -322,6 +386,28 @@ function personalRate(tierKey) {
         <div class="panel">
           <h3 class="panel-title">各题型正确率<span class="sub">≥80% 绿 · ≥50% 黄 · 其余红</span></h3>
           <EChart :option="rateOption" height="300px" />
+
+          <!-- 趋势（审计 B7）：答「这几周是进步还是退步」 -->
+          <div class="panel mt">
+            <h3 class="panel-title">
+              趋势
+              <span class="sub">
+                <el-radio-group v-model="trendBy" size="small">
+                  <el-radio-button value="day">按天</el-radio-button>
+                  <el-radio-button value="quiz">按课次</el-radio-button>
+                </el-radio-group>
+              </span>
+            </h3>
+            <div v-if="trendRows.length" class="trend-verdict" :class="trendVerdict && trendVerdict.kind">
+              <template v-if="trendVerdict">
+                <b>{{ trendVerdict.label }}</b>：前半段平均正确率 {{ trendVerdict.early }}% →
+                后半段 {{ trendVerdict.late }}%
+                <span class="diff">（{{ trendVerdict.diff > 0 ? '+' : '' }}{{ trendVerdict.diff }} 个百分点）</span>
+              </template>
+            </div>
+            <EChart v-if="trendRows.length" :option="trendOption" height="260px" />
+            <div v-else class="empty-hint">还没有足够的作答记录 —— 上完一两次课就能看到走向</div>
+          </div>
         </div>
       </el-col>
     </el-row>
@@ -556,4 +642,9 @@ function personalRate(tierKey) {
 .eval-score i { font-size: var(--fs-xs); color: var(--el-text-color-secondary); font-style: normal; }
 .empty-hint { color: var(--el-text-color-secondary); font-size: var(--fs-sm); padding: var(--sp-2) 0; }
 .ml { margin-left: var(--sp-2); }
+.trend-verdict { padding: var(--sp-2) var(--sp-3); border-radius: var(--radius); background: var(--surface-sunken); margin-bottom: var(--sp-2); font-size: var(--fs-sm); }
+.trend-verdict.up { background: var(--c-ok-weak); color: var(--c-ok); }
+.trend-verdict.down { background: var(--c-bad-weak); color: var(--c-bad); }
+.trend-verdict .diff { color: var(--text-tertiary); }
+.empty-hint { padding: var(--sp-5); text-align: center; color: var(--text-tertiary); font-size: var(--fs-sm); }
 </style>
