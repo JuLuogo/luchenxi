@@ -294,11 +294,16 @@
            * —— 等于把**全班排名表**发给每个学生（打开控制台就能看）。
            * 而 docs/09 写着"个人成绩只发给学生自己的手机"、大屏也早就拿掉了个人榜。
            *
-           * 只保留身份字段：学生端要显示本队成员、大屏点名要高亮谁。
+           * 字段保留，但**由枢纽按角色裁剪**（stage 拿不到个人成绩、team 只拿本队）。
            * 个人成绩走"学生自己的手机"（后续单独下发）与教师机本地。
            */
           return {
             id: r.sid, name: r.name, teamId: r.teamId, teamName: r.teamName,
+  /* 学生端要用的三处 UI（我得分 / 我答对 / 能力画像）——
+     字段留着，**由枢纽按角色下发**：
+       host  全量 ｜ stage 只有身份 ｜ team 本队成员 + 成绩 */
+  score: r.score, attempts: r.attempts, correct: r.correct,
+  rank: r.rank, level: r.level.label,
             color: teamColor(s, r.teamId)
           };
       }),

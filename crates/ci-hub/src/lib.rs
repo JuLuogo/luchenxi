@@ -176,6 +176,13 @@ impl Room {
             Some(c) => c,
             None => return payload.clone(),
         };
+        // **stage（大屏）不显示个人成绩**：它是教室公共屏，个人分数不该投在墙上。
+        // 身份（姓名/队伍）留着 —— 点名要高亮谁、讲评要点名。
+        if c.role == "stage" {
+            let mut scoped = payload.clone();
+            Self::strip_scores(&mut scoped);
+            return scoped;
+        }
         if c.role != "team" {
             return payload.clone();
         }
@@ -188,6 +195,22 @@ impl Room {
             list.retain(|s| s.get("teamId").and_then(|v| v.as_str()) == Some(team));
         }
         out
+    }
+
+    /// 去掉每个学生的成绩字段（大屏用）
+    ///
+    /// 与 Node 版 `stripScores` 同口径 —— 两版必须一致，有黑盒测试盯着。
+    fn strip_scores(payload: &mut Value) {
+        const SCORE_KEYS: [&str; 5] = ["score", "attempts", "correct", "rank", "level"];
+        if let Some(list) = payload.get_mut("students").and_then(|v| v.as_array_mut()) {
+            for s in list.iter_mut() {
+                if let Some(o) = s.as_object_mut() {
+                    for k in SCORE_KEYS {
+                        o.remove(k);
+                    }
+                }
+            }
+        }
     }
 
     /// 按角色逐个发送 state（每条连接拿到的是**裁剪后**的版本）
@@ -521,6 +544,8 @@ async fn handle_socket(socket: WebSocket, q: WsQuery, st: HubState) {
         let mut rooms = st.rooms.write().await;
         let r = rooms.entry(room_id.clone()).or_default();
         let id = r.add_client(role.clone(), q.team.clone(), q.label.clone(), tx.clone());
+        // **连接已登记，可以按角色裁了** —— 放在元组里不行（那一刻 clients 里还查不到它）
+        let state_for_me = if role == "host" { None } else { r.state.as_ref().map(|s| r.state_for(id, s)) };
 
         // 教师端上线：把离线期间排队的命令一次性补发
         let backlog = if role == "host" && !r.queue.is_empty() {
@@ -534,7 +559,10 @@ async fn handle_socket(socket: WebSocket, q: WsQuery, st: HubState) {
             r.state.is_some(),
             r.dump.is_some(),
             r.host_online(),
-            if role == "host" { None } else { r.state.clone() },
+            // 审计发现：连接时补发原来直接把 r.state 原样发出，绕过了 state_for ——
+            // 大屏一连上就拿到了个人成绩（黑盒测试抓到）。这里同样按角色裁。
+            // 注意：这里**不能**裁剪 —— 此刻 add_client 还没执行，clients 里查不到这条连接。
+            state_for_me,
             backlog,
         )
     };

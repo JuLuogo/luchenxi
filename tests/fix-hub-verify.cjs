@@ -156,9 +156,9 @@ const check = (ok, label, extra) => {
     host2.send(JSON.stringify({ type: 'state', rev: 1, payload: {
       courseName: '裁剪测试',
       students: [
-        { id: 'a1', name: '甲同学', teamId: 'T1' },
+        { id: 'a1', name: '甲同学', teamId: 'T1', score: 11, correct: 3, attempts: 4, rank: 1, level: 'A' },
         { id: 'a2', name: '乙同学', teamId: 'T1' },
-        { id: 'b1', name: '丙同学', teamId: 'T2' },
+        { id: 'b1', name: '丙同学', teamId: 'T2', score: 99, correct: 9, attempts: 9, rank: 1, level: 'S' },
         { id: 'b2', name: '丁同学', teamId: 'T2' }
       ]
     } }));
@@ -176,6 +176,8 @@ const check = (ok, label, extra) => {
     check(list1.length === 2 && list1.every((s) => s.teamId === 'T1'),
       'team 只收到本队成员', '收到 ' + list1.length + ' 人（应 2 人）');
     check(!JSON.stringify(st1 || {}).includes('丙同学'), 'team 收不到别队成员的姓名');
+    check(list1.some((s) => s.score === 11), 'team 拿到本队成员的成绩（学生端三处 UI 要用）');
+    check(!JSON.stringify(st1 || {}).includes('99'), 'team 拿不到别队的成绩');
 
     const stageMsgs = [];
     const stage2 = new WebSocket(WS + '/ws?room=' + room2 + '&role=stage');
@@ -185,6 +187,8 @@ const check = (ok, label, extra) => {
     const st2 = stageMsgs.filter((m) => m.type === 'state').pop();
     const list2 = (st2 && st2.payload && st2.payload.students) || [];
     check(list2.length === 4, '大屏看全量（它是教室公共屏）', '收到 ' + list2.length + ' 人（应 4 人）');
+    check(list2.every((s) => !('score' in s)), '大屏拿不到个人成绩（公共屏不投个人分数）');
+    check(list2.every((s) => 'name' in s), '但大屏仍有姓名（点名要高亮谁）');
 
     host2.close(); team2.close(); stage2.close();
     await sleep(200);

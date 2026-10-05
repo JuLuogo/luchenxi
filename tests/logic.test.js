@@ -1933,13 +1933,16 @@ group('广播内容不含个人成绩');
   /* ① 身份字段还在（学生端要显示本队成员、大屏点名要高亮谁） */
   ok(Array.isArray(snap.students) && snap.students.length === 4, 'students 仍在（4 人）');
   ok(snap.students.every((x) => 'id' in x && 'name' in x && 'teamId' in x), 'students 保留身份字段');
+  // 成绩字段也留着 —— **边界由枢纽按角色守**（大屏拿不到、team 只拿本队）
+  ok(snap.students.every((x) => 'score' in x && 'correct' in x), '成绩字段在广播里（学生端的三处 UI 要用）');
 
-  /* ② 个人成绩一个都不能有 */
+  /* ② 边界：广播里有成绩（学生端要用），但**大屏视图里不能有** —— 由枢纽按角色裁剪 */
   const keys = new Set();
   snap.students.forEach((x) => Object.keys(x).forEach((k) => keys.add(k)));
-  ['score', 'rank', 'level', 'correctRate', 'creditRate', 'attempts', 'correct', 'weakTiers'].forEach((bad) => {
-    ok(!keys.has(bad), 'students 里没有 ' + bad + '（个人成绩不下发）');
-  });
+  // 这些字段**广播里有**（学生端要用），但**大屏视图里不能有** —— 由枢纽裁剪
+  const stageView = CI.classroom.publicPayload(S.get()).meta || {};
+  const stageStudents = (stageView.ability && stageView.ability.students) || [];
+  ok(stageStudents.length === 0, '公开投影里没有个人行（大屏拿不到个人成绩）');
 
   /* ③ 最近动态不带姓名（只留队伍与得分） */
   const recent = (snap.meta && snap.meta.recent) || [];
@@ -1952,9 +1955,12 @@ group('广播内容不含个人成绩');
   ok(!ab || !('students' in ab), '能力榜不含个人行（大屏雷达只读 class/teams）');
 
   /* ⑤ 整份 JSON 里不该出现任何个人成绩数值（用名字反查附近有无分数） */
+  /* ⑤ 广播里有成绩（学生端三处 UI 要用），但**大屏视图里不能有** */
   const json = JSON.stringify(snap);
-  ok(!/"score":\s*\d/.test(json.split('"students"')[1] ? json.split('"students"')[1].split('"meta"')[0] : ''),
-    'students 段里没有任何 score 数值');
+  ok(json.includes('"score"'), '广播里带成绩（学生端要用）');
+  const stagePayload = CI.classroom.publicPayload(S.get());
+  const stageJson = JSON.stringify((stagePayload.meta && stagePayload.meta.ability) || {});
+  ok(!stageJson.includes('"score"'), '但公开投影的能力榜里没有个人成绩（大屏拿不到）');
 })();
 
 /* ================= 37. 名单文件导入（审计 Top 8 第 6 位） ================= */

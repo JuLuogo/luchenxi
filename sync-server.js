@@ -204,10 +204,28 @@ function pushPresence(room) {
  * 与 Rust 版（`Room::state_for`）**同口径** —— 两版必须一致，有黑盒测试盯着。
  */
 function stateFor(ws, payload) {
-  if (!ws || ws.role !== 'team' || !ws.teamId || !payload) return payload;
+  if (!payload) return payload;
+  // **stage（大屏）不显示个人成绩**：它是教室公共屏，个人分数不该投在墙上。
+  // 身份（姓名/队伍）留着 —— 点名要高亮谁、讲评要点名。
+  if (ws && ws.role === 'stage') return stripScores(payload);
+  if (!ws || ws.role !== 'team' || !ws.teamId) return payload;
   if (!Array.isArray(payload.students)) return payload;
+  // team：**只留本队成员**（成绩队内可见，别队看不到）
   return Object.assign({}, payload, {
     students: payload.students.filter((s) => s && s.teamId === ws.teamId)
+  });
+}
+
+/** 去掉每个学生的成绩字段（大屏用）—— 与 Rust 版 `strip_scores` 同口径 */
+const SCORE_KEYS = ['score', 'attempts', 'correct', 'rank', 'level'];
+function stripScores(payload) {
+  if (!payload || !Array.isArray(payload.students)) return payload;
+  return Object.assign({}, payload, {
+    students: payload.students.map((s) => {
+      const copy = Object.assign({}, s);
+      SCORE_KEYS.forEach((k) => { delete copy[k]; });
+      return copy;
+    })
   });
 }
 
