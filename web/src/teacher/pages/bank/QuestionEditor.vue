@@ -229,7 +229,7 @@ function saveAndNew() {
             </ul>
           </el-alert>
 
-          <h3 class="panel-title" style="margin-top: 18px">学生端预览</h3>
+          <h3 class="panel-title" style="margin-top: var(--sp-4)">学生端预览</h3>
           <div class="preview">
             <div class="p-stem">{{ preview.stem || '（题干为空）' }}</div>
             <div v-if="parsedOptions.length" class="p-opts">
@@ -252,16 +252,16 @@ function saveAndNew() {
 </template>
 
 <style scoped>
-.hint { color: var(--ci-text-weak); font-size: 12px; margin-left: 10px; }
-.warns { margin: 6px 0 0; padding-left: 18px; }
-.preview { border: 1px solid var(--ci-line); border-radius: 10px; padding: 12px; background: #fcfcfd; }
-.p-stem { font-size: 14px; line-height: 1.6; margin-bottom: 10px; }
-.p-opts { display: grid; gap: 6px; }
-.p-opt { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.hint { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-left: var(--sp-2); }
+.warns { margin: var(--sp-2) 0 0; padding-left: var(--sp-4); }
+.preview { border: 1px solid var(--ci-line); border-radius: var(--radius); padding: var(--sp-3); background: #fcfcfd; }
+.p-stem { font-size: var(--fs-sm); line-height: 1.6; margin-bottom: var(--sp-2); }
+.p-opts { display: grid; gap: var(--sp-2); }
+.p-opt { display: flex; gap: var(--sp-2); align-items: center; font-size: var(--fs-sm); }
 .p-key {
-  width: 20px; height: 20px; border-radius: 6px; background: var(--ci-brand-weak);
-  color: var(--ci-brand); display: grid; place-items: center; font-size: 12px; font-weight: 600;
+  width: 20px; height: 20px; border-radius: var(--radius); background: var(--ci-brand-weak);
+  color: var(--ci-brand); display: grid; place-items: center; font-size: var(--fs-xs); font-weight: 600;
 }
 .p-fill { color: var(--ci-text-weak); }
-.p-ans { margin-top: 12px; font-size: 12px; color: var(--ci-text-weak); }
+.p-ans { margin-top: var(--sp-3); font-size: var(--fs-xs); color: var(--ci-text-weak); }
 </style>

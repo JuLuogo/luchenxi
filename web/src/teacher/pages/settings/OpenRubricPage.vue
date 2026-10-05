@@ -229,22 +229,22 @@ function previewComment() {
 
 <style scoped>
 .rubric-page { max-width: 900px; }
-.sub { color: var(--el-text-color-secondary); font-size: 13px; line-height: 1.7; margin-bottom: 14px; }
-.tbl { margin-bottom: 12px; }
-.actions { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.sum { margin-left: auto; color: var(--el-text-color-secondary); font-size: 13px; }
+.sub { color: var(--el-text-color-secondary); font-size: var(--fs-sm); line-height: 1.7; margin-bottom: var(--sp-4); }
+.tbl { margin-bottom: var(--sp-3); }
+.actions { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-4); }
+.sum { margin-left: auto; color: var(--el-text-color-secondary); font-size: var(--fs-sm); }
 .sum.bad { color: var(--el-color-danger); }
-.note-body { font-size: 13px; line-height: 1.7; }
-.levels { margin-bottom: 18px; }
-.levels-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
-.levels-head .sub { color: var(--el-text-color-secondary); font-size: 12px; }
-.levels-row { row-gap: 8px; }
+.note-body { font-size: var(--fs-sm); line-height: 1.7; }
+.levels { margin-bottom: var(--sp-4); }
+.levels-head { display: flex; align-items: baseline; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.levels-head .sub { color: var(--el-text-color-secondary); font-size: var(--fs-xs); }
+.levels-row { row-gap: var(--sp-2); }
 .levels-actions { margin-left: auto; }
-.levels-row { display: flex; flex-wrap: wrap; gap: 10px; }
-.level-item { display: flex; align-items: center; gap: 6px; }
-.level-rate { color: var(--el-text-color-secondary); font-size: 12px; width: 44px; }
-.levels-hint { color: var(--el-text-color-secondary); font-size: 12px; margin-top: 8px; line-height: 1.7; }
-.policy { margin-bottom: 16px; }
-.policy-group { margin: 8px 0; }
-.policy-hint { color: var(--el-text-color-secondary); font-size: 13px; line-height: 1.7; }
+.levels-row { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.level-item { display: flex; align-items: center; gap: var(--sp-2); }
+.level-rate { color: var(--el-text-color-secondary); font-size: var(--fs-xs); width: 44px; }
+.levels-hint { color: var(--el-text-color-secondary); font-size: var(--fs-xs); margin-top: var(--sp-2); line-height: 1.7; }
+.policy { margin-bottom: var(--sp-4); }
+.policy-group { margin: var(--sp-2) 0; }
+.policy-hint { color: var(--el-text-color-secondary); font-size: var(--fs-sm); line-height: 1.7; }
 </style>

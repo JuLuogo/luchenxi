@@ -159,6 +159,6 @@ function avgWeight(tag) {
 </template>
 
 <style scoped>
-.filters { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.count { color: var(--ci-text-weak); font-size: 12px; }
+.filters { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.count { color: var(--ci-text-weak); font-size: var(--fs-xs); }
 </style>

@@ -86,8 +86,8 @@ async function toggleClose(row) {
         <el-table-column label="试卷" min-width="220">
           <template #default="{ row }">
             <b>{{ row.name }}</b>
-            <el-tag v-if="row.isCurrent" size="small" type="success" effect="plain" style="margin-left: 8px">当前</el-tag>
-            <el-tag v-if="row.closed" size="small" type="info" effect="plain" style="margin-left: 6px">已结束</el-tag>
+            <el-tag v-if="row.isCurrent" size="small" type="success" effect="plain" style="margin-left: var(--sp-2)">当前</el-tag>
+            <el-tag v-if="row.closed" size="small" type="info" effect="plain" style="margin-left: var(--sp-2)">已结束</el-tag>
             <div v-if="row.note" class="note">{{ row.note }}</div>
           </template>
         </el-table-column>
@@ -122,5 +122,5 @@ async function toggleClose(row) {
 </template>
 
 <style scoped>
-.note { color: var(--ci-text-weak); font-size: 12px; margin-top: 2px; }
+.note { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-top: var(--sp-1); }
 </style>

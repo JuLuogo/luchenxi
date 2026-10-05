@@ -34,7 +34,18 @@ if not exist node_modules\ws (
 )
 
 echo [2/3] Starting the hub in a separate window...
-start "Classroom Hub" cmd /k "node sync-server.js"
+rem Prefer the Rust hub (it is the shipping one and implements /api/domain/*).
+rem The Node hub is a reference implementation WITHOUT those endpoints, so the
+rem web UI would silently fall back to the JS reference implementation.
+if exist "target\release\ci-hub-server.exe" (
+  start "Classroom Hub (Rust)" cmd /k "target\release\ci-hub-server.exe"
+) else if exist "target\debug\ci-hub-server.exe" (
+  start "Classroom Hub (Rust debug)" cmd /k "target\debug\ci-hub-server.exe"
+) else (
+  echo [WARN] Rust hub binary not found - falling back to the Node reference hub.
+  echo        The Node hub has NO /api/domain/* endpoints; the UI will use the JS fallback.
+  start "Classroom Hub (Node fallback)" cmd /k "node sync-server.js"
+)
 
 echo [3/3] Opening the teacher console in 3 seconds...
 ping -n 4 127.0.0.1 >nul

@@ -107,7 +107,7 @@ function exportBank() {
         <div class="desc">
           共 {{ store.bank.length }} 道题；按题型加权记分，题目本身不写分值。
           <template v-if="issues.size">
-            <el-tag type="danger" size="small" effect="plain" style="margin-left: 8px">
+            <el-tag type="danger" size="small" effect="plain" style="margin-left: var(--sp-2)">
               {{ issues.size }} 道题有判分风险
             </el-tag>
           </template>
@@ -217,11 +217,11 @@ function exportBank() {
 </template>
 
 <style scoped>
-.filters { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
-.count { color: var(--ci-text-weak); font-size: 12px; }
-.stem { display: flex; align-items: flex-start; gap: 6px; }
-.opts { margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; color: var(--ci-text-weak); font-size: 12px; }
+.filters { display: flex; gap: var(--sp-2); align-items: center; margin-bottom: var(--sp-3); flex-wrap: wrap; }
+.count { color: var(--ci-text-weak); font-size: var(--fs-xs); }
+.stem { display: flex; align-items: flex-start; gap: var(--sp-2); }
+.opts { margin-top: var(--sp-1); display: flex; gap: var(--sp-3); flex-wrap: wrap; color: var(--ci-text-weak); font-size: var(--fs-xs); }
 .ans { color: var(--ci-text-weak); }
-.tag { margin-right: 4px; }
-.tip { color: var(--ci-text-weak); font-size: 12px; }
+.tag { margin-right: var(--sp-1); }
+.tip { color: var(--ci-text-weak); font-size: var(--fs-xs); }
 </style>

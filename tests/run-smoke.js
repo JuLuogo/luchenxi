@@ -215,12 +215,28 @@ const exceptions = cdp.events
     // 分类：只放行**已知良性**，其余一律计入失败（默认严格）。
     //   · favicon 404 —— 浏览器自动请求，页面里没放图标，无害
     //   · 409 Conflict —— 这两条 e2e **故意**测"过期 rev 被拒"那条路径（协议正确行为）
+    /**
+     * 目标枢纽**是不是 Node 参考枢纽**（它没有 /api/domain/* 领域端点）
+     *
+     * 用法：EXPECT_NO_DOMAIN=1 node tests/run-smoke.js <url>（CI 打 Node 枢纽时设上）。
+     * 打 Rust 枢纽时**不要**设 —— 那时领域端点 404 就是失败（「Rust 优先真的生效」的证明）。
+     *
+     * 为什么不一刀切当良性：上一轮就是这么干的，结果把「Rust 优先在主部署路径上没生效」
+     * 这个真问题盖了整整一轮（第二轮审计发现）。
+     */
+    const EXPECT_NO_DOMAIN = process.env.EXPECT_NO_DOMAIN === '1';
+    if (EXPECT_NO_DOMAIN) {
+      console.log('  · 目标为 Node 参考枢纽：/api/domain/* 的 404 属预期（该枢纽不实现领域端点）');
+    }
+    
     const BENIGN = [
       (c) => /favicon/i.test(c.url),
       (c) => /409 \(Conflict\)/.test(c.text),
-      // 探针探测"枢纽有没有领域端点"：打 Node 枢纽时必然 404（它不实现 /api/domain/*），
-      // 这是**设计内的探测失败**，之后应用正确回退本地实现。浏览器会自动记这条错误，无法避免。
-      (c) => /404/.test(c.text) && /\/api\/domain\//.test(c.url)
+  // 注意：**不要**把 /api/domain/* 的 404 当良性 —— 那正是「Rust 优先没生效」的信号。
+  // 审计发现：上一轮把 Node 枢纽缺领域端点造成的 404 写进了白名单，等于把真问题盖住。
+  // 现在 e2e 用 Rust 枢纽跑（ci-local.mjs 的 withRustHub），404 就是失败。
+      // 仅当**明确知道**目标是 Node 参考枢纽时才放行（见上面 EXPECT_NO_DOMAIN 的说明）
+      (c) => EXPECT_NO_DOMAIN && /404/.test(c.text) && /\/api\/domain\//.test(c.url)
     ];
     const realErrors = consoleErrors.filter((c) => !BENIGN.some((f) => f(c)));
     const consoleBad = realErrors.length + exceptions.length;

@@ -71,8 +71,8 @@ function clear() {
 
 <style scoped>
 .ai-page { max-width: 760px; }
-.note { margin-bottom: 16px; }
-.note-body { font-size: 13px; line-height: 1.7; }
-.form { margin-top: 8px; }
-.hint { margin-left: 10px; color: var(--el-text-color-secondary); font-size: 12px; }
+.note { margin-bottom: var(--sp-4); }
+.note-body { font-size: var(--fs-sm); line-height: 1.7; }
+.form { margin-top: var(--sp-2); }
+.hint { margin-left: var(--sp-2); color: var(--el-text-color-secondary); font-size: var(--fs-xs); }
 </style>

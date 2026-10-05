@@ -149,6 +149,6 @@ function ratioLabel(result) {
 </template>
 
 <style scoped>
-.key { color: var(--ci-text-weak); font-size: 12px; margin-left: 8px; }
-.hint { color: var(--ci-text-weak); font-size: 12px; margin-left: 10px; }
+.key { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-left: var(--sp-2); }
+.hint { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-left: var(--sp-2); }
 </style>

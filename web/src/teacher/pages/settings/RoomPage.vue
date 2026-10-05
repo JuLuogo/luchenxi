@@ -70,14 +70,14 @@ const addresses = computed(() => {
             只允许字母、数字、下划线与短横线；保存后教师端、学生端、大屏三端都会切到这个房间。
           </div>
 
-          <h3 class="panel-title" style="margin-top: 20px">学生端地址</h3>
+          <h3 class="panel-title" style="margin-top: var(--sp-4)">学生端地址</h3>
           <el-space wrap>
             <el-input :model-value="studentUrl" readonly style="width: 420px" />
             <el-button @click="copy(studentUrl, '学生端地址')">复制</el-button>
           </el-space>
           <div class="hint">学生手机浏览器直接打开即可（无需安装）；客户端同样支持这个地址。</div>
 
-          <div v-if="addresses.length" class="hint" style="margin-top: 12px">
+          <div v-if="addresses.length" class="hint" style="margin-top: var(--sp-3)">
             本机其它地址（多网卡 / EasyTier 虚拟 IP 时学生端可改用其一）：
             <div v-for="a in addresses" :key="a" class="addr">{{ a }}</div>
           </div>
@@ -103,11 +103,11 @@ const addresses = computed(() => {
 </template>
 
 <style scoped>
-.hint { color: var(--ci-text-weak); font-size: 12px; margin-top: 10px; }
-.addr { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: #334155; }
+.hint { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-top: var(--sp-2); }
+.addr { font-family: ui-monospace, Consolas, monospace; font-size: var(--fs-xs); color: #334155; }
 .qr-panel { text-align: center; }
 .qr { width: 220px; height: 220px; image-rendering: pixelated; }
-.qr-fallback { border: 1px dashed var(--ci-line); border-radius: 10px; padding: 18px; background: #fbfbfd; }
-.fb-title { font-weight: 600; margin-bottom: 6px; }
-.fb-desc { color: var(--ci-text-weak); font-size: 12px; line-height: 1.8; text-align: left; }
+.qr-fallback { border: 1px dashed var(--ci-line); border-radius: var(--radius); padding: var(--sp-4); background: #fbfbfd; }
+.fb-title { font-weight: 600; margin-bottom: var(--sp-2); }
+.fb-desc { color: var(--ci-text-weak); font-size: var(--fs-xs); line-height: 1.8; text-align: left; }
 </style>

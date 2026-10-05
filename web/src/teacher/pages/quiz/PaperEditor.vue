@@ -259,7 +259,7 @@ function tierColor(key) {
 
     <el-dialog v-model="drawOpen" title="一键抽题" width="440">
       <div class="tip">按题型从题库随机抽取（已在试卷里的不会重复抽）。</div>
-      <el-form label-width="130" style="margin-top: 12px">
+      <el-form label-width="130" style="margin-top: var(--sp-3)">
         <el-form-item v-for="t in store.tiers" :key="t.key" :label="t.label + '（' + t.weight + '分）'">
           <el-input-number v-model="drawCount[t.key]" :min="0" :max="30" size="small" />
           <span class="avail">可用 {{ store.bank.filter(q => q.tier === t.key && !ids.includes(q.id)).length }} 道</span>
@@ -280,20 +280,20 @@ function tierColor(key) {
 </template>
 
 <style scoped>
-.filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-.mini { color: var(--ci-text-weak); font-size: 12px; margin-top: 3px; }
-.tag { margin-left: 6px; color: var(--ci-brand); }
-.tier-chip { margin-left: 12px; font-size: 12px; }
-.qrow { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px dashed var(--ci-line); }
+.filters { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; margin-bottom: var(--sp-3); }
+.mini { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-top: var(--sp-1); }
+.tag { margin-left: var(--sp-2); color: var(--ci-brand); }
+.tier-chip { margin-left: var(--sp-3); font-size: var(--fs-xs); }
+.qrow { display: flex; gap: var(--sp-2); align-items: flex-start; padding: var(--sp-2) 0; border-bottom: 1px dashed var(--ci-line); }
 .qno {
-  width: 24px; height: 24px; border-radius: 7px; background: var(--ci-brand-weak); color: var(--ci-brand);
-  display: grid; place-items: center; font-size: 12px; font-weight: 700; flex: none;
+  width: 24px; height: 24px; border-radius: var(--radius); background: var(--ci-brand-weak); color: var(--ci-brand);
+  display: grid; place-items: center; font-size: var(--fs-xs); font-weight: 700; flex: none;
 }
 .qbody { flex: 1; min-width: 0; }
-.qstem { font-size: 13px; line-height: 1.6; }
-.qmeta { display: flex; align-items: center; gap: 6px; color: var(--ci-text-weak); font-size: 12px; margin-top: 4px; }
+.qstem { font-size: var(--fs-sm); line-height: 1.6; }
+.qmeta { display: flex; align-items: center; gap: var(--sp-2); color: var(--ci-text-weak); font-size: var(--fs-xs); margin-top: var(--sp-1); }
 .pt { width: 92px; }
-.qops { display: flex; flex-direction: column; gap: 2px; }
-.tip { color: var(--ci-text-weak); font-size: 12px; }
-.avail { color: var(--ci-text-weak); font-size: 12px; margin-left: 10px; }
+.qops { display: flex; flex-direction: column; gap: var(--sp-1); }
+.tip { color: var(--ci-text-weak); font-size: var(--fs-xs); }
+.avail { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-left: var(--sp-2); }
 </style>

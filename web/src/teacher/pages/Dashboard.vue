@@ -129,8 +129,8 @@ const steps = computed(() => ([
 .step { cursor: pointer; transition: box-shadow .15s, border-color .15s; }
 .step:hover { border-color: var(--ci-brand); box-shadow: 0 2px 10px rgb(79 70 229 / 8%); }
 .step.done { border-color: #bbf7d0; background: #f7fffb; }
-.step-title { display: flex; align-items: center; gap: 6px; font-weight: 600; }
-.step-desc { color: var(--ci-text-weak); font-size: 12px; margin-top: 6px; }
-.team-row { display: grid; grid-template-columns: 90px 1fr 48px; align-items: center; gap: 10px; margin-bottom: 8px; }
-.tname { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.step-title { display: flex; align-items: center; gap: var(--sp-2); font-weight: 600; }
+.step-desc { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-top: var(--sp-2); }
+.team-row { display: grid; grid-template-columns: 90px 1fr 48px; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.tname { font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>

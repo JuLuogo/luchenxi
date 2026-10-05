@@ -310,99 +310,99 @@ function switchTeam() {
 
 <style scoped>
 /* 公开课「到你了」 */
-.open-me { margin: 10px 12px; padding: 14px 16px; border-radius: 12px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; }
+.open-me { margin: var(--sp-2) var(--sp-3); padding: var(--sp-4) var(--sp-4); border-radius: var(--radius-lg); background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; }
 .open-me.done { background: linear-gradient(135deg, #0ea5e9, #22c55e); }
-.open-me-title { display: block; font-size: 22px; font-weight: 800; letter-spacing: 1px; }
-.open-me-sub { display: block; margin-top: 4px; font-size: 14px; opacity: .95; }
-.open-me-eval { margin-top: 10px; font-size: 15px; font-weight: 700; }
-.open-me-comment { margin-top: 6px; font-size: 13px; font-weight: 400; line-height: 1.6; opacity: .95; }
+.open-me-title { display: block; font-size: var(--fs-2xl); font-weight: 800; letter-spacing: 1px; }
+.open-me-sub { display: block; margin-top: var(--sp-1); font-size: var(--fs-sm); opacity: .95; }
+.open-me-eval { margin-top: var(--sp-2); font-size: var(--fs-base); font-weight: 700; }
+.open-me-comment { margin-top: var(--sp-2); font-size: var(--fs-sm); font-weight: 400; line-height: 1.6; opacity: .95; }
 .stu { min-height: 100vh; background: #f7f8fa; }
-.conn { font-size: 12px; color: #969799; }
+.conn { font-size: var(--fs-xs); color: #969799; }
 .conn.on { color: #07c160; }
 
 /* 入座 */
-.join { padding: 16px; }
-.join-title { font-size: 20px; font-weight: 700; }
-.join-sub { color: #969799; font-size: 13px; margin: 6px 0 16px; }
-.team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.join { padding: var(--sp-4); }
+.join-title { font-size: var(--fs-xl); font-weight: 700; }
+.join-sub { color: #969799; font-size: var(--fs-sm); margin: var(--sp-2) 0 var(--sp-4); }
+.team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
 .team-btn {
-  background: #fff; border: 2px solid #e5e7eb; border-radius: 14px; padding: 16px 12px;
-  display: flex; flex-direction: column; gap: 6px; align-items: flex-start; text-align: left;
+  background: #fff; border: 2px solid #e5e7eb; border-radius: var(--radius-lg); padding: var(--sp-4) var(--sp-3);
+  display: flex; flex-direction: column; gap: var(--sp-2); align-items: flex-start; text-align: left;
 }
 .team-btn:active { background: #f2f3f5; }
-.team-name { font-size: 18px; font-weight: 700; }
-.team-meta { color: #969799; font-size: 12px; }
-.join-empty { color: #969799; font-size: 13px; padding: 20px 0; }
-.host-box { margin: 18px 0 10px; }
-.join-ops { display: flex; gap: 8px; flex-wrap: wrap; }
+.team-name { font-size: var(--fs-lg); font-weight: 700; }
+.team-meta { color: #969799; font-size: var(--fs-xs); }
+.join-empty { color: #969799; font-size: var(--fs-sm); padding: var(--sp-4) 0; }
+.host-box { margin: var(--sp-4) 0 var(--sp-2); }
+.join-ops { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 
 /* 成绩卡 */
-.main { padding-bottom: 24px; }
-.score-card { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; }
-.sc-team { background: #fff; border: 2px solid #4f46e5; border-radius: 14px; padding: 12px; }
+.main { padding-bottom: var(--sp-5); }
+.score-card { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); padding: var(--sp-3); }
+.sc-team { background: #fff; border: 2px solid #4f46e5; border-radius: var(--radius-lg); padding: var(--sp-3); }
 .st-name { font-weight: 700; }
-.st-score { font-size: 30px; font-weight: 800; line-height: 1.2; }
-.st-score .unit { font-size: 13px; font-weight: 400; color: #969799; margin-left: 4px; }
-.st-members { color: #969799; font-size: 12px; }
-.sc-me { background: #fff; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-.me-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.me-row b { font-size: 18px; }
-.muted { color: #969799; font-size: 12px; }
-.grade { color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+.st-score { font-size: var(--fs-3xl); font-weight: 800; line-height: 1.2; }
+.st-score .unit { font-size: var(--fs-sm); font-weight: 400; color: #969799; margin-left: var(--sp-1); }
+.st-members { color: #969799; font-size: var(--fs-xs); }
+.sc-me { background: #fff; border-radius: var(--radius-lg); padding: var(--sp-2) var(--sp-3); display: flex; flex-direction: column; justify-content: center; gap: var(--sp-2); }
+.me-row { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); }
+.me-row b { font-size: var(--fs-lg); }
+.muted { color: #969799; font-size: var(--fs-xs); }
+.grade { color: #fff; font-size: var(--fs-xs); padding: var(--sp-1) var(--sp-2); border-radius: 999px; }
 
 /* 其他队 */
-.others { margin: 0 12px 12px; background: #fff; border-radius: 14px; padding: 12px; }
-.others-title { color: #969799; font-size: 12px; margin-bottom: 8px; }
-.other-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 14px; }
+.others { margin: 0 var(--sp-3) var(--sp-3); background: #fff; border-radius: var(--radius-lg); padding: var(--sp-3); }
+.others-title { color: #969799; font-size: var(--fs-xs); margin-bottom: var(--sp-2); }
+.other-row { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) 0; font-size: var(--fs-sm); }
 .dot { width: 10px; height: 10px; border-radius: 50%; }
 .oname { font-weight: 600; }
 .ocorrect { margin-left: auto; color: #07c160; font-weight: 600; }
-.orate { color: #969799; font-size: 12px; }
-.class-row { border-top: 1px dashed #eee; margin-top: 6px; padding-top: 8px; color: #646566; font-size: 13px; }
+.orate { color: #969799; font-size: var(--fs-xs); }
+.class-row { border-top: 1px dashed #eee; margin-top: var(--sp-2); padding-top: var(--sp-2); color: #646566; font-size: var(--fs-sm); }
 
 /* 答题 */
-.pane { padding: 12px; }
-.phase-tip { color: #969799; font-size: 12px; margin-bottom: 8px; }
-.q-card { background: #fff; border-radius: 14px; padding: 14px; }
-.q-meta { display: flex; align-items: center; gap: 8px; }
-.q-tier { background: #e8f7ee; color: #07c160; font-size: 12px; padding: 2px 8px; border-radius: 999px; }
-.q-pts { color: #ff976a; font-weight: 700; font-size: 13px; }
-.q-type { color: #969799; font-size: 12px; }
-.q-stem { font-size: 17px; line-height: 1.6; margin: 10px 0 14px; }
-.opts { display: grid; gap: 10px; }
+.pane { padding: var(--sp-3); }
+.phase-tip { color: #969799; font-size: var(--fs-xs); margin-bottom: var(--sp-2); }
+.q-card { background: #fff; border-radius: var(--radius-lg); padding: var(--sp-4); }
+.q-meta { display: flex; align-items: center; gap: var(--sp-2); }
+.q-tier { background: #e8f7ee; color: #07c160; font-size: var(--fs-xs); padding: var(--sp-1) var(--sp-2); border-radius: 999px; }
+.q-pts { color: #ff976a; font-weight: 700; font-size: var(--fs-sm); }
+.q-type { color: #969799; font-size: var(--fs-xs); }
+.q-stem { font-size: var(--fs-lg); line-height: 1.6; margin: var(--sp-2) 0 var(--sp-4); }
+.opts { display: grid; gap: var(--sp-2); }
 .opt {
-  display: flex; align-items: center; gap: 10px; text-align: left;
-  background: #f7f8fa; border: 2px solid transparent; border-radius: 12px; padding: 12px;
-  font-size: 15px;
+  display: flex; align-items: center; gap: var(--sp-2); text-align: left;
+  background: #f7f8fa; border: 2px solid transparent; border-radius: var(--radius-lg); padding: var(--sp-3);
+  font-size: var(--fs-base);
 }
 .opt.on { border-color: #4f46e5; background: #eef2ff; }
-.okey { width: 26px; height: 26px; border-radius: 8px; background: #e5e7eb; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+.okey { width: 26px; height: 26px; border-radius: var(--radius); background: #e5e7eb; display: grid; place-items: center; font-weight: 700; font-size: var(--fs-sm); }
 .opt.on .okey { background: #4f46e5; color: #fff; }
-.done { color: #07c160; font-size: 13px; margin-top: 12px; }
-.closed { color: #ed6a0c; font-size: 13px; margin-top: 12px; }
-.q-ops { margin-top: 14px; }
-.sub-ops { display: flex; gap: 10px; margin-top: 10px; }
-.answer { margin-top: 12px; font-size: 14px; color: #07c160; }
+.done { color: #07c160; font-size: var(--fs-sm); margin-top: var(--sp-3); }
+.closed { color: #ed6a0c; font-size: var(--fs-sm); margin-top: var(--sp-3); }
+.q-ops { margin-top: var(--sp-4); }
+.sub-ops { display: flex; gap: var(--sp-2); margin-top: var(--sp-2); }
+.answer { margin-top: var(--sp-3); font-size: var(--fs-sm); color: #07c160; }
 
 /* 我们组 */
-.mini-title { color: #969799; font-size: 12px; margin-bottom: 8px; }
-.member-list { display: grid; gap: 10px; }
+.mini-title { color: #969799; font-size: var(--fs-xs); margin-bottom: var(--sp-2); }
+.member-list { display: grid; gap: var(--sp-2); }
 .member {
-  display: flex; align-items: center; gap: 10px; background: #fff; border: 2px solid transparent;
-  border-radius: 12px; padding: 12px; font-size: 15px; text-align: left;
+  display: flex; align-items: center; gap: var(--sp-2); background: #fff; border: 2px solid transparent;
+  border-radius: var(--radius-lg); padding: var(--sp-3); font-size: var(--fs-base); text-align: left;
 }
 .member.on { border-color: #4f46e5; background: #eef2ff; }
 .mname { font-weight: 600; }
-.mcorrect { margin-left: auto; color: #07c160; font-size: 13px; }
+.mcorrect { margin-left: auto; color: #07c160; font-size: var(--fs-sm); }
 .mscore { color: #323233; font-weight: 700; }
-.switch-btn { margin-top: 14px; }
+.switch-btn { margin-top: var(--sp-4); }
 
 /* 公屏模式：大字、无交互 */
 .board .score-card { grid-template-columns: 1fr; }
-.board .sc-team, .board .others, .board .q-card { border-radius: 18px; }
-.board .st-name { font-size: 26px; }
-.board .st-score { font-size: 56px; }
-.board .q-stem { font-size: 30px; }
-.board .opt { font-size: 22px; }
-.why { margin-top: 6px; font-size: 13px; color: #92400e; background: #fffbeb; border-radius: 8px; padding: 8px 10px; line-height: 1.6; }
+.board .sc-team, .board .others, .board .q-card { border-radius: var(--radius-lg); }
+.board .st-name { font-size: var(--fs-2xl); }
+.board .st-score { font-size: var(--fs-6xl); }
+.board .q-stem { font-size: var(--fs-3xl); }
+.board .opt { font-size: var(--fs-2xl); }
+.why { margin-top: var(--sp-2); font-size: var(--fs-sm); color: #92400e; background: #fffbeb; border-radius: var(--radius); padding: var(--sp-2) var(--sp-2); line-height: 1.6; }
 </style>

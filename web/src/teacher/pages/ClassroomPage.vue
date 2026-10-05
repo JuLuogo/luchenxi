@@ -237,7 +237,7 @@ onUnmounted(() => { window.removeEventListener('keydown', onKey); clearInterval(
         type="info"
         :closable="false"
         show-icon
-        style="margin-top: 10px"
+        style="margin-top: var(--sp-2)"
         title="现在不接收作答：学生端的提交按钮是禁用的。点「开始接收作答」后学生才能提交。"
       />
       <el-alert
@@ -245,7 +245,7 @@ onUnmounted(() => { window.removeEventListener('keydown', onKey); clearInterval(
         type="success"
         :closable="false"
         show-icon
-        style="margin-top: 10px"
+        style="margin-top: var(--sp-2)"
         title="正在接收作答：客观题自动判分并立即加分，主观题进入下方「待确认」。"
       />
     </div>
@@ -261,7 +261,7 @@ onUnmounted(() => { window.removeEventListener('keydown', onKey); clearInterval(
             </el-tag>
           </h3>
 
-          <el-space wrap style="margin-bottom: 12px">
+          <el-space wrap style="margin-bottom: var(--sp-3)">
             <el-button size="small" @click="copyJoin">复制学生端地址</el-button>
             <el-button size="small" @click="openStage()">打开大屏</el-button>
           </el-space>
@@ -367,38 +367,38 @@ onUnmounted(() => { window.removeEventListener('keydown', onKey); clearInterval(
 </template>
 
 <style scoped>
-.phase-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.phase-hint { color: var(--ci-text-weak); font-size: 13px; }
-.qhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.qstem { font-size: 16px; line-height: 1.7; flex: 1; min-width: 280px; }
-.qmeta { color: var(--ci-text-weak); font-size: 12px; margin-left: 8px; }
-.qbtns { display: flex; gap: 8px; flex-wrap: wrap; }
+.phase-bar { display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap; }
+.phase-hint { color: var(--ci-text-weak); font-size: var(--fs-sm); }
+.qhead { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; }
+.qstem { font-size: var(--fs-base); line-height: 1.7; flex: 1; min-width: 280px; }
+.qmeta { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-left: var(--sp-2); }
+.qbtns { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 .muted { color: var(--ci-text-weak); }
-.join { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: #334155; word-break: break-all; margin-bottom: 10px; }
+.join { font-family: ui-monospace, Consolas, monospace; font-size: var(--fs-xs); color: #334155; word-break: break-all; margin-bottom: var(--sp-2); }
 /* 课堂节奏：计时器与签到 */
-.timer-row, .checkin-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-.timer-label { font-size: 12px; color: var(--el-text-color-secondary); flex: none; }
-.qr-wrap { margin-bottom: 12px; }
+.timer-row, .checkin-row { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-2); }
+.timer-label { font-size: var(--fs-xs); color: var(--el-text-color-secondary); flex: none; }
+.qr-wrap { margin-bottom: var(--sp-3); }
 .qr { width: 160px; height: 160px; image-rendering: pixelated; }
-.qr-tip { color: var(--ci-text-weak); font-size: 12px; line-height: 1.8; background: #fbfbfd; border: 1px dashed var(--ci-line); border-radius: 8px; padding: 10px; }
-.sub-title { margin: 12px 0 8px; font-size: 13px; color: var(--ci-text-weak); font-weight: 600; }
-.presence-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; border-bottom: 1px dashed var(--ci-line); }
-.presence-row .ago { margin-left: auto; color: var(--ci-text-weak); font-size: 12px; }
+.qr-tip { color: var(--ci-text-weak); font-size: var(--fs-xs); line-height: 1.8; background: #fbfbfd; border: 1px dashed var(--ci-line); border-radius: var(--radius); padding: var(--sp-2); }
+.sub-title { margin: var(--sp-3) 0 var(--sp-2); font-size: var(--fs-sm); color: var(--ci-text-weak); font-weight: 600; }
+.presence-row { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) 0; font-size: var(--fs-sm); border-bottom: 1px dashed var(--ci-line); }
+.presence-row .ago { margin-left: auto; color: var(--ci-text-weak); font-size: var(--fs-xs); }
 .dot-ok, .dot-off { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .dot-ok { background: var(--ci-ok); }
 .dot-off { background: #cbd5e1; }
-.buzz-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--ci-line); font-size: 13px; }
+.buzz-row { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) 0; border-bottom: 1px dashed var(--ci-line); font-size: var(--fs-sm); }
 .buzz-team { font-weight: 600; }
 .buzz-who { color: var(--ci-text-weak); }
-.buzz-row .ago, .pend-main .ago { margin-left: auto; color: var(--ci-text-weak); font-size: 12px; }
-.pending-row { padding: 10px 0; border-bottom: 1px dashed var(--ci-line); }
-.pend-main { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.buzz-row .ago, .pend-main .ago { margin-left: auto; color: var(--ci-text-weak); font-size: var(--fs-xs); }
+.pending-row { padding: var(--sp-2) 0; border-bottom: 1px dashed var(--ci-line); }
+.pend-main { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); }
 .pend-main .team { color: var(--ci-text-weak); }
-.pend-body { margin: 6px 0; font-size: 13px; background: #f8fafc; border-radius: 8px; padding: 8px 10px; white-space: pre-wrap; }
-.pend-ops { display: flex; gap: 6px; flex-wrap: wrap; }
+.pend-body { margin: var(--sp-2) 0; font-size: var(--fs-sm); background: #f8fafc; border-radius: var(--radius); padding: var(--sp-2) var(--sp-2); white-space: pre-wrap; }
+.pend-ops { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 .feed { max-height: 320px; overflow: auto; }
-.feed-row { display: flex; gap: 8px; padding: 5px 0; font-size: 13px; border-bottom: 1px dashed var(--ci-line); }
-.feed-row .ago { margin-left: auto; color: var(--ci-text-weak); font-size: 12px; white-space: nowrap; }
+.feed-row { display: flex; gap: var(--sp-2); padding: var(--sp-1) 0; font-size: var(--fs-sm); border-bottom: 1px dashed var(--ci-line); }
+.feed-row .ago { margin-left: auto; color: var(--ci-text-weak); font-size: var(--fs-xs); white-space: nowrap; }
 .k-answer .feed-text { color: #0f766e; }
 .k-buzz .feed-text { color: #b45309; }
 .k-system .feed-text { color: #6b7280; }

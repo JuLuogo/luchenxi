@@ -14,7 +14,7 @@ body {
   background: var(--c-bg);
   color: var(--c-text);
   font-family: system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
-  font-size: 14px;
+  font-size: var(--fs-sm);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -36,57 +36,57 @@ body {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
 }
 .page-head h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--fs-2xl);
   font-weight: 700;
   letter-spacing: .2px;
 }
 .page-head .desc {
   color: var(--c-text-2);
-  font-size: 13px;
-  margin-top: 5px;
+  font-size: var(--fs-sm);
+  margin-top: var(--sp-1);
   line-height: 1.7;
 }
-.page-head .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.page-head .actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 
 /* ---------- 卡片 ---------- */
 .panel {
   background: var(--c-surface);
   border: 1px solid var(--c-line);
   border-radius: var(--r-lg);
-  padding: 18px;
-  margin-bottom: 16px;
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-4);
   box-shadow: var(--sh-1);
 }
 .panel-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin: 0 0 14px;
-  font-size: 15px;
+  gap: var(--sp-3);
+  margin: 0 0 var(--sp-4);
+  font-size: var(--fs-base);
   font-weight: 700;
   color: var(--c-text);
 }
 .panel-title .sub {
   color: var(--c-text-3);
   font-weight: 400;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-2);
 }
-.sub-title { margin: 18px 0 10px; font-size: 14px; font-weight: 700; }
+.sub-title { margin: var(--sp-4) 0 var(--sp-2); font-size: var(--fs-sm); font-weight: 700; }
 
 /* ---------- 空状态 ---------- */
 .empty-hint {
   color: var(--c-text-3);
-  font-size: 13px;
-  padding: 26px 0;
+  font-size: var(--fs-sm);
+  padding: var(--sp-5) 0;
   text-align: center;
   line-height: 1.8;
 }
@@ -103,7 +103,7 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  margin-right: 6px;
+  margin-right: var(--sp-2);
   vertical-align: 1px;
 }
 
@@ -111,12 +111,12 @@ body {
 .todo-box {
   border: 1px dashed var(--c-line-strong);
   border-radius: var(--r-lg);
-  padding: 30px;
+  padding: var(--sp-6);
   text-align: center;
   color: var(--c-text-2);
   background: var(--c-surface-2);
 }
-.todo-box strong { color: var(--c-text); display: block; margin-bottom: 6px; font-size: 15px; }
+.todo-box strong { color: var(--c-text); display: block; margin-bottom: var(--sp-2); font-size: var(--fs-base); }
 
 /* ---------- 表格：更紧凑、表头更轻 ---------- */
 .el-table { --el-table-border-color: var(--c-line); }
@@ -131,20 +131,20 @@ body {
 /* ---------- 按钮/标签微调（现代观感：圆角一致、无重阴影） ---------- */
 .el-button { border-radius: var(--r-sm); font-weight: 500; }
 .el-button--primary { box-shadow: 0 1px 2px rgb(79 70 229 / 22%); }
-.el-tag { border-radius: 6px; }
+.el-tag { border-radius: var(--radius); }
 .el-card { border-radius: var(--r-lg); }
 .el-dialog { border-radius: var(--r-lg); }
-.el-drawer__header { margin-bottom: 12px; font-weight: 700; }
+.el-drawer__header { margin-bottom: var(--sp-3); font-weight: 700; }
 
 /* 键盘提示 */
 .kbd {
   display: inline-block;
-  padding: 1px 6px;
+  padding: var(--sp-1) var(--sp-2);
   border: 1px solid var(--c-line-strong);
   border-bottom-width: 2px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: #fff;
   color: var(--c-text-2);
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-family: ui-monospace, Consolas, monospace;
 }

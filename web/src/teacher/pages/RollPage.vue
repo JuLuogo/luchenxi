@@ -170,7 +170,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
             <el-button type="primary" size="small" @click="saveSettings">保存设置</el-button>
           </el-form>
 
-          <el-descriptions :column="1" border size="small" style="margin-top: 14px">
+          <el-descriptions :column="1" border size="small" style="margin-top: var(--sp-4)">
             <el-descriptions-item label="学生总数">{{ roundInfo.total }}</el-descriptions-item>
             <el-descriptions-item label="已被点过">{{ roundInfo.called }}</el-descriptions-item>
             <el-descriptions-item label="当前候选">{{ roundInfo.pool }}</el-descriptions-item>
@@ -182,15 +182,15 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 </template>
 
 <style scoped>
-.pick-panel { text-align: center; padding: 28px 16px; }
-.picked .who { font-size: 64px; font-weight: 800; letter-spacing: 4px; line-height: 1.2; }
-.picked .meta { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 10px; color: var(--ci-text-weak); }
+.pick-panel { text-align: center; padding: var(--sp-6) var(--sp-4); }
+.picked .who { font-size: var(--fs-6xl); font-weight: 800; letter-spacing: 4px; line-height: 1.2; }
+.picked .meta { display: flex; align-items: center; justify-content: center; gap: var(--sp-4); margin-top: var(--sp-2); color: var(--ci-text-weak); }
 .picked .meta b { color: var(--ci-text); }
-.unpicked .hint-big { font-size: 24px; color: var(--ci-text-weak); }
-.unpicked .hint-small { margin-top: 8px; color: var(--ci-text-weak); font-size: 13px; }
-.judge-row { display: flex; justify-content: center; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
-.quick-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
-.quick-row .label { color: var(--ci-text-weak); font-size: 13px; }
-.history { display: flex; flex-wrap: wrap; gap: 6px; }
-.hint { color: var(--ci-text-weak); font-size: 12px; margin-left: 8px; }
+.unpicked .hint-big { font-size: var(--fs-2xl); color: var(--ci-text-weak); }
+.unpicked .hint-small { margin-top: var(--sp-2); color: var(--ci-text-weak); font-size: var(--fs-sm); }
+.judge-row { display: flex; justify-content: center; gap: var(--sp-2); margin-top: var(--sp-5); flex-wrap: wrap; }
+.quick-row { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); margin-top: var(--sp-4); flex-wrap: wrap; }
+.quick-row .label { color: var(--ci-text-weak); font-size: var(--fs-sm); }
+.history { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.hint { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-left: var(--sp-2); }
 </style>

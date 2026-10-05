@@ -94,24 +94,24 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.radar-wrap { display: grid; grid-template-columns: 1fr 380px; gap: 22px; height: 100%; }
+.radar-wrap { display: grid; grid-template-columns: 1fr 380px; gap: var(--sp-5); height: 100%; }
 .radar { min-height: 380px; }
-.grades { display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+.grades { display: flex; flex-direction: column; justify-content: center; gap: var(--sp-3); }
 .grade-row {
-  display: flex; align-items: center; gap: 12px; font-size: 21px;
+  display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-xl);
   background: #fff; border: 1px solid var(--c-line); border-radius: var(--r-md);
-  padding: 10px 14px; box-shadow: var(--sh-1);
+  padding: var(--sp-2) var(--sp-4); box-shadow: var(--sh-1);
 }
 .class-row { background: var(--c-surface-2); }
 .badge {
-  width: 38px; height: 38px; border-radius: 11px; color: #fff;
-  display: grid; place-items: center; font-weight: 800; font-size: 16px; flex: none;
+  width: 38px; height: 38px; border-radius: var(--radius-lg); color: #fff;
+  display: grid; place-items: center; font-weight: 800; font-size: var(--fs-base); flex: none;
 }
 .gname { font-weight: 700; }
-.glabel { color: var(--c-text-2); font-size: 15px; }
+.glabel { color: var(--c-text-2); font-size: var(--fs-base); }
 .gscore { margin-left: auto; font-weight: 800; font-variant-numeric: tabular-nums; }
 .comment {
-  color: var(--c-text-2); font-size: 15px; line-height: 1.9; margin-top: 4px;
-  background: var(--c-brand-weak); border: 1px solid #dcdcfb; border-radius: var(--r-md); padding: 12px 14px;
+  color: var(--c-text-2); font-size: var(--fs-base); line-height: 1.9; margin-top: var(--sp-1);
+  background: var(--c-brand-weak); border: 1px solid #dcdcfb; border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4);
 }
 </style>

@@ -31,13 +31,36 @@ export interface DomainStatsResult {
 }
 
 /** 枢纽地址：与 sync.js 同一套约定（空值表示与页面同源） */
+/**
+ * 枢纽地址
+ *
+ * 审计发现：原来缺省回落到 location.origin —— 但打包客户端里页面源是
+ * http://tauri.localhost（Tauri 伪源），file:// 下 origin 甚至是 null，
+ * 两种情况领域请求全打错地址 → **桌面端的 Rust 路径永久失效**。
+ * assets/js/sync.js 早就处理过这两个坑，这里改成同一套判定（单一来源）。
+ */
 function hubBase(): string {
+  // ① 优先问 sync.js（它有一份经过验证的判定：排除伪源、file:// 回落默认端口）
   try {
-    const host = (CI.sync as { host?: () => string } | undefined)?.host?.();
+    const sync = CI.sync as { hubBase?: () => string; host?: () => string } | undefined;
+    if (sync && typeof sync.hubBase === 'function') {
+      const b = sync.hubBase();
+      if (b) return b;
+    }
+    const host = sync && typeof sync.host === 'function' ? sync.host() : '';
     if (host) return /^https?:\/\//.test(host) ? host : 'http://' + host;
-  } catch { /* 忽略 */ }
+  } catch { /* 落到下面的兜底 */ }
+  // ② localStorage 里存过的地址
   const stored = (() => { try { return localStorage.getItem('ci_ws_host') || ''; } catch { return ''; } })();
   if (stored) return /^https?:\/\//.test(stored) ? stored : 'http://' + stored;
+  // ③ 兜底：排除 Tauri 伪源与 file://（否则桌面端永远打错地址）
+  const proto = location.protocol;
+  const hostname = location.hostname;
+  const bogus = !hostname || hostname === 'tauri.localhost' || proto === 'file:' || proto === 'tauri:';
+  if (bogus) {
+    const port = (() => { try { return localStorage.getItem('ci_port') || '8080'; } catch { return '8080'; } })();
+    return 'http://127.0.0.1:' + port;
+  }
   return location.origin;
 }
 

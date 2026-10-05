@@ -102,7 +102,7 @@ function runCheck() {
       type="error"
       show-icon
       :closable="false"
-      style="margin-bottom: 14px"
+      style="margin-bottom: var(--sp-4)"
       :title="'EasyTier 错误：' + runtime.error"
     />
 
@@ -184,15 +184,15 @@ function runCheck() {
 .cmd {
   background: #0f172a;
   color: #e2e8f0;
-  border-radius: 10px;
-  padding: 12px;
-  font-size: 12px;
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+  font-size: var(--fs-xs);
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-all;
   margin: 0;
 }
-.hint { color: var(--ci-text-weak); font-size: 12px; margin-top: 10px; }
-.guide { color: var(--ci-text); font-size: 13px; line-height: 2; padding-left: 18px; margin: 0; }
-.guide code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; }
+.hint { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-top: var(--sp-2); }
+.guide { color: var(--ci-text); font-size: var(--fs-sm); line-height: 2; padding-left: var(--sp-4); margin: 0; }
+.guide code { background: #f1f5f9; padding: var(--sp-1) var(--sp-1); border-radius: var(--radius-sm); }
 </style>

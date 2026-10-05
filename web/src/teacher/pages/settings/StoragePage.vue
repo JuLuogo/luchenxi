@@ -135,7 +135,7 @@ async function factory() {
 
       <el-alert
         v-if="status.degraded || status.lastError"
-        style="margin-top: 12px"
+        style="margin-top: var(--sp-3)"
         type="warning"
         :closable="false"
         show-icon
@@ -172,5 +172,5 @@ async function factory() {
 </template>
 
 <style scoped>
-.hint { color: var(--ci-text-weak); font-size: 12px; margin-top: 12px; }
+.hint { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-top: var(--sp-3); }
 </style>

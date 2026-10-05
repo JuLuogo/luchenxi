@@ -48,6 +48,31 @@ if (!has(DIST_ENTRY) && !NO_BUILD) {
 }
 
 /* ---------- 3. 起枢纽 ---------- */
-const hub = spawn(process.execPath, [path.join(ROOT, 'sync-server.js')], { cwd: ROOT, stdio: 'inherit' });
+/**
+ * 起枢纽：**优先 Rust 枢纽**（它才是要出货的那个，且实现了 /api/domain/*）。
+ *
+ * 审计发现：原来这里起的是 Node 枢纽，而它**没有领域端点** → 网页版每次都探测失败、
+ * 静默回退 JS 参考实现 —— 等于 docs/14 禁止的"两份实现"在主路径上天天发生。
+ * 拿不到 Rust 二进制时回退 Node，但要**明确提示**（否则又会静默降级）。
+ */
+const RUST_BIN = path.join(ROOT, 'target', process.env.CI_PROFILE || 'release', 'ci-hub-server' + (process.platform === 'win32' ? '.exe' : ''));
+const RUST_BIN_DEBUG = path.join(ROOT, 'target', 'debug', 'ci-hub-server' + (process.platform === 'win32' ? '.exe' : ''));
+let hubCmd = null;
+let hubArgs = [];
+let hubMode = '';
+if (fs.existsSync(RUST_BIN)) { hubCmd = RUST_BIN; hubMode = 'Rust 核心'; }
+else if (fs.existsSync(RUST_BIN_DEBUG)) { hubCmd = RUST_BIN_DEBUG; hubMode = 'Rust 核心（debug 构建）'; }
+else {
+  hubCmd = process.execPath;
+  hubArgs = [path.join(ROOT, 'sync-server.js')];
+  hubMode = 'Node 参考枢纽';
+  console.log('');
+  console.log('  ⚠ 没找到 Rust 枢纽二进制 → 回退 Node 参考枢纽。');
+  console.log('     Node 枢纽**没有 /api/domain/* 领域端点**，界面会回退到 JS 参考实现（口径一致但不是出货路径）。');
+  console.log('     想用 Rust 核心：npm run build:hub（或 cargo build -p ci-core --bin ci-hub-server）');
+  console.log('');
+}
+console.log('  枢纽：' + hubMode + '  → ' + hubCmd);
+const hub = spawn(hubCmd, hubArgs, { cwd: ROOT, stdio: 'inherit' });
 process.on('SIGINT', () => { try { hub.kill(); } catch (e) { /* 忽略 */ } process.exit(0); });
 hub.on('exit', (code) => process.exit(code == null ? 0 : code));

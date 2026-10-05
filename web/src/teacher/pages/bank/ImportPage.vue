@@ -154,7 +154,7 @@ function downloadTemplate() {
             type="warning"
             :closable="false"
             show-icon
-            style="margin-bottom: 8px"
+            style="margin-bottom: var(--sp-2)"
             :title="'第 ' + (x.i + 1) + ' 题：' + x.v.warnings[0]"
           />
 
@@ -178,6 +178,6 @@ function downloadTemplate() {
 </template>
 
 <style scoped>
-.opts-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; color: var(--ci-text-weak); font-size: 13px; }
-.parse-err { color: var(--ci-bad); font-size: 13px; margin-bottom: 8px; }
+.opts-row { display: flex; align-items: center; gap: var(--sp-3); margin-top: var(--sp-3); color: var(--ci-text-weak); font-size: var(--fs-sm); }
+.parse-err { color: var(--ci-bad); font-size: var(--fs-sm); margin-bottom: var(--sp-2); }
 </style>

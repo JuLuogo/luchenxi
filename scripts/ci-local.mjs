@@ -218,12 +218,22 @@ if (!QUICK) {
   try {
     e2eOk = await withHub(async (port) => {
       const base = 'http://127.0.0.1:' + port;
-      const a = run('教师端端到端（admin.html）', ['tests/run-smoke.js', base + '/tests/smoke.html']);
-      const b = run('多端协同端到端（教师端+学生端+大屏）', ['tests/run-smoke.js', base + '/tests/smoke-class.html']);
-      // 枢纽安全黑盒验证：数据库不可下载 / 不能冒名 host / dump 不当 state 广播
-      // （审计发现的高危，修完必须钉住，否则会悄悄回来）
-      const c = run('枢纽安全（黑盒）', ['tests/fix-hub-verify.cjs', base]);
-      return a && b && c;
+      // Node 枢纽是参考实现，**没有 /api/domain/* 领域端点** —— 该配置下 404 属预期，
+      // 所以显式声明 EXPECT_NO_DOMAIN。打 Rust 枢纽时（withRustHub）**不设**：
+      // 那时领域端点 404 就是「Rust 优先没生效」，必须让 e2e 红。
+      const prevExpectNoDomain = process.env.EXPECT_NO_DOMAIN;
+      process.env.EXPECT_NO_DOMAIN = '1';
+      try {
+        const a = run('教师端端到端（admin.html）', ['tests/run-smoke.js', base + '/tests/smoke.html']);
+        const b = run('多端协同端到端（教师端+学生端+大屏）', ['tests/run-smoke.js', base + '/tests/smoke-class.html']);
+        // 枢纽安全黑盒验证：数据库不可下载 / 不能冒名 host / dump 不当 state 广播
+        const c = run('枢纽安全（黑盒）', ['tests/fix-hub-verify.cjs', base]);
+        return a && b && c;
+      } finally {
+        // process.env 是全局的：恢复现场，别让 Rust 枢纽那条 e2e 继承这个开关
+        if (prevExpectNoDomain === undefined) delete process.env.EXPECT_NO_DOMAIN;
+        else process.env.EXPECT_NO_DOMAIN = prevExpectNoDomain;
+      }
     });
   } catch (e) {
     results.push({ title: '浏览器端到端（枢纽启动失败）', pass: false, ms: 0, tail: String(e && e.message || e) });
@@ -378,6 +388,9 @@ if (cargoAvailable) {
     console.log((okBuild ? C.ok + '✔ ' : C.bad + '✘ ') + 'Rust：构建 ci-hub-server' + C.x + '\n');
 
     if (okBuild) {
+      // 双保险：打 Rust 枢纽时**必须**没有 EXPECT_NO_DOMAIN ——
+      // 领域端点 404 就是「Rust 优先没生效」，必须让 e2e 红。
+      delete process.env.EXPECT_NO_DOMAIN;
       const e2eRust = await withRustHub(cargoBin, cargoEnv, async (port) => {
         const base = 'http://127.0.0.1:' + port;
         const a = run('教师端端到端（Rust 枢纽）', ['tests/run-smoke.js', base + '/tests/smoke.html']);

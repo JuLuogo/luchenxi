@@ -77,8 +77,8 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.hint { color: var(--ci-text-weak); font-size: 12px; margin-top: 10px; }
-.links { margin: 0; padding-left: 18px; line-height: 2; }
+.hint { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-top: var(--sp-2); }
+.links { margin: 0; padding-left: var(--sp-4); line-height: 2; }
 .links a { color: var(--ci-brand); text-decoration: none; }
 .links a:hover { text-decoration: underline; }
 </style>

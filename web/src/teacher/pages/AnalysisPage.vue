@@ -360,7 +360,7 @@ function personalRate(tierKey) {
         type="warning"
         :closable="false"
         show-icon
-        style="margin-bottom: 10px"
+        style="margin-bottom: var(--sp-2)"
       />
       <el-table :data="questionRows" size="small" max-height="380">
         <el-table-column type="index" label="#" width="50" />
@@ -536,11 +536,11 @@ function personalRate(tierKey) {
 </template>
 
 <style scoped>
-.tier-mini { margin-top: 14px; }
-.tm-row { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12px; }
+.tier-mini { margin-top: var(--sp-4); }
+.tm-row { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-2); font-size: var(--fs-xs); }
 .tm-label { color: var(--ci-text-weak); }
-.missers { font-size: 12px; color: #b45309; }
+.missers { font-size: var(--fs-xs); color: #b45309; }
 .eval-score { font-weight: 700; color: #4f46e5; cursor: help; }
-.eval-score i { font-size: 11px; color: var(--el-text-color-secondary); font-style: normal; }
-.empty-hint { color: var(--el-text-color-secondary); font-size: 13px; padding: 8px 0; }
+.eval-score i { font-size: var(--fs-xs); color: var(--el-text-color-secondary); font-style: normal; }
+.empty-hint { color: var(--el-text-color-secondary); font-size: var(--fs-sm); padding: var(--sp-2) 0; }
 </style>

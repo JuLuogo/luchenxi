@@ -165,7 +165,7 @@ async function copyComment() {
           </div>
         </div>
 
-        <el-alert type="info" :closable="false" style="margin: 12px 0">
+        <el-alert type="info" :closable="false" style="margin: var(--sp-3) 0">
           <template #title>
             <span class="comment">{{ current ? current.comment : '还没有数据' }}</span>
           </template>
@@ -237,24 +237,24 @@ async function copyComment() {
 </template>
 
 <style scoped>
-.grade-card { display: flex; gap: 14px; align-items: center; border: 1px solid var(--ci-line); border-radius: 12px; padding: 14px; }
+.grade-card { display: flex; gap: var(--sp-4); align-items: center; border: 1px solid var(--ci-line); border-radius: var(--radius-lg); padding: var(--sp-4); }
 .grade-badge {
-  width: 64px; height: 64px; border-radius: 16px; color: #fff;
-  display: grid; place-items: center; font-size: 26px; font-weight: 800; flex: none;
+  width: 64px; height: 64px; border-radius: var(--radius-lg); color: #fff;
+  display: grid; place-items: center; font-size: var(--fs-2xl); font-weight: 800; flex: none;
 }
 .grade-main { flex: 1; min-width: 0; }
-.grade-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
-.grade-label { font-size: 14px; font-weight: 600; }
-.grade-nums { display: flex; gap: 22px; margin-top: 8px; }
-.num-item .num { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.num-item .cap { color: var(--ci-text-weak); font-size: 12px; }
+.grade-title { font-size: var(--fs-base); font-weight: 700; display: flex; align-items: center; gap: var(--sp-2); }
+.grade-label { font-size: var(--fs-sm); font-weight: 600; }
+.grade-nums { display: flex; gap: var(--sp-5); margin-top: var(--sp-2); }
+.num-item .num { font-size: var(--fs-xl); font-weight: 700; font-variant-numeric: tabular-nums; }
+.num-item .cap { color: var(--ci-text-weak); font-size: var(--fs-xs); }
 .comment { white-space: normal; line-height: 1.7; color: var(--ci-text); }
-.axis-list { margin-top: 6px; }
-.axis-row { display: grid; grid-template-columns: 92px 1fr 76px; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 12px; }
+.axis-list { margin-top: var(--sp-2); }
+.axis-row { display: grid; grid-template-columns: 92px 1fr 76px; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-2); font-size: var(--fs-xs); }
 .axis-name { color: var(--ci-text); }
 .axis-meta { color: var(--ci-text-weak); text-align: right; }
-.card-ops { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
-.tip { color: var(--ci-text-weak); font-size: 12px; }
-.sub-title { margin: 18px 0 10px; font-size: 14px; }
-.group { color: var(--ci-text-weak); font-size: 12px; margin-left: 8px; }
+.card-ops { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-3); }
+.tip { color: var(--ci-text-weak); font-size: var(--fs-xs); }
+.sub-title { margin: var(--sp-4) 0 var(--sp-2); font-size: var(--fs-sm); }
+.group { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-left: var(--sp-2); }
 </style>

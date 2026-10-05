@@ -305,7 +305,7 @@ function saveCourseName(v: string) {
     <!-- ④ 学生分数明细 -->
     <el-drawer v-model="detailSid" size="420" :title="drawerStudent ? drawerStudent.name + ' · 分数明细' : ''">
       <div v-if="drawerStudent">
-        <el-descriptions :column="2" border size="small" style="margin-bottom: 12px">
+        <el-descriptions :column="2" border size="small" style="margin-bottom: var(--sp-3)">
           <el-descriptions-item label="队伍">{{ teamName(drawerStudent.teamId) }}</el-descriptions-item>
           <el-descriptions-item label="当前积分">{{ store.scoreOf(drawerStudent.id) }}</el-descriptions-item>
           <el-descriptions-item label="被点次数">{{ store.calledCount(drawerStudent.id) }}</el-descriptions-item>
@@ -335,18 +335,18 @@ function saveCourseName(v: string) {
 </template>
 
 <style scoped>
-.team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-.team-card :deep(.el-card__body) { padding: 12px; }
+.team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--sp-3); }
+.team-card :deep(.el-card__body) { padding: var(--sp-3); }
 .team-head { display: flex; align-items: center; justify-content: space-between; }
-.tname { font-weight: 600; font-size: 14px; }
-.team-score { margin: 8px 0 4px; }
-.team-score .score-num { font-size: 26px; }
-.team-score .unit { color: var(--ci-text-weak); font-size: 12px; margin-left: 4px; }
+.tname { font-weight: 600; font-size: var(--fs-sm); }
+.team-score { margin: var(--sp-2) 0 var(--sp-1); }
+.team-score .score-num { font-size: var(--fs-2xl); }
+.team-score .unit { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-left: var(--sp-1); }
 .team-ops { display: flex; justify-content: flex-end; }
-.filters { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-.ops { display: flex; flex-wrap: wrap; gap: 0 2px; white-space: nowrap; }
-.rec { display: flex; justify-content: space-between; gap: 10px; }
-.course-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.course-label { color: var(--el-text-color-secondary); font-size: 13px; }
+.filters { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-3); flex-wrap: wrap; }
+.ops { display: flex; flex-wrap: wrap; gap: 0 var(--sp-1); white-space: nowrap; }
+.rec { display: flex; justify-content: space-between; gap: var(--sp-2); }
+.course-row { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.course-label { color: var(--el-text-color-secondary); font-size: var(--fs-sm); }
 .course-input { max-width: 320px; }
 </style>
