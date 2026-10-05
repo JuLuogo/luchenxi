@@ -7,6 +7,7 @@
 'use strict';
 
 const path = require('path');
+const fs = require('fs');
 
 /* ---------- 极简 localStorage 桩 ---------- */
 function fakeStorage() {
@@ -1783,6 +1784,21 @@ group('断网排队与幂等');
   const twice = { kind: 'answer', id: 'cmd_fixed_2', teamId: t1, sid: stu.id, qid: q.id, choice: ['A'] };
   CI.classroom.handleCmd(twice, false, null);
   eq(S.allRecords(S.get()).length, recs1, '换 id 的重复作答被业务去重挡住');
+})();
+
+/* ================= 32. 大屏的隐私与适配（审计 Top 8 第 2 位） ================= */
+group('大屏不点名 + 投屏适配');
+
+(function () {
+  /* 大屏是投在墙上的公共屏：个人排名与「谁没答对」都不该出现
+     （实证研究：公开点名伤学生，垫底的人每次抬头就看见自己） */
+  const stageSrc = fs.readFileSync(path.join(__dirname, '..', 'web', 'src', 'stage', 'App.vue'), 'utf8');
+  ok(!/\{\{[^}]*missers[^}]*\}\}/.test(stageSrc), '大屏不把「谁没答对」的姓名渲染出来（注释里提到不算）');
+  ok(/missCount/.test(stageSrc), '但保留「未答对人数」（tip-detail 里的 missCount）');
+
+  /* 投屏适配：大屏字号要随视口缩，否则老教室 1024×768 / 4:3 会溢出 */
+  ok(/clamp\([^)]*vmin/.test(stageSrc), '大屏字号用 clamp + vmin（随视口缩）');
+  ok(!/font-size:\s*150px/.test(stageSrc), '点名姓名不再硬编码 150px');
 })();
 
 /* ================= 汇总 ================= */

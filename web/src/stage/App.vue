@@ -296,7 +296,9 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
           {{ q.correctRate }}%
         </span>
         <span class="tip-detail">{{ q.attempts }} 人作答 · {{ q.missCount }} 人未答对</span>
-        <span v-if="q.missers.length" class="tip-who">{{ q.missers.join('、') }}</span>
+        <!-- 审计发现：这里原来把"没答对的学生姓名"投在墙上（`q.missers.join`）——
+             与本文件第 270 行的结论自相矛盾（公开点名比排名更伤人）。
+             现在只显示人数；姓名留给教师机（学生看不到老师的屏幕）。 -->
       </div>
     </aside>
 
@@ -330,7 +332,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
   width: 34px; height: 34px; border-radius: var(--radius); background: var(--c-brand); color: var(--c-surface);
   display: grid; place-items: center; font-weight: 800;
 }
-.course { font-size: var(--fs-2xl); font-weight: 700; letter-spacing: .3px; }
+.course { font-size: clamp(18px, 2.6vmin, 24px); font-weight: 700; letter-spacing: .3px; }
 .phase-pill {
   padding: var(--sp-1) var(--sp-4); border-radius: 999px; font-size: var(--fs-base); font-weight: 600;
   color: var(--c-brand); background: var(--c-brand-weak); border: 1px solid #dcdcfb;
@@ -362,10 +364,10 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
 
 /* ① 待机 */
 .idle { display: grid; grid-template-columns: 1fr 460px; gap: var(--sp-6); align-items: center; }
-.lobby-title { font-size: var(--fs-5xl); font-weight: 800; letter-spacing: 2px; }
-.lobby-sub { color: var(--c-text-2); font-size: var(--fs-lg); margin: var(--sp-2) 0 var(--sp-4); }
+.lobby-title { font-size: clamp(28px, 5vmin, 48px); font-weight: 800; letter-spacing: 2px; }
+.lobby-sub { color: var(--c-text-2); font-size: clamp(14px, 2vmin, 18px); margin: var(--sp-2) 0 var(--sp-4); }
 .join-url {
-  display: inline-block; font-family: ui-monospace, Consolas, monospace; font-size: var(--fs-2xl);
+  display: inline-block; font-family: ui-monospace, Consolas, monospace; font-size: clamp(18px, 2.6vmin, 24px);
   color: var(--c-brand); background: var(--c-surface); border: 1px solid #dcdcfb;
   border-radius: var(--r-md); padding: var(--sp-2) var(--sp-4); margin-bottom: var(--sp-5);
 }
@@ -373,11 +375,11 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
 .seat {
   display: flex; align-items: center; gap: var(--sp-4); background: var(--c-surface);
   border: 1px solid var(--c-line); border-left: 6px solid var(--c-brand);
-  border-radius: var(--r-md); padding: var(--sp-4) var(--sp-4); font-size: var(--fs-2xl); box-shadow: var(--sh-1);
+  border-radius: var(--r-md); padding: var(--sp-4) var(--sp-4); font-size: clamp(18px, 2.6vmin, 24px); box-shadow: var(--sh-1);
 }
 .seat-name { font-weight: 700; }
 .seat-members { color: var(--c-text-3); font-size: var(--fs-base); }
-.seat-score { margin-left: auto; font-size: var(--fs-3xl); font-weight: 800; font-variant-numeric: tabular-nums; }
+.seat-score { margin-left: auto; font-size: clamp(20px, 3.2vmin, 30px); font-weight: 800; font-variant-numeric: tabular-nums; }
 .seat-score i { font-size: var(--fs-sm); font-style: normal; color: var(--c-text-3); margin-left: var(--sp-1); }
 .qr-box { display: grid; place-items: center; }
 .qr { width: 100%; max-width: 420px; background: var(--c-surface); padding: var(--sp-4); border-radius: var(--r-lg); box-shadow: var(--sh-2); }
@@ -385,18 +387,18 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
 
 /* ② 点名 */
 .rollcall { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-.roll-label { font-size: var(--fs-3xl); color: var(--c-text-2); letter-spacing: 8px; }
+.roll-label { font-size: clamp(20px, 3.2vmin, 30px); color: var(--c-text-2); letter-spacing: 8px; }
 .roll-name {
-  font-size: 150px; font-weight: 900; letter-spacing: 14px; line-height: 1.1; margin: var(--sp-2) 0 var(--sp-4);
+  font-size: clamp(56px, 13vmin, 150px); font-weight: 900; letter-spacing: 14px; line-height: 1.1; margin: var(--sp-2) 0 var(--sp-4);
   background: linear-gradient(180deg, var(--c-text) 0%, var(--c-brand) 120%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.roll-meta { display: flex; align-items: center; gap: var(--sp-4); font-size: var(--fs-2xl); color: var(--c-text-2); }
+.roll-meta { display: flex; align-items: center; gap: var(--sp-4); font-size: clamp(18px, 2.6vmin, 24px); color: var(--c-text-2); }
 .team-badge {
   padding: var(--sp-2) var(--sp-4); border-radius: 999px; background: var(--c-brand-weak);
   color: var(--c-brand); font-weight: 700; border: 1px solid #dcdcfb;
 }
-.roll-hint { margin-top: var(--sp-6); color: var(--c-text-3); font-size: var(--fs-lg); }
+.roll-hint { margin-top: var(--sp-6); color: var(--c-text-3); font-size: clamp(14px, 2vmin, 18px); }
 
 /* ③ 出题：Kahoot 式四色选项块 */
 .question { display: grid; grid-template-columns: 1fr 320px; gap: var(--sp-6); }
@@ -405,26 +407,26 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
   padding: var(--sp-1) var(--sp-4); border-radius: 999px; font-size: var(--fs-base); font-weight: 600;
   background: var(--c-ok-weak); color: var(--c-ok); border: 1px solid #bfe9d8;
 }
-.tier-pts { color: var(--c-warn); font-size: var(--fs-xl); font-weight: 800; }
+.tier-pts { color: var(--c-warn); font-size: clamp(16px, 2.2vmin, 20px); font-weight: 800; }
 .tier-type { color: var(--c-text-3); font-size: var(--fs-base); }
-.q-stem { font-size: var(--fs-5xl); font-weight: 800; line-height: 1.4; margin-bottom: var(--sp-5); }
+.q-stem { font-size: clamp(28px, 5vmin, 48px); font-weight: 800; line-height: 1.4; margin-bottom: var(--sp-5); }
 .q-options { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(112px, auto); gap: var(--sp-4); }
 .q-options.many { grid-template-columns: repeat(3, 1fr); }
 .q-option {
   display: flex; align-items: center; gap: var(--sp-4); color: var(--c-surface);
-  border-radius: var(--r-xl); padding: var(--sp-4) var(--sp-5); font-size: var(--fs-3xl); font-weight: 800;
+  border-radius: var(--r-xl); padding: var(--sp-4) var(--sp-5); font-size: clamp(20px, 3.2vmin, 30px); font-weight: 800;
   box-shadow: var(--sh-2); min-height: 112px;
 }
-.opt-shape { font-size: var(--fs-xl); opacity: .9; }
+.opt-shape { font-size: clamp(16px, 2.2vmin, 20px); opacity: .9; }
 .opt-key {
   width: 40px; height: 40px; border-radius: var(--radius); background: rgb(255 255 255 / 22%);
   display: grid; place-items: center; font-weight: 900; flex: none;
 }
 .opt-text { line-height: 1.3; }
-.q-fill { font-size: var(--fs-2xl); color: var(--c-text-2); }
-.q-answer { margin-top: var(--sp-5); font-size: var(--fs-3xl); font-weight: 800; color: var(--c-ok); }
+.q-fill { font-size: clamp(18px, 2.6vmin, 24px); color: var(--c-text-2); }
+.q-answer { margin-top: var(--sp-5); font-size: clamp(20px, 3.2vmin, 30px); font-weight: 800; color: var(--c-ok); }
 .q-side { border-left: 1px solid var(--c-line); padding-left: var(--sp-5); }
-.buzz-row, .score-row { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-xl); padding: var(--sp-2) 0; }
+.buzz-row, .score-row { display: flex; align-items: center; gap: var(--sp-2); font-size: clamp(16px, 2.2vmin, 20px); padding: var(--sp-2) 0; }
 .buzz-rank {
   width: 28px; height: 28px; border-radius: var(--radius); background: var(--c-warn-weak);
   color: var(--c-warn); display: grid; place-items: center; font-size: var(--fs-sm); font-weight: 700;
@@ -438,13 +440,13 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
 .review { display: grid; grid-template-columns: 400px 1fr; gap: var(--sp-6); }
 .rev-team {
   display: flex; align-items: center; gap: var(--sp-3); background: var(--c-surface); border: 1px solid var(--c-line);
-  border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-2); font-size: var(--fs-xl); box-shadow: var(--sh-1);
+  border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-2); font-size: clamp(16px, 2.2vmin, 20px); box-shadow: var(--sh-1);
 }
 .rev-name { font-weight: 700; }
 .rev-correct { margin-left: auto; color: var(--c-ok); font-weight: 800; }
 .rev-attempts { color: var(--c-text-3); font-size: var(--fs-base); }
 .rev-rate { width: 64px; text-align: right; color: var(--c-text-2); font-variant-numeric: tabular-nums; }
-.stu-row { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-xl); padding: var(--sp-2) 0; }
+.stu-row { display: flex; align-items: center; gap: var(--sp-3); font-size: clamp(16px, 2.2vmin, 20px); padding: var(--sp-2) 0; }
 .stu-rank {
   width: 28px; height: 28px; border-radius: var(--radius); background: var(--c-surface-2);
   color: var(--c-text-2); display: grid; place-items: center; font-size: var(--fs-sm); font-weight: 700;
@@ -465,14 +467,14 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
 .open-block { background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-2) 100%); color: var(--c-surface); border-radius: var(--radius-lg); padding: var(--sp-4) var(--sp-4); margin-bottom: var(--sp-4); }
 .open-who { display: flex; align-items: baseline; gap: var(--sp-3); }
 .open-tag { font-size: var(--fs-xs); background: rgba(255, 255, 255, .25); padding: var(--sp-1) var(--sp-2); border-radius: 999px; }
-.open-name { font-size: var(--fs-3xl); font-weight: 800; letter-spacing: 1px; }
+.open-name { font-size: clamp(20px, 3.2vmin, 30px); font-weight: 800; letter-spacing: 1px; }
 .open-verdict { font-size: var(--fs-base); font-weight: 700; padding: var(--sp-1) var(--sp-2); border-radius: 999px; background: rgba(255, 255, 255, .2); }
 .open-verdict.v-correct { background: var(--c-ok); }
 .open-verdict.v-half { background: var(--c-warn); }
 .open-verdict.v-wrong { background: var(--c-bad); }
 .open-eval { margin-top: var(--sp-2); }
 .open-eval.muted { font-size: var(--fs-sm); opacity: .85; }
-.open-score { font-size: var(--fs-2xl); font-weight: 800; margin-right: var(--sp-3); }
+.open-score { font-size: clamp(18px, 2.6vmin, 24px); font-weight: 800; margin-right: var(--sp-3); }
 .open-comment { font-size: var(--fs-base); opacity: .95; line-height: 1.6; }
 
 /* 选项分布：正确项绿色、干扰项灰色；条宽 = 选择比例 */
