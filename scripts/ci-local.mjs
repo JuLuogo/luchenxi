@@ -194,6 +194,9 @@ const NODE_TESTS = [
   ['图表颜色守卫（canvas 用不了 CSS 变量）', 'tests/canvas-token-guard.test.js'],
   // 审计回归：逐条回答「当初那个 bug 现在还在不在」（51 项，覆盖这一轮修过的每一类问题）
   ['审计回归（逐条复核修过的 bug）', 'tests/audit-regression.cjs'],
+  // 第二轮验收：逐条回答「这一轮的缺口真的补上了吗」（功能 Top 8 / 隐私四层 /
+  // UI 规范化 / API 规范 / 守卫 / 文档同步）
+  ['第二轮验收（缺口真的补上了吗）', 'tests/audit2-regression.cjs'],
   ['v5 工作区结构（crate 划分 / 依赖方向 / 迁移进度）', 'tests/v5-workspace.test.js'],
   // JS ↔ Rust 一致性基准：JS 规则改了却没重新生成基准时会在这里红，
   // 免得回头误以为是 Rust 实现漂移

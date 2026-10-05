@@ -304,6 +304,9 @@ pub fn router(state: HubState) -> Router {
         .route("/", get(ws_handler))
         .route("/ws", get(ws_handler))
         .layer(tower_http::cors::CorsLayer::permissive())
+    // 审计发现：这里没设请求体上限，axum 默认 2MB —— 而 Node 版是 16MB，
+    // 两版枢纽行为不一致（同一份 state 在 Node 上能推、在 Rust 上 413）。
+    .layer(axum::extract::DefaultBodyLimit::max(16 * 1024 * 1024))
         .with_state(state)
 }
 
@@ -832,6 +835,18 @@ async fn handle_client_message(st: &HubState, room_id: &str, client_id: u64, rol
                 rooms.get(room_id).map(|r| r.host_online()).unwrap_or(false)
             };
             let cmd_id = cmd.get("id").cloned().unwrap_or(Value::Null);
+            // 审计发现：转发时**不补 at / from**（Node 版补了，docs/07 明文要求枢纽补 at）——
+            // 两版行为必须一致，否则教师端在 Rust 枢纽上拿到的命令没有服务端时间戳。
+            let mut cmd = cmd;
+            if let Some(o) = cmd.as_object_mut() {
+                if !o.contains_key("at") {
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.as_millis() as i64)
+                        .unwrap_or(0);
+                    o.insert("at".to_string(), json!(now));
+                }
+            }
 
             if host_online {
                 let rooms = st.rooms.read().await;
