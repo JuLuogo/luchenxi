@@ -2090,6 +2090,44 @@ group('趋势（按天 / 按课次）');
   eq(CI.analysis.trend(S.get(), { by: 'quiz', teamId: team1 }).length, 2, '按队过滤仍有 2 个桶');
 })();
 
+/* ================= 40. 批量判分（审计 C3：50 人班不该一个个点） ================= */
+group('批量判分');
+
+(function () {
+  /* 痛点：一个班 50 人，口头/纸面作答后老师要一个个判 —— 串行点 50 次。
+     做法是班级页多选 + 一次记分，底层走领域层 quickFor（与点名页同一口径）。 */
+  ok(typeof CI.rollcall.quickFor === 'function', '有 quickFor（单人快捷记分，批量就是循环它）');
+
+  S.replaceState(S.defaultState());
+  const team1 = S.get().teams[0].id;
+  S.addStudentsBulk('甲\n乙\n丙', team1);
+  const ids = S.get().students.map((x) => x.id);
+  const before = S.allRecords(S.get()).length;
+
+  /* 一次给 3 人记"答对" */
+  let done = 0;
+  ids.forEach((sid) => { if (CI.rollcall.quickFor(sid, 'basic', 'correct')) done += 1; });
+  eq(done, 3, '三个人都记上了');
+  eq(S.allRecords(S.get()).length, before + 3, '流水多 3 条（一人一条）');
+
+  /* 分值与领域层口径一致：基础题权重 × 1 */
+  const recs = S.allRecords(S.get()).slice(-3);
+  eq(recs[0].points, S.tierOf(S.get(), 'basic').weight, '得分 = 题型权重（界面不重算）');
+  eq(recs[0].source, 'quick', '来源标记为 quick（与点名页一致）');
+  eq(recs[0].by, 'class', '操作者标记为 class');
+
+  /* 半对按 halfRatio 折算（同一个领域规则） */
+  CI.rollcall.quickFor(ids[0], 'basic', 'half');
+  const half = S.allRecords(S.get()).slice(-1)[0];
+  ok(half.points > 0 && half.points < S.tierOf(S.get(), 'basic').weight, '半对得分在 0 与满分之间');
+
+  /* 跳过记 0 分但仍留痕（老师要知道"这个人没答"） */
+  CI.rollcall.quickFor(ids[1], 'basic', 'skip');
+  const skip = S.allRecords(S.get()).slice(-1)[0];
+  eq(skip.points, 0, '跳过 0 分');
+  eq(skip.result, 'skip', '但结果记为 skip（留痕）');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

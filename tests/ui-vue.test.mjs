@@ -253,6 +253,8 @@ try {
 
   console.log('  检查三个入口（构建产物，等价于客户端与网页版实际加载的东西）…');
   await checkPage('admin.html', '教师端', '#/', true);
+// 批量判分按钮（审计 C3）：班级页的多选 + 一次记分 —— 用真实浏览器 DOM 断言
+await checkPage('admin.html', '课堂积分 · 教师端', '#/class', true, '批量判分');
   await checkPage('admin.html', '教师端', '#/analysis', true);   // 学情分析页（统计最重的页面）
   await checkPage('admin.html', '教师端', '#/classroom', true);  // 课堂协同页
   await checkPage('admin.html', '教师端', '#/open', true);   // 公开课（不能出问题的场景）

@@ -168,6 +168,53 @@ function bulkDelete() {
       ElMessage.success('已删除');
     }).catch(() => {});
 }
+
+/* ---------- 批量判分（审计 C3：50 人班不该一个个点） ---------- */
+const judgeOpen = ref(false);
+const judgeResult = ref<'correct' | 'half' | 'wrong' | 'skip'>('correct');
+const judgeTier = ref<string>('');
+
+/** 当前题目的题型（批量判分的默认值 —— 多数场景就是"这道题，这几个人答对了"） */
+const currentTier = computed(() => {
+  void store.rev;
+  const qid = (store.runtime as any).qid;
+  if (!qid) return '';
+  const q = store.bank.find((x: any) => x.id === qid);
+  return (q && q.tier) || '';
+});
+
+/** 打开批量判分（默认判定与题型取"当前题目"的上下文） */
+function openJudge() {
+  if (!selected.value.length) { ElMessage.warning('请先勾选学生'); return; }
+  judgeResult.value = 'correct';
+  judgeTier.value = currentTier.value || (store.tiers[0] ? store.tiers[0].key : '');
+  judgeOpen.value = true;
+}
+
+/**
+ * 执行批量判分
+ *
+ * 走领域层 `CI.rollcall.quickFor`（与点名页的快捷记分同一口径）——
+ * 界面不重算分数，只负责把"哪些人、什么结果"传下去。
+ */
+function doBulkJudge() {
+  const ids = selected.value.slice();
+  if (!ids.length) { judgeOpen.value = false; return; }
+  if (!judgeTier.value) { ElMessage.warning('请选择题型'); return; }
+  let done = 0;
+  let failed = 0;
+  ids.forEach((sid: string) => {
+    try {
+      const r = (CI.rollcall as any).quickFor(sid, judgeTier.value, judgeResult.value);
+      if (r) done += 1; else failed += 1;
+    } catch { failed += 1; }
+  });
+  judgeOpen.value = false;
+  selected.value = [];
+  const label = { correct: '答对', half: '半对', wrong: '答错', skip: '跳过' }[judgeResult.value] || judgeResult.value;
+  if (failed) ElMessage.warning('已给 ' + done + ' 人记为「' + label + '」，' + failed + ' 人失败');
+  else ElMessage.success('已给 ' + done + ' 人记为「' + label + '」');
+}
 /** 删除一条流水前先确认（点一下就改分太危险 —— 审计发现） */
 function askRemoveRecord(rid: string) {
   ElMessageBox.confirm('删除这条记录会改分，确定？', '删除记录', { type: 'warning' })
@@ -254,6 +301,8 @@ function saveCourseName(v: string) {
           <el-option v-for="t in store.teams" :key="t.id" :label="t.name" :value="t.id" />
         </el-select>
         <el-button :disabled="!selected.length" @click="bulkTeamMove">批量调队</el-button>
+        <!-- 批量判分（审计 C3）：50 人班不该一个个点 -->
+        <el-button :disabled="!selected.length" type="primary" plain @click="openJudge">批量判分</el-button>
         <el-button :disabled="!selected.length" type="danger" plain @click="bulkDelete">批量删除</el-button>
       </div>
 
@@ -309,6 +358,30 @@ function saveCourseName(v: string) {
     </div>
 
     <!-- ③ 批量添加 -->
+    <!-- 批量判分：勾选的人 + 一个判定结果 = 一次记完 -->
+    <el-dialog v-model="judgeOpen" title="批量判分" width="440">
+      <el-form label-width="80">
+        <el-form-item label="判定结果">
+          <el-radio-group v-model="judgeResult">
+            <el-radio-button value="correct">答对</el-radio-button>
+            <el-radio-button value="half">半对</el-radio-button>
+            <el-radio-button value="wrong">答错</el-radio-button>
+            <el-radio-button value="skip">跳过</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="题型">
+          <el-select v-model="judgeTier" style="width: 100%">
+            <el-option v-for="t in store.tiers" :key="t.key" :label="t.label + '（' + t.weight + ' 分）'" :value="t.key" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <div class="hint">将给勾选的 <b>{{ selected.length }}</b> 名学生各记一次分（与点名页的快捷记分同一口径）。</div>
+      <template #footer>
+        <el-button @click="judgeOpen = false">取消</el-button>
+        <el-button type="primary" @click="doBulkJudge">记分</el-button>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="bulkOpen" title="批量添加学生" width="520">
       <el-form label-width="80">
         <el-form-item label="加入队伍">
