@@ -1267,6 +1267,91 @@ mkTypeCase('题型：无选项有答案 → 填空题', [], '42');
 mkTypeCase('题型：都没有 → 主观题', [], '');
 mkTypeCase('题型：空白答案 → 主观题', [], '   ');
 /* ---------- 落盘 / 校验 ---------- */
+/* ---------- 用例集：趋势（analysis.js::trend）---------- */
+/*
+ * 为什么需要（审计 B7）：原来只有"本节课 / 全部课次"两档，答不了
+ * "这三周是进步还是退步"。趋势是**领域规则**，所以要有 Rust 孪生与 parity。
+ *
+ * 注意 `tzOffsetMin`：按天分桶要用它，否则 Rust 侧与浏览器算出的"天"会不一样。
+ * 用例里固定 -480（东八区），这样基准是确定的。
+ */
+const trendCases = [];
+{
+  const TZ = -480;   // 东八区：按天分桶要它，否则 Rust 与 JS 算出的"天"不一样
+  const at = (day, hour) => Date.UTC(2026, 9, day, hour, 0, 0);   // UTC 时间戳
+
+  /* 状态用 store API 造 —— 形状由领域层保证（手搓会漏字段：Rust 侧 ScoreRecord
+     要求 id/base/ratio/note/by 等，漏一个 parity 就反序列化失败） */
+  S.replaceState(S.defaultState());
+  const t1 = S.get().teams[0].id;
+  const t2 = S.get().teams[1].id;
+  S.addStudentsBulk('甲', t1);
+  S.addStudentsBulk('乙', t2);
+  const st = S.get();
+  const sid1 = st.students[0].id;
+  const sid2 = st.students[1].id;
+
+  /** 一条流水（补齐 Rust ScoreRecord 的全部必需字段） */
+  const rec = (sid, qid, result, points, ts, quizId, source) => ({
+    id: 'r_' + qid + '_' + sid.slice(-3), sid, qid, tier: 'basic', quizId,
+    result, base: 3, ratio: result === 'correct' ? 1 : (result === 'half' ? 0.5 : 0),
+    points, source: source || 'quiz', note: '', at: ts, by: 'host'
+  });
+
+  /* quiz 也要补全字段：Rust 的 Quiz 要求 note / createdAt / closedAt（无 serde(default)） */
+  st.quizzes = [
+    { id: 'z1', name: '第 1 次随堂测', note: '', createdAt: 0, closedAt: 0, questionIds: [], records: [] },
+    { id: 'z2', name: '第 2 次随堂测', note: '', createdAt: 0, closedAt: 0, questionIds: [], records: [] }
+  ];
+  const rows = [
+    rec(sid1, 'q1', 'wrong', 0, at(1, 1), 'z1'),
+    rec(sid1, 'q2', 'half', 1, at(1, 2), 'z1'),
+    rec(sid2, 'q1', 'correct', 3, at(1, 3), 'z1'),
+    rec(sid1, 'q3', 'correct', 3, at(2, 1), 'z2'),
+    rec(sid1, 'q4', 'correct', 3, at(2, 2), 'z2'),
+    rec(sid2, 'q3', 'skip', 0, at(3, 1), 'z2'),
+    rec(sid1, 'q5', 'correct', 3, at(3, 2), 'z2'),
+    rec(sid1, 'q6', 'manual', 2, at(3, 3), 'z2', 'manual'),   // 手动调整：不计入
+    /* 跨日边界：UTC 17:00 在东八区已是次日 —— 这一条专门用来验「时区不同 → 分桶不同」 */
+    rec(sid2, 'q7', 'correct', 3, at(3, 17), 'z2')
+  ];
+  st.quizzes[0].records = rows.filter((r) => r.quizId === 'z1');
+  st.quizzes[1].records = rows.filter((r) => r.quizId === 'z2');
+
+  const cases = [
+    ['按天（全班）', { by: 'day', tzOffsetMin: TZ }],
+    ['按天（只看甲）', { by: 'day', tzOffsetMin: TZ, studentId: 's1' }],
+    ['按天（只看红队）', { by: 'day', tzOffsetMin: TZ, teamId: 't1' }],
+    ['按课次（全班）', { by: 'quiz' }],
+    ['按课次（只看乙）', { by: 'quiz', studentId: 's2' }],
+    ['时区不同 → 分桶不同（UTC）', { by: 'day', tzOffsetMin: 0 }]
+  ];
+  for (const [name, opts] of cases) {
+    /* **带上完整 state**：Rust 侧要重放，而 ClassroomState 没有 serde(default) ——
+       少一个字段就反序列化失败（这是刻意的：形状漂移要立刻炸，而不是静默用默认值） */
+    /* 归一化：state 里的 updatedAt 是 Date.now()（defaultState 给的），
+       直接嵌进去会让基准每次都变、--check 永远失败。
+       只保留与趋势有关的字段内容，时间类字段清零。 */
+    const stable = JSON.parse(JSON.stringify(st));
+    stable.updatedAt = 0;
+    stable.rev = 0;
+    stable.logs = [];
+    /* 学生的 joinedAt 也是 Date.now()（addStudentsBulk 给的），同样清零 */
+    stable.students.forEach((x) => { x.joinedAt = 0; });
+    /* **id 也要固定**：defaultState / addStudentsBulk 用 uid() 生成随机 id，
+       不固定的话基准每次生成都不同，--check 永远失败（实测踩过）。 */
+    stable.teams.forEach((x, i2) => { x.id = 't' + (i2 + 1); });
+    stable.students.forEach((x, i2) => { x.id = 's' + (i2 + 1); x.teamId = 't' + (i2 + 1); });
+    stable.quizzes.forEach((z) => z.records.forEach((r, i2) => {
+      r.sid = r.sid === st.students[0].id ? 's1' : 's2';
+      r.id = 'r' + (i2 + 1) + '_' + z.id;
+    }));
+    /* **expect 必须用归一化后的 state 算** —— 否则 JS 看到的是原始（随机）id，
+       而 Rust 拿到的是归一化后的 id，两边输入不同、必然分叉（实测踩过）。 */
+    trendCases.push({ name, opts, state: stable, expect: CI.analysis.trend(stable, opts) });
+  }
+}
+
 const payload = {
   _comment: '由 scripts/gen-parity-fixtures.mjs 生成；Rust 侧 crates/ci-domain/tests/parity.rs 逐字段比对',
   generatedBy: 'JS 参考实现（assets/js/analysis.js + assets/js/grade.js）',
@@ -1288,7 +1373,8 @@ const payload = {
   stagePolicy: policyCases,
   levels: levelCases,
   levelValidity: validityCases,
-  questionType: typeCases
+  questionType: typeCases,
+  trend: trendCases
 };
 const text = JSON.stringify(payload, null, 2) + '\n';
 const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';

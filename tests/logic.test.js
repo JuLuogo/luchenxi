@@ -2041,6 +2041,55 @@ group('本课归档');
   ok(CI.archive.stamp(new Date('2026-01-02T03:04:00')) === '20260102-0304', '日期戳补零正确');
 })();
 
+/* ================= 39. 趋势（审计 B7，Top 8 第 7 项） ================= */
+group('趋势（按天 / 按课次）');
+
+(function () {
+  /* 原来只有「本节课 / 全部课次」两档，答不了「这几周是进步还是退步」。 */
+  ok(typeof CI.analysis.trend === 'function', '有 trend');
+  ok(typeof CI.analysis.dayKey === 'function', '有 dayKey（本地日期键）');
+
+  /* 按天：跨日边界要跟时区走（这条是 parity 里最容易被忽略的） */
+  const t1 = Date.UTC(2026, 9, 1, 1, 0, 0);   // 东八区 10-01 09:00
+  eq(CI.analysis.dayKey(t1, -480), '2026-10-01', '东八区：10-01');
+  eq(CI.analysis.dayKey(t1, 0), '2026-10-01', 'UTC：也是 10-01（凌晨）');
+  const t2 = Date.UTC(2026, 9, 3, 17, 0, 0);  // 东八区已是 10-04
+  eq(CI.analysis.dayKey(t2, -480), '2026-10-04', '东八区：跨到 10-04');
+  eq(CI.analysis.dayKey(t2, 0), '2026-10-03', 'UTC：仍是 10-03（同一时间戳，两个不同的天）');
+
+  /* 聚合：只看可计入的流水（手动调整不计） */
+  S.replaceState(S.defaultState());
+  const st = S.get();
+  const team1 = st.teams[0].id;
+  S.addStudentsBulk('甲', team1);
+  const sid1 = S.get().students[0].id;
+  S.addQuestion({ stem: '趋势题', tier: 'basic', answer: 'A', options: ['x', 'y'] });
+  const q = S.get().bank[0];
+  st.quizzes = [{ id: 'z1', name: '第一次', note: '', createdAt: 0, closedAt: 0, questionIds: [q.id], records: [
+    { id: 'r1', sid: sid1, qid: q.id, tier: 'basic', quizId: 'z1', result: 'wrong', base: 3, ratio: 0, points: 0, source: 'quiz', note: '', at: Date.UTC(2026, 9, 1, 1), by: 'host' },
+    { id: 'r2', sid: sid1, qid: q.id, tier: 'basic', quizId: 'z1', result: 'manual', base: 0, ratio: 0, points: 5, source: 'manual', note: '', at: Date.UTC(2026, 9, 1, 2), by: 'host' }
+  ] }];
+  const byDay = CI.analysis.trend(S.get(), { by: 'day', tzOffsetMin: -480 });
+  eq(byDay.length, 1, '一天一个桶');
+  eq(byDay[0].key, '2026-10-01', '桶键是日期');
+  eq(byDay[0].attempts, 1, '手动调整不计入（attempts 只有 1）');
+  eq(byDay[0].rate, 0, '答错 → 正确率 0%');
+  eq(byDay[0].points, 0, '手动加的 5 分不进趋势的得分');
+
+  /* 按课次：顺序跟着试卷列表 */
+  S.get().quizzes.push({ id: 'z2', name: '第二次', note: '', createdAt: 0, closedAt: 0, questionIds: [q.id], records: [
+    { id: 'r3', sid: sid1, qid: q.id, tier: 'basic', quizId: 'z2', result: 'correct', base: 3, ratio: 1, points: 3, source: 'quiz', note: '', at: Date.UTC(2026, 9, 2, 1), by: 'host' }
+  ] });
+  const byQuiz = CI.analysis.trend(S.get(), { by: 'quiz' });
+  eq(byQuiz.length, 2, '两次测验两个桶');
+  eq(byQuiz[0].label, '第一次', '标签用测验名');
+  eq(byQuiz[1].rate, 100, '第二次全对 → 100%');
+
+  /* 过滤：只看某人 / 只看某队 */
+  eq(CI.analysis.trend(S.get(), { by: 'quiz', studentId: 'nobody' }).length, 0, '查不存在的人 → 空');
+  eq(CI.analysis.trend(S.get(), { by: 'quiz', teamId: team1 }).length, 2, '按队过滤仍有 2 个桶');
+})();
+
 /* ================= 汇总 ================= */
 console.log('\n----------------------------------------');
 if (failures.length) {

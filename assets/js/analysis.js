@@ -473,6 +473,77 @@
     return Math.round((a / b) * 100);
   }
 
+  /**
+   * 趋势：按"天"或"按测验（课次）"聚合，回答「这几周是进步还是退步」。
+   *
+   * 为什么需要：原来只有"本节课 / 全部课次"两档，看不出走向（审计 B7）。
+   *
+   * @param state 课堂状态
+   * @param opts  { by: 'day'|'quiz', studentId?, teamId?, tzOffsetMin? }
+   *   tzOffsetMin —— 与 `Date.prototype.getTimezoneOffset()` 同义（分钟，东八区是 -480）。
+   *   **按天分桶必须传它**：否则 Rust 侧无法与浏览器算出同一天（默认取本机时区）。
+   * @returns [{ key, label, attempts, correct, half, wrong, skip, points, rate }]（按时间升序）
+   */
+  function trend(state, opts) {
+    var s = state || CI.store.get();
+    var o = opts || {};
+    var by = o.by === 'quiz' ? 'quiz' : 'day';
+    var tz = (typeof o.tzOffsetMin === 'number') ? o.tzOffsetMin
+      : (new Date().getTimezoneOffset());
+    var map = {};
+    var order = [];
+
+    (s.quizzes || []).forEach(function (qz) {
+      (qz.records || []).forEach(function (r) {
+        if (!counts(s, r)) return;
+        if (o.studentId && r.sid !== o.studentId) return;
+        if (o.teamId) {
+          var stu = r.sid ? CI.store.student(s, r.sid) : null;
+          if (!stu || stu.teamId !== o.teamId) return;
+        }
+        var key, label;
+        if (by === 'quiz') {
+          key = qz.id;
+          label = qz.name || '未命名测验';
+        } else {
+          key = dayKey(r.at, tz);
+          label = key;
+        }
+        if (!key) return;
+        if (!map[key]) {
+          map[key] = { key: key, label: label, attempts: 0, correct: 0, half: 0, wrong: 0, skip: 0, points: 0 };
+          order.push(key);
+        }
+        var e = map[key];
+        e.attempts += 1;
+        if (e[r.result] !== undefined && r.result !== 'attempts' && r.result !== 'points') e[r.result] += 1;
+        e.points += U.num(r.points, 0);
+      });
+    });
+
+    var out = order.map(function (k) { return map[k]; });
+    if (by === 'day') out.sort(function (a, b) { return a.key < b.key ? -1 : (a.key > b.key ? 1 : 0); });
+    return out.map(function (e) {
+      return {
+        key: e.key, label: e.label,
+        attempts: e.attempts, correct: e.correct, half: e.half, wrong: e.wrong, skip: e.skip,
+        points: Math.round(e.points * 100) / 100,
+        // 严格正确率（与 docs/05 口径一致）：答对 / 作答次数
+        rate: e.attempts ? Math.round((e.correct / e.attempts) * 100) : 0
+      };
+    });
+  }
+
+  /** 本地日期键 YYYY-MM-DD（tzOffsetMin 与 getTimezoneOffset 同义） */
+  function dayKey(at, tzOffsetMin) {
+    var t = U.num(at, 0);
+    if (!t) return '';
+    var d = new Date(t - U.num(tzOffsetMin, 0) * 60000);
+    var m = d.getUTCMonth() + 1;
+    var day = d.getUTCDate();
+    return d.getUTCFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
+  }
+
   function questionStats(state, quizId) {
     var s = state || CI.store.get();
     var records = [];
@@ -1195,7 +1266,7 @@
     studentCSV: studentCSV,
     classCSV: classCSV,
     questionCSV: questionCSV,
-    questionStats: questionStats, optionDistribution: optionDistribution, retestQuestions: retestQuestions,
+    questionStats: questionStats, trend: trend, dayKey: dayKey, optionDistribution: optionDistribution, retestQuestions: retestQuestions,
     questionReviewLine: questionReviewLine,
     studentMistakes: studentMistakes, mistakeBoard: mistakeBoard,
     // 多维度评价（正确性 / 参与度 / 进步）

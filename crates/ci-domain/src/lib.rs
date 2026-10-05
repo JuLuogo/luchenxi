@@ -26,6 +26,7 @@ pub mod rollcall;
 pub mod scoring;
 pub mod stats;
 pub mod state;
+pub mod trend;
 
 pub use ability::{
     ability_comment, ability_of_tiers, grade_by_key, pct, Ability, Axis, Bucket, Grade, TierStat,
@@ -41,6 +42,7 @@ pub use question_stats::{
     option_distribution, question_stats, review_line, short_stem, short_stem_with, student_view,
     OptionCount, OptionView, QuestionStat, StudentQuestionView,
 };
+pub use trend::{day_key, trend, TrendBucket, TrendOpts};
 pub use openclass::{
     show_on_stage,
     default_open_dimensions, evaluate_open, open_comment, open_level, open_rate, OpenDimension,

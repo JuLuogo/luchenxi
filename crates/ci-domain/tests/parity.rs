@@ -15,14 +15,14 @@ use ci_domain::state::ClassroomState;
 use ci_domain::{
     type_label, type_of,
     default_open_levels, evaluate_open_full, levels_are_valid, levels_from_labels, open_rate, show_on_stage,
-    ability_of_tiers, answer_key, apply_pick, auto, build_report, decayed_rate, evaluate, growth_score,
+    ability_of_tiers, answer_key, apply_pick, trend, auto, build_report, decayed_rate, evaluate, growth_score,
     default_open_dimensions, evaluate_open,
     option_distribution, participation_rate, polish_prompt, sanitize_polish, student_stats, student_view,
     POLISH_RULES, class_stats, ranking, team_ranking, default_tiers, describe_submission,
     draw_questions, finalize_feed, handle_cmd, mistake_board, question_stats, report_markdown,
     rollcall_pick, score_of_input, set_phase_named, student_mistakes, validate_question, BankQuestion,
     Checkin, ClassStudent, ClassTeam, CmdOutcome, DrawOpts, PickOpts, Question, RollcallSettings,
-    EvalWeights, ReportInput, Runtime, ScoreInput, ScoreRecord, ScoringSettings, StateStudent, Student,
+    EvalWeights, ReportInput, Runtime, TrendBucket, TrendOpts, ScoreInput, ScoreRecord, ScoringSettings, StateStudent, Student,
     StudentCmd, Submission, Team, TeamStat, TierStat,
 };
 use serde_json::json;
@@ -56,6 +56,7 @@ struct Fixture {
     level_validity: Vec<ValidityCase>,
     #[serde(rename = "questionType")]
     question_type: Vec<TypeCase>,
+    trend: Vec<TrendCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -2304,4 +2305,43 @@ fn question_type_matches_js_reference() {
         assert_eq!(type_label(&q), c.expect_label, "[{}] 题型名", c.name);
     }
     println!("\n✅ 题型判定：{} 组用例与 JS 一致", fx.question_type.len());
+}
+
+
+/* ------------------------------------------------------------------ *
+ * 趋势（analysis.js::trend ↔ ci_domain::trend）
+ * ------------------------------------------------------------------ *
+ * 审计 B7：原来只有"本节课 / 全部课次"两档，答不了"这几周是进步还是退步"。
+ * 趋势是领域规则，所以必须逐字段一致 —— 尤其**按天分桶**依赖时区偏移，
+ * 两边算法不同就会算出不同的"天"（这正是 parity 要钉住的）。
+ */
+#[derive(Debug, Deserialize)]
+struct TrendCase {
+    name: String,
+    opts: TrendOpts,
+    state: ClassroomState,
+    expect: Vec<TrendBucket>,
+}
+
+#[test]
+fn parity_trend() {
+    let fx = load();
+    assert!(!fx.trend.is_empty(), "基准里要有趋势用例");
+    for c in &fx.trend {
+        let got = trend(&c.state, &c.opts);
+        assert_eq!(
+            got, c.expect,
+            "趋势不一致：{}（桶数 {} vs {}）",
+            c.name, got.len(), c.expect.len()
+        );
+        // 逐字段也核一遍，报错时能直接看出是哪个字段漂了
+        for (g, e) in got.iter().zip(c.expect.iter()) {
+            assert_eq!(g.key, e.key, "{} 的 key", c.name);
+            assert_eq!(g.attempts, e.attempts, "{} 的 attempts", c.name);
+            assert_eq!(g.correct, e.correct, "{} 的 correct", c.name);
+            assert_eq!(g.rate, e.rate, "{} 的 rate", c.name);
+            assert!((g.points - e.points).abs() < 1e-9, "{} 的 points", c.name);
+        }
+    }
+    println!("   趋势 {} 个用例逐字段一致", fx.trend.len());
 }

@@ -9832,5 +9832,2217 @@
       "expectType": "subjective",
       "expectLabel": "主观题"
     }
+  ],
+  "trend": [
+    {
+      "name": "按天（全班）",
+      "opts": {
+        "by": "day",
+        "tzOffsetMin": -480
+      },
+      "state": {
+        "version": 2,
+        "rev": 0,
+        "updatedAt": 0,
+        "settings": {
+          "courseName": "24机械高考公开课",
+          "halfRatio": 0.5,
+          "wrongPenalty": 0,
+          "fastBonus": 0,
+          "buzzRankBonuses": [],
+          "weakThreshold": 0.6,
+          "strongThreshold": 0.85,
+          "minSample": 5,
+          "evalWeights": {
+            "mastery": 60,
+            "participation": 25,
+            "growth": 15
+          },
+          "decayRatio": 0.65,
+          "manualCapPlus": 2,
+          "manualCapMinus": -1,
+          "openEvalOnStage": "smart",
+          "openLevels": [
+            {
+              "label": "待改进",
+              "rate": 0
+            },
+            {
+              "label": "合格",
+              "rate": 33
+            },
+            {
+              "label": "良好",
+              "rate": 67
+            },
+            {
+              "label": "优秀",
+              "rate": 100
+            }
+          ],
+          "openDimensions": [
+            {
+              "key": "basic",
+              "label": "基础掌握",
+              "weight": 30,
+              "anchor": "概念、公式、常规运算是否准确"
+            },
+            {
+              "key": "transfer",
+              "label": "拓展迁移",
+              "weight": 30,
+              "anchor": "能否举一反三、把方法用到新情境"
+            },
+            {
+              "key": "expression",
+              "label": "思维表达",
+              "weight": 25,
+              "anchor": "思路是否清晰、表达是否有条理"
+            },
+            {
+              "key": "attitude",
+              "label": "参与态度",
+              "weight": 15,
+              "anchor": "投入程度、回应质量、是否敢试"
+            }
+          ]
+        },
+        "tiers": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "color": "#66bb6a",
+            "desc": "课本概念与常规运算，面向全体"
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "color": "#42a5f5",
+            "desc": "综合应用，需要两步以上推理"
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "color": "#ab47bc",
+            "desc": "跨章节综合或建模，考查迁移能力"
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "color": "#ef6c00",
+            "desc": "压轴/竞赛级，挑战思维上限"
+          }
+        ],
+        "tags": [
+          "集合与逻辑",
+          "函数与导数",
+          "三角函数",
+          "数列",
+          "立体几何",
+          "解析几何",
+          "概率统计"
+        ],
+        "teams": [
+          {
+            "id": "t1",
+            "name": "红队",
+            "icon": "🔴",
+            "color": "#e74c3c",
+            "order": 0
+          },
+          {
+            "id": "t2",
+            "name": "蓝队",
+            "icon": "🔵",
+            "color": "#3498db",
+            "order": 1
+          }
+        ],
+        "students": [
+          {
+            "id": "s1",
+            "name": "甲",
+            "teamId": "t1",
+            "active": true,
+            "called": 0,
+            "joinedAt": 0
+          },
+          {
+            "id": "s2",
+            "name": "乙",
+            "teamId": "t2",
+            "active": true,
+            "called": 0,
+            "joinedAt": 0
+          }
+        ],
+        "bank": [],
+        "quizzes": [
+          {
+            "id": "z1",
+            "name": "第 1 次随堂测",
+            "note": "",
+            "createdAt": 0,
+            "closedAt": 0,
+            "questionIds": [],
+            "records": [
+              {
+                "id": "r1_z1",
+                "sid": "s1",
+                "qid": "q1",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "wrong",
+                "base": 3,
+                "ratio": 0,
+                "points": 0,
+                "source": "quiz",
+                "note": "",
+                "at": 1790816400000,
+                "by": "host"
+              },
+              {
+                "id": "r2_z1",
+                "sid": "s1",
+                "qid": "q2",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "half",
+                "base": 3,
+                "ratio": 0.5,
+                "points": 1,
+                "source": "quiz",
+                "note": "",
+                "at": 1790820000000,
+                "by": "host"
+              },
+              {
+                "id": "r3_z1",
+                "sid": "s2",
+                "qid": "q1",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790823600000,
+                "by": "host"
+              }
+            ]
+          },
+          {
+            "id": "z2",
+            "name": "第 2 次随堂测",
+            "note": "",
+            "createdAt": 0,
+            "closedAt": 0,
+            "questionIds": [],
+            "records": [
+              {
+                "id": "r1_z2",
+                "sid": "s1",
+                "qid": "q3",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790902800000,
+                "by": "host"
+              },
+              {
+                "id": "r2_z2",
+                "sid": "s1",
+                "qid": "q4",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790906400000,
+                "by": "host"
+              },
+              {
+                "id": "r3_z2",
+                "sid": "s2",
+                "qid": "q3",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "skip",
+                "base": 3,
+                "ratio": 0,
+                "points": 0,
+                "source": "quiz",
+                "note": "",
+                "at": 1790989200000,
+                "by": "host"
+              },
+              {
+                "id": "r4_z2",
+                "sid": "s1",
+                "qid": "q5",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790992800000,
+                "by": "host"
+              },
+              {
+                "id": "r5_z2",
+                "sid": "s1",
+                "qid": "q6",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "manual",
+                "base": 3,
+                "ratio": 0,
+                "points": 2,
+                "source": "manual",
+                "note": "",
+                "at": 1790996400000,
+                "by": "host"
+              },
+              {
+                "id": "r6_z2",
+                "sid": "s2",
+                "qid": "q7",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1791046800000,
+                "by": "host"
+              }
+            ]
+          }
+        ],
+        "currentQuizId": null,
+        "rollcall": {
+          "mode": "even",
+          "scope": "all",
+          "excludeAnswered": true,
+          "recentExclude": 1,
+          "history": [],
+          "roundPool": [],
+          "round": 1
+        },
+        "logs": [],
+        "runtime": {
+          "quizId": null,
+          "qid": null,
+          "sid": null,
+          "phase": "idle",
+          "accepting": false,
+          "reveal": false,
+          "revealedQid": null,
+          "timerEndsAt": 0,
+          "timerLabel": ""
+        },
+        "classroom": {
+          "buzz": [],
+          "pending": [],
+          "feed": [],
+          "open": null
+        },
+        "openRecords": []
+      },
+      "expect": [
+        {
+          "key": "2026-10-01",
+          "label": "2026-10-01",
+          "attempts": 3,
+          "correct": 1,
+          "half": 1,
+          "wrong": 1,
+          "skip": 0,
+          "points": 4,
+          "rate": 33
+        },
+        {
+          "key": "2026-10-02",
+          "label": "2026-10-02",
+          "attempts": 2,
+          "correct": 2,
+          "half": 0,
+          "wrong": 0,
+          "skip": 0,
+          "points": 6,
+          "rate": 100
+        },
+        {
+          "key": "2026-10-03",
+          "label": "2026-10-03",
+          "attempts": 2,
+          "correct": 1,
+          "half": 0,
+          "wrong": 0,
+          "skip": 1,
+          "points": 3,
+          "rate": 50
+        },
+        {
+          "key": "2026-10-04",
+          "label": "2026-10-04",
+          "attempts": 1,
+          "correct": 1,
+          "half": 0,
+          "wrong": 0,
+          "skip": 0,
+          "points": 3,
+          "rate": 100
+        }
+      ]
+    },
+    {
+      "name": "按天（只看甲）",
+      "opts": {
+        "by": "day",
+        "tzOffsetMin": -480,
+        "studentId": "s1"
+      },
+      "state": {
+        "version": 2,
+        "rev": 0,
+        "updatedAt": 0,
+        "settings": {
+          "courseName": "24机械高考公开课",
+          "halfRatio": 0.5,
+          "wrongPenalty": 0,
+          "fastBonus": 0,
+          "buzzRankBonuses": [],
+          "weakThreshold": 0.6,
+          "strongThreshold": 0.85,
+          "minSample": 5,
+          "evalWeights": {
+            "mastery": 60,
+            "participation": 25,
+            "growth": 15
+          },
+          "decayRatio": 0.65,
+          "manualCapPlus": 2,
+          "manualCapMinus": -1,
+          "openEvalOnStage": "smart",
+          "openLevels": [
+            {
+              "label": "待改进",
+              "rate": 0
+            },
+            {
+              "label": "合格",
+              "rate": 33
+            },
+            {
+              "label": "良好",
+              "rate": 67
+            },
+            {
+              "label": "优秀",
+              "rate": 100
+            }
+          ],
+          "openDimensions": [
+            {
+              "key": "basic",
+              "label": "基础掌握",
+              "weight": 30,
+              "anchor": "概念、公式、常规运算是否准确"
+            },
+            {
+              "key": "transfer",
+              "label": "拓展迁移",
+              "weight": 30,
+              "anchor": "能否举一反三、把方法用到新情境"
+            },
+            {
+              "key": "expression",
+              "label": "思维表达",
+              "weight": 25,
+              "anchor": "思路是否清晰、表达是否有条理"
+            },
+            {
+              "key": "attitude",
+              "label": "参与态度",
+              "weight": 15,
+              "anchor": "投入程度、回应质量、是否敢试"
+            }
+          ]
+        },
+        "tiers": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "color": "#66bb6a",
+            "desc": "课本概念与常规运算，面向全体"
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "color": "#42a5f5",
+            "desc": "综合应用，需要两步以上推理"
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "color": "#ab47bc",
+            "desc": "跨章节综合或建模，考查迁移能力"
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "color": "#ef6c00",
+            "desc": "压轴/竞赛级，挑战思维上限"
+          }
+        ],
+        "tags": [
+          "集合与逻辑",
+          "函数与导数",
+          "三角函数",
+          "数列",
+          "立体几何",
+          "解析几何",
+          "概率统计"
+        ],
+        "teams": [
+          {
+            "id": "t1",
+            "name": "红队",
+            "icon": "🔴",
+            "color": "#e74c3c",
+            "order": 0
+          },
+          {
+            "id": "t2",
+            "name": "蓝队",
+            "icon": "🔵",
+            "color": "#3498db",
+            "order": 1
+          }
+        ],
+        "students": [
+          {
+            "id": "s1",
+            "name": "甲",
+            "teamId": "t1",
+            "active": true,
+            "called": 0,
+            "joinedAt": 0
+          },
+          {
+            "id": "s2",
+            "name": "乙",
+            "teamId": "t2",
+            "active": true,
+            "called": 0,
+            "joinedAt": 0
+          }
+        ],
+        "bank": [],
+        "quizzes": [
+          {
+            "id": "z1",
+            "name": "第 1 次随堂测",
+            "note": "",
+            "createdAt": 0,
+            "closedAt": 0,
+            "questionIds": [],
+            "records": [
+              {
+                "id": "r1_z1",
+                "sid": "s1",
+                "qid": "q1",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "wrong",
+                "base": 3,
+                "ratio": 0,
+                "points": 0,
+                "source": "quiz",
+                "note": "",
+                "at": 1790816400000,
+                "by": "host"
+              },
+              {
+                "id": "r2_z1",
+                "sid": "s1",
+                "qid": "q2",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "half",
+                "base": 3,
+                "ratio": 0.5,
+                "points": 1,
+                "source": "quiz",
+                "note": "",
+                "at": 1790820000000,
+                "by": "host"
+              },
+              {
+                "id": "r3_z1",
+                "sid": "s2",
+                "qid": "q1",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790823600000,
+                "by": "host"
+              }
+            ]
+          },
+          {
+            "id": "z2",
+            "name": "第 2 次随堂测",
+            "note": "",
+            "createdAt": 0,
+            "closedAt": 0,
+            "questionIds": [],
+            "records": [
+              {
+                "id": "r1_z2",
+                "sid": "s1",
+                "qid": "q3",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790902800000,
+                "by": "host"
+              },
+              {
+                "id": "r2_z2",
+                "sid": "s1",
+                "qid": "q4",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790906400000,
+                "by": "host"
+              },
+              {
+                "id": "r3_z2",
+                "sid": "s2",
+                "qid": "q3",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "skip",
+                "base": 3,
+                "ratio": 0,
+                "points": 0,
+                "source": "quiz",
+                "note": "",
+                "at": 1790989200000,
+                "by": "host"
+              },
+              {
+                "id": "r4_z2",
+                "sid": "s1",
+                "qid": "q5",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790992800000,
+                "by": "host"
+              },
+              {
+                "id": "r5_z2",
+                "sid": "s1",
+                "qid": "q6",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "manual",
+                "base": 3,
+                "ratio": 0,
+                "points": 2,
+                "source": "manual",
+                "note": "",
+                "at": 1790996400000,
+                "by": "host"
+              },
+              {
+                "id": "r6_z2",
+                "sid": "s2",
+                "qid": "q7",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1791046800000,
+                "by": "host"
+              }
+            ]
+          }
+        ],
+        "currentQuizId": null,
+        "rollcall": {
+          "mode": "even",
+          "scope": "all",
+          "excludeAnswered": true,
+          "recentExclude": 1,
+          "history": [],
+          "roundPool": [],
+          "round": 1
+        },
+        "logs": [],
+        "runtime": {
+          "quizId": null,
+          "qid": null,
+          "sid": null,
+          "phase": "idle",
+          "accepting": false,
+          "reveal": false,
+          "revealedQid": null,
+          "timerEndsAt": 0,
+          "timerLabel": ""
+        },
+        "classroom": {
+          "buzz": [],
+          "pending": [],
+          "feed": [],
+          "open": null
+        },
+        "openRecords": []
+      },
+      "expect": [
+        {
+          "key": "2026-10-01",
+          "label": "2026-10-01",
+          "attempts": 2,
+          "correct": 0,
+          "half": 1,
+          "wrong": 1,
+          "skip": 0,
+          "points": 1,
+          "rate": 0
+        },
+        {
+          "key": "2026-10-02",
+          "label": "2026-10-02",
+          "attempts": 2,
+          "correct": 2,
+          "half": 0,
+          "wrong": 0,
+          "skip": 0,
+          "points": 6,
+          "rate": 100
+        },
+        {
+          "key": "2026-10-03",
+          "label": "2026-10-03",
+          "attempts": 1,
+          "correct": 1,
+          "half": 0,
+          "wrong": 0,
+          "skip": 0,
+          "points": 3,
+          "rate": 100
+        }
+      ]
+    },
+    {
+      "name": "按天（只看红队）",
+      "opts": {
+        "by": "day",
+        "tzOffsetMin": -480,
+        "teamId": "t1"
+      },
+      "state": {
+        "version": 2,
+        "rev": 0,
+        "updatedAt": 0,
+        "settings": {
+          "courseName": "24机械高考公开课",
+          "halfRatio": 0.5,
+          "wrongPenalty": 0,
+          "fastBonus": 0,
+          "buzzRankBonuses": [],
+          "weakThreshold": 0.6,
+          "strongThreshold": 0.85,
+          "minSample": 5,
+          "evalWeights": {
+            "mastery": 60,
+            "participation": 25,
+            "growth": 15
+          },
+          "decayRatio": 0.65,
+          "manualCapPlus": 2,
+          "manualCapMinus": -1,
+          "openEvalOnStage": "smart",
+          "openLevels": [
+            {
+              "label": "待改进",
+              "rate": 0
+            },
+            {
+              "label": "合格",
+              "rate": 33
+            },
+            {
+              "label": "良好",
+              "rate": 67
+            },
+            {
+              "label": "优秀",
+              "rate": 100
+            }
+          ],
+          "openDimensions": [
+            {
+              "key": "basic",
+              "label": "基础掌握",
+              "weight": 30,
+              "anchor": "概念、公式、常规运算是否准确"
+            },
+            {
+              "key": "transfer",
+              "label": "拓展迁移",
+              "weight": 30,
+              "anchor": "能否举一反三、把方法用到新情境"
+            },
+            {
+              "key": "expression",
+              "label": "思维表达",
+              "weight": 25,
+              "anchor": "思路是否清晰、表达是否有条理"
+            },
+            {
+              "key": "attitude",
+              "label": "参与态度",
+              "weight": 15,
+              "anchor": "投入程度、回应质量、是否敢试"
+            }
+          ]
+        },
+        "tiers": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "color": "#66bb6a",
+            "desc": "课本概念与常规运算，面向全体"
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "color": "#42a5f5",
+            "desc": "综合应用，需要两步以上推理"
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "color": "#ab47bc",
+            "desc": "跨章节综合或建模，考查迁移能力"
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "color": "#ef6c00",
+            "desc": "压轴/竞赛级，挑战思维上限"
+          }
+        ],
+        "tags": [
+          "集合与逻辑",
+          "函数与导数",
+          "三角函数",
+          "数列",
+          "立体几何",
+          "解析几何",
+          "概率统计"
+        ],
+        "teams": [
+          {
+            "id": "t1",
+            "name": "红队",
+            "icon": "🔴",
+            "color": "#e74c3c",
+            "order": 0
+          },
+          {
+            "id": "t2",
+            "name": "蓝队",
+            "icon": "🔵",
+            "color": "#3498db",
+            "order": 1
+          }
+        ],
+        "students": [
+          {
+            "id": "s1",
+            "name": "甲",
+            "teamId": "t1",
+            "active": true,
+            "called": 0,
+            "joinedAt": 0
+          },
+          {
+            "id": "s2",
+            "name": "乙",
+            "teamId": "t2",
+            "active": true,
+            "called": 0,
+            "joinedAt": 0
+          }
+        ],
+        "bank": [],
+        "quizzes": [
+          {
+            "id": "z1",
+            "name": "第 1 次随堂测",
+            "note": "",
+            "createdAt": 0,
+            "closedAt": 0,
+            "questionIds": [],
+            "records": [
+              {
+                "id": "r1_z1",
+                "sid": "s1",
+                "qid": "q1",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "wrong",
+                "base": 3,
+                "ratio": 0,
+                "points": 0,
+                "source": "quiz",
+                "note": "",
+                "at": 1790816400000,
+                "by": "host"
+              },
+              {
+                "id": "r2_z1",
+                "sid": "s1",
+                "qid": "q2",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "half",
+                "base": 3,
+                "ratio": 0.5,
+                "points": 1,
+                "source": "quiz",
+                "note": "",
+                "at": 1790820000000,
+                "by": "host"
+              },
+              {
+                "id": "r3_z1",
+                "sid": "s2",
+                "qid": "q1",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790823600000,
+                "by": "host"
+              }
+            ]
+          },
+          {
+            "id": "z2",
+            "name": "第 2 次随堂测",
+            "note": "",
+            "createdAt": 0,
+            "closedAt": 0,
+            "questionIds": [],
+            "records": [
+              {
+                "id": "r1_z2",
+                "sid": "s1",
+                "qid": "q3",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790902800000,
+                "by": "host"
+              },
+              {
+                "id": "r2_z2",
+                "sid": "s1",
+                "qid": "q4",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790906400000,
+                "by": "host"
+              },
+              {
+                "id": "r3_z2",
+                "sid": "s2",
+                "qid": "q3",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "skip",
+                "base": 3,
+                "ratio": 0,
+                "points": 0,
+                "source": "quiz",
+                "note": "",
+                "at": 1790989200000,
+                "by": "host"
+              },
+              {
+                "id": "r4_z2",
+                "sid": "s1",
+                "qid": "q5",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790992800000,
+                "by": "host"
+              },
+              {
+                "id": "r5_z2",
+                "sid": "s1",
+                "qid": "q6",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "manual",
+                "base": 3,
+                "ratio": 0,
+                "points": 2,
+                "source": "manual",
+                "note": "",
+                "at": 1790996400000,
+                "by": "host"
+              },
+              {
+                "id": "r6_z2",
+                "sid": "s2",
+                "qid": "q7",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1791046800000,
+                "by": "host"
+              }
+            ]
+          }
+        ],
+        "currentQuizId": null,
+        "rollcall": {
+          "mode": "even",
+          "scope": "all",
+          "excludeAnswered": true,
+          "recentExclude": 1,
+          "history": [],
+          "roundPool": [],
+          "round": 1
+        },
+        "logs": [],
+        "runtime": {
+          "quizId": null,
+          "qid": null,
+          "sid": null,
+          "phase": "idle",
+          "accepting": false,
+          "reveal": false,
+          "revealedQid": null,
+          "timerEndsAt": 0,
+          "timerLabel": ""
+        },
+        "classroom": {
+          "buzz": [],
+          "pending": [],
+          "feed": [],
+          "open": null
+        },
+        "openRecords": []
+      },
+      "expect": [
+        {
+          "key": "2026-10-01",
+          "label": "2026-10-01",
+          "attempts": 2,
+          "correct": 0,
+          "half": 1,
+          "wrong": 1,
+          "skip": 0,
+          "points": 1,
+          "rate": 0
+        },
+        {
+          "key": "2026-10-02",
+          "label": "2026-10-02",
+          "attempts": 2,
+          "correct": 2,
+          "half": 0,
+          "wrong": 0,
+          "skip": 0,
+          "points": 6,
+          "rate": 100
+        },
+        {
+          "key": "2026-10-03",
+          "label": "2026-10-03",
+          "attempts": 1,
+          "correct": 1,
+          "half": 0,
+          "wrong": 0,
+          "skip": 0,
+          "points": 3,
+          "rate": 100
+        }
+      ]
+    },
+    {
+      "name": "按课次（全班）",
+      "opts": {
+        "by": "quiz"
+      },
+      "state": {
+        "version": 2,
+        "rev": 0,
+        "updatedAt": 0,
+        "settings": {
+          "courseName": "24机械高考公开课",
+          "halfRatio": 0.5,
+          "wrongPenalty": 0,
+          "fastBonus": 0,
+          "buzzRankBonuses": [],
+          "weakThreshold": 0.6,
+          "strongThreshold": 0.85,
+          "minSample": 5,
+          "evalWeights": {
+            "mastery": 60,
+            "participation": 25,
+            "growth": 15
+          },
+          "decayRatio": 0.65,
+          "manualCapPlus": 2,
+          "manualCapMinus": -1,
+          "openEvalOnStage": "smart",
+          "openLevels": [
+            {
+              "label": "待改进",
+              "rate": 0
+            },
+            {
+              "label": "合格",
+              "rate": 33
+            },
+            {
+              "label": "良好",
+              "rate": 67
+            },
+            {
+              "label": "优秀",
+              "rate": 100
+            }
+          ],
+          "openDimensions": [
+            {
+              "key": "basic",
+              "label": "基础掌握",
+              "weight": 30,
+              "anchor": "概念、公式、常规运算是否准确"
+            },
+            {
+              "key": "transfer",
+              "label": "拓展迁移",
+              "weight": 30,
+              "anchor": "能否举一反三、把方法用到新情境"
+            },
+            {
+              "key": "expression",
+              "label": "思维表达",
+              "weight": 25,
+              "anchor": "思路是否清晰、表达是否有条理"
+            },
+            {
+              "key": "attitude",
+              "label": "参与态度",
+              "weight": 15,
+              "anchor": "投入程度、回应质量、是否敢试"
+            }
+          ]
+        },
+        "tiers": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "color": "#66bb6a",
+            "desc": "课本概念与常规运算，面向全体"
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "color": "#42a5f5",
+            "desc": "综合应用，需要两步以上推理"
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "color": "#ab47bc",
+            "desc": "跨章节综合或建模，考查迁移能力"
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "color": "#ef6c00",
+            "desc": "压轴/竞赛级，挑战思维上限"
+          }
+        ],
+        "tags": [
+          "集合与逻辑",
+          "函数与导数",
+          "三角函数",
+          "数列",
+          "立体几何",
+          "解析几何",
+          "概率统计"
+        ],
+        "teams": [
+          {
+            "id": "t1",
+            "name": "红队",
+            "icon": "🔴",
+            "color": "#e74c3c",
+            "order": 0
+          },
+          {
+            "id": "t2",
+            "name": "蓝队",
+            "icon": "🔵",
+            "color": "#3498db",
+            "order": 1
+          }
+        ],
+        "students": [
+          {
+            "id": "s1",
+            "name": "甲",
+            "teamId": "t1",
+            "active": true,
+            "called": 0,
+            "joinedAt": 0
+          },
+          {
+            "id": "s2",
+            "name": "乙",
+            "teamId": "t2",
+            "active": true,
+            "called": 0,
+            "joinedAt": 0
+          }
+        ],
+        "bank": [],
+        "quizzes": [
+          {
+            "id": "z1",
+            "name": "第 1 次随堂测",
+            "note": "",
+            "createdAt": 0,
+            "closedAt": 0,
+            "questionIds": [],
+            "records": [
+              {
+                "id": "r1_z1",
+                "sid": "s1",
+                "qid": "q1",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "wrong",
+                "base": 3,
+                "ratio": 0,
+                "points": 0,
+                "source": "quiz",
+                "note": "",
+                "at": 1790816400000,
+                "by": "host"
+              },
+              {
+                "id": "r2_z1",
+                "sid": "s1",
+                "qid": "q2",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "half",
+                "base": 3,
+                "ratio": 0.5,
+                "points": 1,
+                "source": "quiz",
+                "note": "",
+                "at": 1790820000000,
+                "by": "host"
+              },
+              {
+                "id": "r3_z1",
+                "sid": "s2",
+                "qid": "q1",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790823600000,
+                "by": "host"
+              }
+            ]
+          },
+          {
+            "id": "z2",
+            "name": "第 2 次随堂测",
+            "note": "",
+            "createdAt": 0,
+            "closedAt": 0,
+            "questionIds": [],
+            "records": [
+              {
+                "id": "r1_z2",
+                "sid": "s1",
+                "qid": "q3",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790902800000,
+                "by": "host"
+              },
+              {
+                "id": "r2_z2",
+                "sid": "s1",
+                "qid": "q4",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790906400000,
+                "by": "host"
+              },
+              {
+                "id": "r3_z2",
+                "sid": "s2",
+                "qid": "q3",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "skip",
+                "base": 3,
+                "ratio": 0,
+                "points": 0,
+                "source": "quiz",
+                "note": "",
+                "at": 1790989200000,
+                "by": "host"
+              },
+              {
+                "id": "r4_z2",
+                "sid": "s1",
+                "qid": "q5",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790992800000,
+                "by": "host"
+              },
+              {
+                "id": "r5_z2",
+                "sid": "s1",
+                "qid": "q6",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "manual",
+                "base": 3,
+                "ratio": 0,
+                "points": 2,
+                "source": "manual",
+                "note": "",
+                "at": 1790996400000,
+                "by": "host"
+              },
+              {
+                "id": "r6_z2",
+                "sid": "s2",
+                "qid": "q7",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1791046800000,
+                "by": "host"
+              }
+            ]
+          }
+        ],
+        "currentQuizId": null,
+        "rollcall": {
+          "mode": "even",
+          "scope": "all",
+          "excludeAnswered": true,
+          "recentExclude": 1,
+          "history": [],
+          "roundPool": [],
+          "round": 1
+        },
+        "logs": [],
+        "runtime": {
+          "quizId": null,
+          "qid": null,
+          "sid": null,
+          "phase": "idle",
+          "accepting": false,
+          "reveal": false,
+          "revealedQid": null,
+          "timerEndsAt": 0,
+          "timerLabel": ""
+        },
+        "classroom": {
+          "buzz": [],
+          "pending": [],
+          "feed": [],
+          "open": null
+        },
+        "openRecords": []
+      },
+      "expect": [
+        {
+          "key": "z1",
+          "label": "第 1 次随堂测",
+          "attempts": 3,
+          "correct": 1,
+          "half": 1,
+          "wrong": 1,
+          "skip": 0,
+          "points": 4,
+          "rate": 33
+        },
+        {
+          "key": "z2",
+          "label": "第 2 次随堂测",
+          "attempts": 5,
+          "correct": 4,
+          "half": 0,
+          "wrong": 0,
+          "skip": 1,
+          "points": 12,
+          "rate": 80
+        }
+      ]
+    },
+    {
+      "name": "按课次（只看乙）",
+      "opts": {
+        "by": "quiz",
+        "studentId": "s2"
+      },
+      "state": {
+        "version": 2,
+        "rev": 0,
+        "updatedAt": 0,
+        "settings": {
+          "courseName": "24机械高考公开课",
+          "halfRatio": 0.5,
+          "wrongPenalty": 0,
+          "fastBonus": 0,
+          "buzzRankBonuses": [],
+          "weakThreshold": 0.6,
+          "strongThreshold": 0.85,
+          "minSample": 5,
+          "evalWeights": {
+            "mastery": 60,
+            "participation": 25,
+            "growth": 15
+          },
+          "decayRatio": 0.65,
+          "manualCapPlus": 2,
+          "manualCapMinus": -1,
+          "openEvalOnStage": "smart",
+          "openLevels": [
+            {
+              "label": "待改进",
+              "rate": 0
+            },
+            {
+              "label": "合格",
+              "rate": 33
+            },
+            {
+              "label": "良好",
+              "rate": 67
+            },
+            {
+              "label": "优秀",
+              "rate": 100
+            }
+          ],
+          "openDimensions": [
+            {
+              "key": "basic",
+              "label": "基础掌握",
+              "weight": 30,
+              "anchor": "概念、公式、常规运算是否准确"
+            },
+            {
+              "key": "transfer",
+              "label": "拓展迁移",
+              "weight": 30,
+              "anchor": "能否举一反三、把方法用到新情境"
+            },
+            {
+              "key": "expression",
+              "label": "思维表达",
+              "weight": 25,
+              "anchor": "思路是否清晰、表达是否有条理"
+            },
+            {
+              "key": "attitude",
+              "label": "参与态度",
+              "weight": 15,
+              "anchor": "投入程度、回应质量、是否敢试"
+            }
+          ]
+        },
+        "tiers": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "color": "#66bb6a",
+            "desc": "课本概念与常规运算，面向全体"
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "color": "#42a5f5",
+            "desc": "综合应用，需要两步以上推理"
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "color": "#ab47bc",
+            "desc": "跨章节综合或建模，考查迁移能力"
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "color": "#ef6c00",
+            "desc": "压轴/竞赛级，挑战思维上限"
+          }
+        ],
+        "tags": [
+          "集合与逻辑",
+          "函数与导数",
+          "三角函数",
+          "数列",
+          "立体几何",
+          "解析几何",
+          "概率统计"
+        ],
+        "teams": [
+          {
+            "id": "t1",
+            "name": "红队",
+            "icon": "🔴",
+            "color": "#e74c3c",
+            "order": 0
+          },
+          {
+            "id": "t2",
+            "name": "蓝队",
+            "icon": "🔵",
+            "color": "#3498db",
+            "order": 1
+          }
+        ],
+        "students": [
+          {
+            "id": "s1",
+            "name": "甲",
+            "teamId": "t1",
+            "active": true,
+            "called": 0,
+            "joinedAt": 0
+          },
+          {
+            "id": "s2",
+            "name": "乙",
+            "teamId": "t2",
+            "active": true,
+            "called": 0,
+            "joinedAt": 0
+          }
+        ],
+        "bank": [],
+        "quizzes": [
+          {
+            "id": "z1",
+            "name": "第 1 次随堂测",
+            "note": "",
+            "createdAt": 0,
+            "closedAt": 0,
+            "questionIds": [],
+            "records": [
+              {
+                "id": "r1_z1",
+                "sid": "s1",
+                "qid": "q1",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "wrong",
+                "base": 3,
+                "ratio": 0,
+                "points": 0,
+                "source": "quiz",
+                "note": "",
+                "at": 1790816400000,
+                "by": "host"
+              },
+              {
+                "id": "r2_z1",
+                "sid": "s1",
+                "qid": "q2",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "half",
+                "base": 3,
+                "ratio": 0.5,
+                "points": 1,
+                "source": "quiz",
+                "note": "",
+                "at": 1790820000000,
+                "by": "host"
+              },
+              {
+                "id": "r3_z1",
+                "sid": "s2",
+                "qid": "q1",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790823600000,
+                "by": "host"
+              }
+            ]
+          },
+          {
+            "id": "z2",
+            "name": "第 2 次随堂测",
+            "note": "",
+            "createdAt": 0,
+            "closedAt": 0,
+            "questionIds": [],
+            "records": [
+              {
+                "id": "r1_z2",
+                "sid": "s1",
+                "qid": "q3",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790902800000,
+                "by": "host"
+              },
+              {
+                "id": "r2_z2",
+                "sid": "s1",
+                "qid": "q4",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790906400000,
+                "by": "host"
+              },
+              {
+                "id": "r3_z2",
+                "sid": "s2",
+                "qid": "q3",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "skip",
+                "base": 3,
+                "ratio": 0,
+                "points": 0,
+                "source": "quiz",
+                "note": "",
+                "at": 1790989200000,
+                "by": "host"
+              },
+              {
+                "id": "r4_z2",
+                "sid": "s1",
+                "qid": "q5",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790992800000,
+                "by": "host"
+              },
+              {
+                "id": "r5_z2",
+                "sid": "s1",
+                "qid": "q6",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "manual",
+                "base": 3,
+                "ratio": 0,
+                "points": 2,
+                "source": "manual",
+                "note": "",
+                "at": 1790996400000,
+                "by": "host"
+              },
+              {
+                "id": "r6_z2",
+                "sid": "s2",
+                "qid": "q7",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1791046800000,
+                "by": "host"
+              }
+            ]
+          }
+        ],
+        "currentQuizId": null,
+        "rollcall": {
+          "mode": "even",
+          "scope": "all",
+          "excludeAnswered": true,
+          "recentExclude": 1,
+          "history": [],
+          "roundPool": [],
+          "round": 1
+        },
+        "logs": [],
+        "runtime": {
+          "quizId": null,
+          "qid": null,
+          "sid": null,
+          "phase": "idle",
+          "accepting": false,
+          "reveal": false,
+          "revealedQid": null,
+          "timerEndsAt": 0,
+          "timerLabel": ""
+        },
+        "classroom": {
+          "buzz": [],
+          "pending": [],
+          "feed": [],
+          "open": null
+        },
+        "openRecords": []
+      },
+      "expect": [
+        {
+          "key": "z1",
+          "label": "第 1 次随堂测",
+          "attempts": 1,
+          "correct": 1,
+          "half": 0,
+          "wrong": 0,
+          "skip": 0,
+          "points": 3,
+          "rate": 100
+        },
+        {
+          "key": "z2",
+          "label": "第 2 次随堂测",
+          "attempts": 2,
+          "correct": 1,
+          "half": 0,
+          "wrong": 0,
+          "skip": 1,
+          "points": 3,
+          "rate": 50
+        }
+      ]
+    },
+    {
+      "name": "时区不同 → 分桶不同（UTC）",
+      "opts": {
+        "by": "day",
+        "tzOffsetMin": 0
+      },
+      "state": {
+        "version": 2,
+        "rev": 0,
+        "updatedAt": 0,
+        "settings": {
+          "courseName": "24机械高考公开课",
+          "halfRatio": 0.5,
+          "wrongPenalty": 0,
+          "fastBonus": 0,
+          "buzzRankBonuses": [],
+          "weakThreshold": 0.6,
+          "strongThreshold": 0.85,
+          "minSample": 5,
+          "evalWeights": {
+            "mastery": 60,
+            "participation": 25,
+            "growth": 15
+          },
+          "decayRatio": 0.65,
+          "manualCapPlus": 2,
+          "manualCapMinus": -1,
+          "openEvalOnStage": "smart",
+          "openLevels": [
+            {
+              "label": "待改进",
+              "rate": 0
+            },
+            {
+              "label": "合格",
+              "rate": 33
+            },
+            {
+              "label": "良好",
+              "rate": 67
+            },
+            {
+              "label": "优秀",
+              "rate": 100
+            }
+          ],
+          "openDimensions": [
+            {
+              "key": "basic",
+              "label": "基础掌握",
+              "weight": 30,
+              "anchor": "概念、公式、常规运算是否准确"
+            },
+            {
+              "key": "transfer",
+              "label": "拓展迁移",
+              "weight": 30,
+              "anchor": "能否举一反三、把方法用到新情境"
+            },
+            {
+              "key": "expression",
+              "label": "思维表达",
+              "weight": 25,
+              "anchor": "思路是否清晰、表达是否有条理"
+            },
+            {
+              "key": "attitude",
+              "label": "参与态度",
+              "weight": 15,
+              "anchor": "投入程度、回应质量、是否敢试"
+            }
+          ]
+        },
+        "tiers": [
+          {
+            "key": "basic",
+            "label": "基础题",
+            "weight": 3,
+            "color": "#66bb6a",
+            "desc": "课本概念与常规运算，面向全体"
+          },
+          {
+            "key": "advanced",
+            "label": "拔高题",
+            "weight": 5,
+            "color": "#42a5f5",
+            "desc": "综合应用，需要两步以上推理"
+          },
+          {
+            "key": "extended",
+            "label": "扩展题",
+            "weight": 8,
+            "color": "#ab47bc",
+            "desc": "跨章节综合或建模，考查迁移能力"
+          },
+          {
+            "key": "improve",
+            "label": "提升题",
+            "weight": 10,
+            "color": "#ef6c00",
+            "desc": "压轴/竞赛级，挑战思维上限"
+          }
+        ],
+        "tags": [
+          "集合与逻辑",
+          "函数与导数",
+          "三角函数",
+          "数列",
+          "立体几何",
+          "解析几何",
+          "概率统计"
+        ],
+        "teams": [
+          {
+            "id": "t1",
+            "name": "红队",
+            "icon": "🔴",
+            "color": "#e74c3c",
+            "order": 0
+          },
+          {
+            "id": "t2",
+            "name": "蓝队",
+            "icon": "🔵",
+            "color": "#3498db",
+            "order": 1
+          }
+        ],
+        "students": [
+          {
+            "id": "s1",
+            "name": "甲",
+            "teamId": "t1",
+            "active": true,
+            "called": 0,
+            "joinedAt": 0
+          },
+          {
+            "id": "s2",
+            "name": "乙",
+            "teamId": "t2",
+            "active": true,
+            "called": 0,
+            "joinedAt": 0
+          }
+        ],
+        "bank": [],
+        "quizzes": [
+          {
+            "id": "z1",
+            "name": "第 1 次随堂测",
+            "note": "",
+            "createdAt": 0,
+            "closedAt": 0,
+            "questionIds": [],
+            "records": [
+              {
+                "id": "r1_z1",
+                "sid": "s1",
+                "qid": "q1",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "wrong",
+                "base": 3,
+                "ratio": 0,
+                "points": 0,
+                "source": "quiz",
+                "note": "",
+                "at": 1790816400000,
+                "by": "host"
+              },
+              {
+                "id": "r2_z1",
+                "sid": "s1",
+                "qid": "q2",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "half",
+                "base": 3,
+                "ratio": 0.5,
+                "points": 1,
+                "source": "quiz",
+                "note": "",
+                "at": 1790820000000,
+                "by": "host"
+              },
+              {
+                "id": "r3_z1",
+                "sid": "s2",
+                "qid": "q1",
+                "tier": "basic",
+                "quizId": "z1",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790823600000,
+                "by": "host"
+              }
+            ]
+          },
+          {
+            "id": "z2",
+            "name": "第 2 次随堂测",
+            "note": "",
+            "createdAt": 0,
+            "closedAt": 0,
+            "questionIds": [],
+            "records": [
+              {
+                "id": "r1_z2",
+                "sid": "s1",
+                "qid": "q3",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790902800000,
+                "by": "host"
+              },
+              {
+                "id": "r2_z2",
+                "sid": "s1",
+                "qid": "q4",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790906400000,
+                "by": "host"
+              },
+              {
+                "id": "r3_z2",
+                "sid": "s2",
+                "qid": "q3",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "skip",
+                "base": 3,
+                "ratio": 0,
+                "points": 0,
+                "source": "quiz",
+                "note": "",
+                "at": 1790989200000,
+                "by": "host"
+              },
+              {
+                "id": "r4_z2",
+                "sid": "s1",
+                "qid": "q5",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1790992800000,
+                "by": "host"
+              },
+              {
+                "id": "r5_z2",
+                "sid": "s1",
+                "qid": "q6",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "manual",
+                "base": 3,
+                "ratio": 0,
+                "points": 2,
+                "source": "manual",
+                "note": "",
+                "at": 1790996400000,
+                "by": "host"
+              },
+              {
+                "id": "r6_z2",
+                "sid": "s2",
+                "qid": "q7",
+                "tier": "basic",
+                "quizId": "z2",
+                "result": "correct",
+                "base": 3,
+                "ratio": 1,
+                "points": 3,
+                "source": "quiz",
+                "note": "",
+                "at": 1791046800000,
+                "by": "host"
+              }
+            ]
+          }
+        ],
+        "currentQuizId": null,
+        "rollcall": {
+          "mode": "even",
+          "scope": "all",
+          "excludeAnswered": true,
+          "recentExclude": 1,
+          "history": [],
+          "roundPool": [],
+          "round": 1
+        },
+        "logs": [],
+        "runtime": {
+          "quizId": null,
+          "qid": null,
+          "sid": null,
+          "phase": "idle",
+          "accepting": false,
+          "reveal": false,
+          "revealedQid": null,
+          "timerEndsAt": 0,
+          "timerLabel": ""
+        },
+        "classroom": {
+          "buzz": [],
+          "pending": [],
+          "feed": [],
+          "open": null
+        },
+        "openRecords": []
+      },
+      "expect": [
+        {
+          "key": "2026-10-01",
+          "label": "2026-10-01",
+          "attempts": 3,
+          "correct": 1,
+          "half": 1,
+          "wrong": 1,
+          "skip": 0,
+          "points": 4,
+          "rate": 33
+        },
+        {
+          "key": "2026-10-02",
+          "label": "2026-10-02",
+          "attempts": 2,
+          "correct": 2,
+          "half": 0,
+          "wrong": 0,
+          "skip": 0,
+          "points": 6,
+          "rate": 100
+        },
+        {
+          "key": "2026-10-03",
+          "label": "2026-10-03",
+          "attempts": 3,
+          "correct": 2,
+          "half": 0,
+          "wrong": 0,
+          "skip": 1,
+          "points": 6,
+          "rate": 67
+        }
+      ]
+    }
   ]
 }
