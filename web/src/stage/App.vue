@@ -10,6 +10,8 @@
  * 按课堂环节切换四屏：待机 / 随机点名 / 出题作答 / 点评总结
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { init as initA11y } from '../shared/a11y';
+initA11y();   // 无障碍偏好（字号档 / 减少动效）—— 每台设备各自记
 import StageRadar from './StageRadar.vue';
 
 const state = ref<any>(null);

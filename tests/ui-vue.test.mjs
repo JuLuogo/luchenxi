@@ -167,6 +167,21 @@ try {
       return r.result?.value;
     };
 
+    // 无障碍最小集（审计 Top 8 第 8 位）：字号档用 zoom 应用、减少动效加 class ——
+    // 这两条只有在**真实浏览器**里才验得了（Node 里没有 document）
+    {
+      await run('localStorage.setItem("ci_a11y", JSON.stringify({ fontScale: "xlarge", motion: "reduced" }))');
+      await run('location.reload()');
+      await sleep(3000);
+      const zoom = await run('document.documentElement.style.zoom');
+      ok(zoom === '1.3', '字号档生效（zoom=1.3）—— 实际 ' + zoom);
+      const cls = await run('document.documentElement.className');
+      ok(String(cls).includes('a11y-reduce-motion'), '减少动效生效（html 上有 class）');
+      await run('localStorage.removeItem("ci_a11y")');
+      await run('location.reload()');
+      await sleep(2500);
+    }
+
     // ① 用领域层接口造数据（与老师点"新增学生/新增题目"同一条路径）
     const made = await run(`(function(){
       try {

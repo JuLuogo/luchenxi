@@ -5,6 +5,8 @@
  * 页面内部只关心自己的业务。
  */
 import { computed, onMounted, reactive, ref } from 'vue';
+import { init as initA11y } from '../shared/a11y';
+initA11y();   // 无障碍偏好（字号档 / 减少动效）—— 每台设备各自记
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { buildMenu } from './router';

@@ -1,7 +1,7 @@
 {
  "version": 2,
  "rev": 11,
- "updatedAt": 1791198059302,
+ "updatedAt": 1791199083562,
  "settings": {
   "courseName": "24机械高考公开课",
   "halfRatio": 0.5,
@@ -106,14 +106,14 @@
  ],
  "teams": [
   {
-   "id": "tm_muv52rz9zvz5o",
+   "id": "tm_muv5oqaxfvkbp",
    "name": "红队",
    "icon": "🔴",
    "color": "#e74c3c",
    "order": 0
   },
   {
-   "id": "tm_muv52rz9cikrh",
+   "id": "tm_muv5oqaxydjtg",
    "name": "蓝队",
    "icon": "🔵",
    "color": "#3498db",
@@ -122,17 +122,17 @@
  ],
  "students": [
   {
-   "id": "st_muv52rz99dyvz",
+   "id": "st_muv5oqaxv0wpp",
    "name": "甲",
-   "teamId": "tm_muv52rz9zvz5o",
+   "teamId": "tm_muv5oqaxfvkbp",
    "active": true,
    "called": 0,
-   "joinedAt": 1791198059301
+   "joinedAt": 1791199083561
   }
  ],
  "bank": [
   {
-   "id": "q_muv52rzaq5fly",
+   "id": "q_muv5oqayz0m6i",
    "tier": "basic",
    "points": null,
    "stem": "示例题：1+1=?",
@@ -149,26 +149,26 @@
    "note": "讲评要点",
    "imageUrl": "data:image/png;base64,AA",
    "archived": false,
-   "createdAt": 1791198059301
+   "createdAt": 1791199083562
   }
  ],
  "quizzes": [
   {
-   "id": "qz_muv52rzafutmx",
+   "id": "qz_muv5oqayv335n",
    "name": "示例卷",
    "note": "",
-   "createdAt": 1791198059302,
+   "createdAt": 1791199083562,
    "closedAt": 0,
    "questionIds": [
-    "q_muv52rzaq5fly"
+    "q_muv5oqayz0m6i"
    ],
    "records": [
     {
-     "id": "rc_muv52rzaweaa0",
-     "sid": "st_muv52rz99dyvz",
-     "qid": "q_muv52rzaq5fly",
+     "id": "rc_muv5oqaywqv62",
+     "sid": "st_muv5oqaxv0wpp",
+     "qid": "q_muv5oqayz0m6i",
      "tier": "basic",
-     "quizId": "qz_muv52rzafutmx",
+     "quizId": "qz_muv5oqayv335n",
      "result": "correct",
      "base": 3,
      "ratio": 1,
@@ -176,13 +176,13 @@
      "source": "quiz",
      "note": "",
      "picked": "A",
-     "at": 1791198059302,
+     "at": 1791199083562,
      "by": ""
     }
    ]
   }
  ],
- "currentQuizId": "qz_muv52rzafutmx",
+ "currentQuizId": "qz_muv5oqayv335n",
  "rollcall": {
   "mode": "even",
   "scope": "all",
@@ -190,11 +190,11 @@
   "recentExclude": 1,
   "history": [
    {
-    "id": "rl_muv52rza2ismb",
-    "sid": "st_muv52rz99dyvz",
-    "at": 1791198059302,
-    "quizId": "qz_muv52rzafutmx",
-    "qid": "q_muv52rzaq5fly"
+    "id": "rl_muv5oqayzdrde",
+    "sid": "st_muv5oqaxv0wpp",
+    "at": 1791199083562,
+    "quizId": "qz_muv5oqayv335n",
+    "qid": "q_muv5oqayz0m6i"
    }
   ],
   "roundPool": [],
@@ -202,63 +202,63 @@
  },
  "logs": [
   {
-   "id": "lg_muv52rz9soruw",
-   "ts": 1791198059301,
+   "id": "lg_muv5oqay1h5i2",
+   "ts": 1791199083562,
    "type": "批量添加学生",
    "detail": "共 1 人 → 红队"
   },
   {
-   "id": "lg_muv52rzady4rz",
-   "ts": 1791198059302,
+   "id": "lg_muv5oqay35lgf",
+   "ts": 1791199083562,
    "type": "新增题目",
    "detail": "基础题 · 示例题：1+1=?"
   },
   {
-   "id": "lg_muv52rzaed69n",
-   "ts": 1791198059302,
+   "id": "lg_muv5oqayeql0p",
+   "ts": 1791199083562,
    "type": "新建试卷",
    "detail": "示例卷（1 题）"
   },
   {
-   "id": "lg_muv52rzanw5n2",
-   "ts": 1791198059302,
+   "id": "lg_muv5oqayzkumw",
+   "ts": 1791199083562,
    "type": "切换试卷",
    "detail": "示例卷"
   },
   {
-   "id": "lg_muv52rza5ieqw",
-   "ts": 1791198059302,
+   "id": "lg_muv5oqayq77f8",
+   "ts": 1791199083562,
    "type": "记分",
    "detail": "甲 · 基础题·示例题：1+1=? 答对 → +3"
   },
   {
-   "id": "lg_muv52rza85330",
-   "ts": 1791198059302,
+   "id": "lg_muv5oqay6pxtq",
+   "ts": 1791199083562,
    "type": "课堂环节",
    "detail": "出题答题"
   },
   {
-   "id": "lg_muv52rzavgeo0",
-   "ts": 1791198059302,
+   "id": "lg_muv5oqaybg0j7",
+   "ts": 1791199083562,
    "type": "课堂计时",
    "detail": "60 秒（随堂练习）"
   },
   {
-   "id": "lg_muv52rza1u7uc",
-   "ts": 1791198059302,
+   "id": "lg_muv5oqaynb2tp",
+   "ts": 1791199083562,
    "type": "点名",
    "detail": "甲"
   }
  ],
  "runtime": {
-  "quizId": "qz_muv52rzafutmx",
-  "qid": "q_muv52rzaq5fly",
-  "sid": "st_muv52rz99dyvz",
+  "quizId": "qz_muv5oqayv335n",
+  "qid": "q_muv5oqayz0m6i",
+  "sid": "st_muv5oqaxv0wpp",
   "phase": "question",
   "accepting": true,
   "reveal": false,
   "revealedQid": null,
-  "timerEndsAt": 1791198119302,
+  "timerEndsAt": 1791199143562,
   "timerLabel": "随堂练习"
  },
  "classroom": {

@@ -154,3 +154,19 @@
   font-size: 11px;
   font-family: ui-monospace, Consolas, monospace;
 }
+
+/* ------------------------------------------------------------------ *
+ * 无障碍（审计 Top 8 第 8 位）
+ * ------------------------------------------------------------------ *
+ * 字号档由 a11y.ts 用 zoom 应用（见那里的说明）。
+ * 这里只管"减少动效"：前庭敏感的学生、以及老设备卡顿。
+ * 注意用 `!important` 覆盖组件库自带的过渡（Element Plus / Vant 都带）。
+ * ------------------------------------------------------------------ */
+.a11y-reduce-motion *,
+.a11y-reduce-motion *::before,
+.a11y-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}

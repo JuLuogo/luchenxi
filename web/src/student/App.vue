@@ -9,6 +9,9 @@
  *   · ?view=board → 小组公屏（放大显示，适合平板挂墙上）
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { init as initA11y } from '../shared/a11y';
+import { load as loadA11y, save as saveA11yPrefs } from '../shared/a11y';
+initA11y();   // 无障碍偏好（字号档 / 减少动效）—— 每台设备各自记
 import { showToast, showConfirmDialog } from 'vant';
 import { CIStudent } from './bridge-student';
 
@@ -26,6 +29,13 @@ const rulesInfo = computed(() => {
   try { return (CIStudent as any).rules ? (CIStudent as any).rules() : { tiers: [], halfRatio: 0.5, wrongPenalty: 0, fastBonus: 0, buzzRankBonuses: [], minSample: 5 }; }
   catch { return { tiers: [], halfRatio: 0.5, wrongPenalty: 0, fastBonus: 0, buzzRankBonuses: [], minSample: 5 }; }
 });
+
+/** 显示设置（无障碍最小集） */
+const a11yOpen = ref(false);
+const a11yPrefs = ref(loadA11y());
+const a11yReduce = ref(a11yPrefs.value.motion === 'reduced');
+function saveA11y() { a11yPrefs.value = saveA11yPrefs({ fontScale: a11yPrefs.value.fontScale, motion: a11yReduce.value ? 'reduced' : 'normal' }); }
+function onReduceMotion(v: boolean) { saveA11yPrefs({ fontScale: a11yPrefs.value.fontScale, motion: v ? 'reduced' : 'normal' }); }
 
 const pending = ref(0);
 onMounted(() => {
@@ -149,10 +159,31 @@ function switchTeam() {
   <div class="stu" :class="{ board: boardMode }">
     <!-- 顶部：状态 + 我们组 -->
     <van-nav-bar :title="boardMode ? '小组公屏' : '课堂小组端'" fixed placeholder>
-      <template #right>
-        <span class="conn" :class="{ on: st.connected }">{{ st.connected ? '已连接' : '未连接' }}</span>
-      </template>
+    <template #right>
+      <van-icon name="setting-o" size="18" style="margin-right: 8px" @click="a11yOpen = true" />
+      <span class="conn" :class="{ on: st.connected }">{{ st.connected ? '已连接' : '未连接' }}</span>
+    </template>
     </van-nav-bar>
+
+    <!-- 显示设置：后排看不清 / 前庭敏感 —— 每台设备各自记（审计 Top 8 第 8 位） -->
+    <van-popup v-model:show="a11yOpen" position="bottom" round>
+      <div class="a11y-box">
+        <div class="a11y-title">显示设置</div>
+        <div class="a11y-row">
+          <span>字号</span>
+          <van-radio-group v-model="a11yPrefs.fontScale" direction="horizontal" @change="saveA11y">
+            <van-radio name="normal">标准</van-radio>
+            <van-radio name="large">大</van-radio>
+            <van-radio name="xlarge">特大</van-radio>
+          </van-radio-group>
+        </div>
+        <div class="a11y-row">
+          <span>减少动效</span>
+          <van-switch v-model="a11yReduce" size="20" @change="onReduceMotion" />
+        </div>
+        <div class="a11y-note">设置只影响这台设备，换手机不影响别人。</div>
+      </div>
+    </van-popup>
 
     <!-- 断网时提交会排队，这里告诉学生"没丢，联网自动补交"（审计 Top 8 第 1 位） -->
     <van-notice-bar
@@ -452,4 +483,8 @@ function switchTeam() {
 .board .opt { font-size: var(--fs-2xl); }
 .why { margin-top: var(--sp-2); font-size: var(--fs-sm); color: #92400e; background: #fffbeb; border-radius: var(--radius); padding: var(--sp-2) var(--sp-2); line-height: 1.6; }
 .rules-note { padding: var(--sp-3) var(--sp-4); color: var(--text-tertiary); font-size: var(--fs-xs); line-height: var(--lh-base); }
+.a11y-box { padding: var(--sp-4); }
+.a11y-title { font-size: var(--fs-lg); font-weight: var(--fw-bold); margin-bottom: var(--sp-3); }
+.a11y-row { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-2) 0; }
+.a11y-note { color: var(--text-tertiary); font-size: var(--fs-xs); margin-top: var(--sp-3); }
 </style>
