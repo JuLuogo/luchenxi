@@ -1,6 +1,6 @@
 {
   "name": "classroom-points",
-  "version": "4.2.3",
+  "version": "4.2.4",
   "private": true,
   "description": "课堂积分系统：教师机本地枢纽 + 学生小组端协同（加权记分 / 题库组卷 / 点名 / 学情分析），数据落本机 SQLite；跨平台客户端见 apps/",
   "scripts": {

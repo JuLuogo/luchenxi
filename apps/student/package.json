@@ -1,7 +1,7 @@
 {
   "name": "luchenxi-student",
   "private": true,
-  "version": "4.2.3",
+  "version": "4.2.4",
   "description": "课堂积分系统 · 学生小组端（Tauri v2：Android 为主，桌面也可用）",
   "scripts": {
     "tauri": "tauri",
