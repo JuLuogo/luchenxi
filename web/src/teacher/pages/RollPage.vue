@@ -69,6 +69,11 @@ function resultShort(r: string) {
 }
 
 async function doPick() {
+  // 用户要求：判完**不要**自动换人 —— 先给这位判分，再按一次空格抽下一位
+  if (current.value && !current.value.judged) {
+    ElMessage.info('先给 ' + current.value.name + ' 判分（1/2/3/4），或点「跳过 4」');
+    return;
+  }
   // 点名优先走 Rust 核心（/api/domain/pick，与 parity 基准同一套算法），不可达时回退本地实现
   const r = await fetchPick();
   const res = r.pick;
@@ -77,7 +82,7 @@ async function doPick() {
   // 顺带把课堂环节切到"随机点名"，大屏立刻放大显示这位同学
   CI.classroom.setPhase('rollcall');
   const stu = store.students.find((x) => x.id === res.sid);
-  current.value = stu ? { sid: stu.id, name: stu.name, teamName: teamName(stu.teamId) } : null;
+  current.value = stu ? { sid: stu.id, name: stu.name, teamName: teamName(stu.teamId), judged: false } : null;
   history.value.unshift({ sid: res.sid, name: stu ? stu.name : '?', at: Date.now() });
 }
 
@@ -94,8 +99,11 @@ function judge(result) {
   const after = store.scoreOf(current.value.sid);
   const delta = Math.round((after - before) * 100) / 100;
   recordScore(current.value.sid, delta, result);   // 记回点名顺序，供统计与复盘
+  // 用户要求：**不自动抽下一位** —— 停在这位同学，等老师再按一次空格
+  current.value.judged = true;
+  current.value.delta = delta;
+  current.value.result = result;
   ElMessage.success(`${current.value.name} ${CI.store.RESULT_LABEL[result]}${delta ? '（' + (delta > 0 ? '+' : '') + delta + '）' : ''}`);
-  doPick();                       // 判分后立刻抽下一位
 }
 
 function quick(tierKey, result) {
@@ -104,6 +112,8 @@ function quick(tierKey, result) {
   CI.rollcall.quickFor(current.value.sid, tierKey, result || 'correct');
   const after = store.scoreOf(current.value.sid);
   recordScore(current.value.sid, Math.round((after - before) * 100) / 100, result || 'correct');
+  current.value.judged = true;
+  current.value.result = result || 'correct';
   ElMessage.success(`${current.value.name} 已按题型记分`);
 }
 
@@ -138,18 +148,27 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
       <div>
         <h2>随机点名</h2>
         <div class="desc">
-          空格抽下一位；抽到后按 <b>1</b> 答对 / <b>2</b> 半对 / <b>3</b> 答错 / <b>4</b> 跳过，判分后自动抽下一位。
+          抽到后按 <b>1</b> 答对 / <b>2</b> 半对 / <b>3</b> 答错 / <b>4</b> 跳过；<b>判完停在原位</b>，再按一次 <b>空格</b> 才抽下一位。
         </div>
       </div>
       <div class="actions">
         <el-button @click="resetRound">重置点名池</el-button>
-        <el-button type="primary" size="large" @click="doPick">抽一位（空格）</el-button>
+        <el-button type="primary" size="large" @click="doPick">{{ current ? '抽下一位（空格）' : '抽一位（空格）' }}</el-button>
       </div>
     </div>
 
     <el-row :gutter="14">
       <el-col :xs="24" :md="16">
         <div class="panel pick-panel">
+          <!-- 用户要求：判完停在原位，提示"再按一次空格抽下一位" -->
+          <div v-if="current && current.judged" class="judged-bar">
+            <span class="jb-main">
+              已判分：{{ current.name }}
+              <b>{{ current.delta > 0 ? '+' : '' }}{{ current.delta }}</b>
+              分（{{ resultShort(current.result) }}）
+            </span>
+            <span class="jb-next">再按一次 <b>空格</b> 抽下一位</span>
+          </div>
           <div v-if="current" class="picked">
             <div class="who">{{ current.name }}</div>
             <div class="meta">
@@ -281,6 +300,17 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 /* ---- 点名顺序说明 + 本轮统计（用户反馈：顺序看不懂、没有加分统计） ---- */
 .order-hint { display: block; margin: 0 0 var(--sp-3); line-height: var(--lh-relaxed); }
 .order-hint b { color: var(--ci-text); }
+
+/* 已判分提示条（判完停在原位） */
+.judged-bar {
+  display: flex; align-items: center; justify-content: center; gap: var(--sp-4);
+  flex-wrap: wrap; margin-bottom: var(--sp-3); padding: var(--sp-2) var(--sp-4);
+  background: var(--ci-fill); border-radius: var(--radius-md);
+}
+.judged-bar .jb-main { font-size: var(--fs-lg); }
+.judged-bar .jb-main b { color: var(--c-success); font-size: var(--fs-xl); }
+.judged-bar .jb-next { color: var(--ci-text-weak); font-size: var(--fs-sm); }
+.judged-bar .jb-next b { color: var(--ci-text); }
 
 .roll-stats {
   display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-5);
