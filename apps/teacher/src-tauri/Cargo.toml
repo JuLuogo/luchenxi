@@ -1,6 +1,6 @@
 [package]
 name = "luchenxi-teacher"
-version = "4.0.0"
+version = "4.2.0"
 description = "课堂积分系统 · 教师端（本地 SQLite + 内置枢纽 + EasyTier 组网）"
 authors = ["luchenxi"]
 edition = "2021"
