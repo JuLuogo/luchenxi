@@ -80,6 +80,36 @@ const evalPublic = computed<boolean>(() => !!meta.value.openEvalPublic);
 
 const teamStats = computed<any[]>(() => (meta.value.teamStats || []).filter((t) => t.teamId !== 'all'));
 const ability = computed(() => meta.value.ability || null);
+
+/* ---- 点评总结的多维度分析（用户要求：从多个角度多个维度去分析） ---- */
+
+/** 班级概览：全部用已有数据算，不新增接口 */
+const reviewKpi = computed(() => {
+  const rows = teamStats.value;
+  const attempts = rows.reduce((a, t) => a + (t.attempts || 0), 0);
+  const correct = rows.reduce((a, t) => a + (t.correct || 0), 0);
+  const rate = attempts ? Math.round((correct / attempts) * 100) : 0;
+  const top = rows.slice().sort((a, b) => (b.score || 0) - (a.score || 0))[0] || null;
+  return { attempts, correct, rate, teams: rows.length, top };
+});
+
+const maxTeamScore = computed(() => Math.max(1, ...teamStats.value.map((t) => Math.abs(t.score || 0))));
+
+/**
+ * 每队的「最强 / 最弱」题型 —— 与右栏雷达取自**同一份** ability.teams[].axes，
+ * 所以文字与图形永远一致（不会一个说强、一个图形显示弱）。
+ */
+const teamAxes = computed(() => {
+  const map: any = {};
+  const teams = (ability.value && ability.value.teams) || [];
+  teams.forEach((t: any) => {
+    const axes = (t.axes || []).filter((a: any) => (a.attempts || 0) > 0);
+    if (!axes.length) { map[t.teamId] = null; return; }
+    const sorted = axes.slice().sort((a: any, b: any) => b.rate - a.rate);
+    map[t.teamId] = { best: sorted[0], worst: sorted[sorted.length - 1] };
+  });
+  return map;
+});
 const buzz = computed<any[]>(() => (meta.value.buzz || []).slice(0, 5));
 const courseName = computed(() => (state.value && state.value.courseName) || '课堂积分');
 const revealed = computed(() => !!meta.value.reveal);
@@ -257,6 +287,17 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
     <!-- ④ 点评总结：各队答对 + 能力雷达（浅色） -->
     <main v-else class="body review">
       <section class="rev-left">
+        <!-- 班级概览 KPI：一眼看到这一节的整体表现 -->
+        <div class="rev-kpi">
+          <div class="kpi"><span class="k">作答人次</span><b class="v">{{ reviewKpi.attempts }}</b></div>
+          <div class="kpi"><span class="k">整体正确率</span><b class="v">{{ reviewKpi.rate }}<i>%</i></b></div>
+          <div class="kpi"><span class="k">参与队伍</span><b class="v">{{ reviewKpi.teams }}</b></div>
+          <div class="kpi" v-if="reviewKpi.top">
+            <span class="k">目前领先</span>
+            <b class="v" :style="{ color: reviewKpi.top.color }">{{ reviewKpi.top.name }}</b>
+          </div>
+        </div>
+
         <div class="side-title">各队答题情况</div>
         <div v-for="t in teamStats" :key="t.teamId" class="rev-team">
           <span class="seat-dot" :style="{ background: t.color }" />
@@ -264,6 +305,23 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
           <span class="rev-correct">答对 {{ t.correct }}</span>
           <span class="rev-attempts">/ {{ t.attempts }} 次</span>
           <span class="rev-rate">{{ Math.round(t.creditRate) }}%</span>
+          <!-- 多维度对比：正确率条 + 得分条（按最高分归一）-->
+          <div class="rev-bars">
+            <span class="bar" title="正确率">
+              <span class="fill" :style="{ width: Math.min(100, Math.round(t.creditRate)) + '%', background: t.color }" />
+            </span>
+            <span class="bar thin" title="得分">
+              <span class="fill" :style="{ width: Math.round((Math.abs(t.score || 0) / maxTeamScore) * 100) + '%', background: t.color, opacity: .55 }" />
+            </span>
+            <span class="rev-score">{{ t.score }} 分</span>
+          </div>
+          <!-- 最强/最弱题型：与右栏雷达同一份数据 -->
+          <div class="rev-axes" v-if="teamAxes[t.teamId]">
+            <span class="ax best">强 {{ teamAxes[t.teamId].best.label }} {{ Math.round(teamAxes[t.teamId].best.rate) }}%</span>
+            <span class="ax worst">弱 {{ teamAxes[t.teamId].worst.label }} {{ Math.round(teamAxes[t.teamId].worst.rate) }}%</span>
+          </div>
+          <div class="rev-axes muted" v-else-if="teamStats.length">还没有作答数据</div>
+
         </div>
         <div v-if="!teamStats.length" class="empty">还没有作答数据</div>
 
@@ -440,9 +498,27 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
 
 /* ④ 点评 */
 .review { display: grid; grid-template-columns: 400px 1fr; gap: var(--sp-6); }
+/* ---- 点评总结的多维度分析 ---- */
+.rev-kpi { display: flex; gap: var(--sp-4); flex-wrap: wrap; margin-bottom: var(--sp-3); }
+.rev-kpi .kpi { display: flex; flex-direction: column; gap: 2px; }
+.rev-kpi .k { color: var(--c-text-3); font-size: var(--fs-sm); }
+.rev-kpi .v { font-size: var(--fs-2xl); font-weight: 800; color: var(--c-text); line-height: 1.1; }
+.rev-kpi .v i { font-size: var(--fs-sm); font-style: normal; margin-left: 2px; }
+.rev-bars { display: flex; align-items: center; gap: var(--sp-2); margin-left: var(--sp-3); flex: 1; }
+.rev-bars .bar { flex: 1; height: 10px; border-radius: var(--radius-pill); background: var(--c-surface-3); overflow: hidden; }
+.rev-bars .bar.thin { height: 6px; flex: .7; }
+.rev-bars .bar .fill { display: block; height: 100%; border-radius: var(--radius-pill); transition: width var(--dur-2) var(--ease-out); }
+.rev-bars .rev-score { min-width: 62px; text-align: right; color: var(--c-text-2); font-size: var(--fs-sm); }
+.rev-axes { display: flex; gap: var(--sp-2); margin-left: var(--sp-3); font-size: var(--fs-xs); flex-basis: 100%; }
+.rev-axes .ax { padding: 0 var(--sp-2); border-radius: var(--radius-sm); }
+.rev-axes .ax.best { background: var(--c-ok-weak); color: var(--c-ok); }
+.rev-axes .ax.worst { background: var(--c-bad-weak); color: var(--c-bad); }
+.rev-axes.muted { color: var(--c-text-3); }
+
 .rev-team {
   display: flex; align-items: center; gap: var(--sp-3); background: var(--c-surface); border: 1px solid var(--c-line);
   border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-2); font-size: clamp(16px, 2.2vmin, 20px); box-shadow: var(--sh-1);
+  flex-wrap: wrap;
 }
 .rev-name { font-weight: 700; }
 .rev-correct { margin-left: auto; color: var(--c-ok); font-weight: 800; }
