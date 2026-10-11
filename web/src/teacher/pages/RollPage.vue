@@ -12,6 +12,35 @@ import { fetchPick } from '../../shared/domain-api';
 
 const store = useClassStore();
 const current = ref<any>(null);          // { sid, name, teamName }
+
+/* ---- 抽人动画（用户要求：不要生硬，要有"随意跳动"的感觉） ----
+ * 真正的结果仍来自领域层 fetchPick；这里只负责"看得见的期待感"。
+ * 遵守无障碍：开了「减少动效」就直接出结果（设计规范硬规则）。
+ */
+const rolling = ref(false);
+const rollName = ref('');
+
+/** 当前是否要求减少动效（a11y 设置写在 html 上） */
+function reduceMotion() {
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('a11y-reduce-motion');
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** 在候选池里跳名字，约 1.1 秒后停手（前快后慢，像老虎机落定） */
+async function rollAnimation() {
+  const names = pool.value.map((s: any) => s.name).filter(Boolean);
+  if (!names.length || reduceMotion()) return;
+  rolling.value = true;
+  const total = 1100;
+  const t0 = Date.now();
+  while (Date.now() - t0 < total) {
+    rollName.value = names[Math.floor(Math.random() * names.length)];
+    const t = (Date.now() - t0) / total;
+    await sleep(45 + t * t * 220);   // 越接近结束，间隔越大
+  }
+  rolling.value = false;
+}
 const history = ref<any[]>([]);            // 本次课堂的点名顺序
 const settings = ref({ ...store.state.rollcall });
 
@@ -78,6 +107,7 @@ async function doPick() {
   const r = await fetchPick();
   const res = r.pick;
   if (!res) { ElMessage.warning('没有可点名的学生（检查候选池设置或名单）'); return; }
+  await rollAnimation();   // 先跳一会儿，再落到结果上
   CI.rollcall.applyPick(res);
   // 顺带把课堂环节切到"随机点名"，大屏立刻放大显示这位同学
   CI.classroom.setPhase('rollcall');
@@ -153,7 +183,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
       </div>
       <div class="actions">
         <el-button @click="resetRound">重置点名池</el-button>
-        <el-button type="primary" size="large" @click="doPick">{{ current ? '抽下一位（空格）' : '抽一位（空格）' }}</el-button>
+        <el-button :disabled="rolling" type="primary" size="large" @click="doPick">{{ rolling ? '正在抽…' : (current ? '抽下一位（空格）' : '抽一位（空格）') }}</el-button>
       </div>
     </div>
 
@@ -168,6 +198,11 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
               分（{{ resultShort(current.result) }}）
             </span>
             <span class="jb-next">再按一次 <b>空格</b> 抽下一位</span>
+          </div>
+          <!-- 抽人中：名字快速跳动 -->
+          <div v-if="rolling" class="picked rolling">
+            <div class="who roll-who">{{ rollName || '…' }}</div>
+            <div class="meta"><span class="score">正在抽…</span></div>
           </div>
           <div v-if="current" class="picked">
             <div class="who">{{ current.name }}</div>
@@ -286,6 +321,17 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 <style scoped>
 .pick-panel { text-align: center; padding: var(--sp-6) var(--sp-4); }
 .picked .who { font-size: var(--fs-6xl); font-weight: 800; letter-spacing: 4px; line-height: 1.2; }
+
+/* 抽人时的跳动（克制：只做轻微缩放+位移，不旋转不闪烁） */
+.roll-who { animation: roll-jump .16s ease-in-out infinite alternate; }
+@keyframes roll-jump {
+  from { transform: translateY(-4px) scale(.985); opacity: .82; }
+  to   { transform: translateY(4px) scale(1.015); opacity: 1; }
+}
+.picked.rolling .who { color: var(--ci-text-weak); }
+/* 减少动效：静态呈现（a11y 设置由 html 类控制） */
+:global(html.a11y-reduce-motion) .roll-who { animation: none; }
+
 .picked .meta { display: flex; align-items: center; justify-content: center; gap: var(--sp-4); margin-top: var(--sp-2); color: var(--ci-text-weak); }
 .picked .meta b { color: var(--ci-text); }
 .unpicked .hint-big { font-size: var(--fs-2xl); color: var(--ci-text-weak); }
