@@ -351,7 +351,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
 }
 .chip.timer.urgent { color: var(--c-surface); background: var(--c-bad); border-color: var(--c-bad); animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .72; } }
-.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c-bad); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-bad); }
 .dot.ok { background: var(--c-ok); }
 
 .body { flex: 1; padding: var(--sp-5) var(--sp-6); overflow: hidden; }
@@ -486,7 +486,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (ws) ws.close(); });
   font-size: var(--fs-xs); font-weight: 700; text-align: center; line-height: 22px;
 }
 .opt-key.right { background: #dcfce7; color: #15803d; }
-.opt-bar { flex: 1; min-width: 40px; height: 10px; border-radius: 999px; background: var(--c-bg); overflow: hidden; }
+.opt-bar { flex: 1; min-width: 40px; height: 8px; border-radius: var(--radius-pill); background: var(--c-bg); overflow: hidden; }
 .opt-fill { display: block; height: 100%; background: #94a3b8; }
 .opt-fill.right { background: var(--c-ok); }
 .opt-rate { flex: none; width: 42px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--c-text-2); }

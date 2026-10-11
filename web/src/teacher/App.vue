@@ -215,7 +215,7 @@ function bindShortcuts() {
   border-right: 1px solid var(--ci-line);
   display: flex;
   flex-direction: column;
-  transition: width .18s ease;
+  transition: width var(--dur-2) var(--ease-out);
 }
 .brand {
   display: flex;

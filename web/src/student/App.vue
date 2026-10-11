@@ -431,7 +431,7 @@ function switchTeam() {
 .others { margin: 0 var(--sp-3) var(--sp-3); background: var(--c-surface); border-radius: var(--radius-lg); padding: var(--sp-3); }
 .others-title { color: var(--c-text-3); font-size: var(--fs-xs); margin-bottom: var(--sp-2); }
 .other-row { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) 0; font-size: var(--fs-sm); }
-.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
 .oname { font-weight: 600; }
 .ocorrect { margin-left: auto; color: var(--c-ok); font-weight: 600; }
 .orate { color: var(--c-text-3); font-size: var(--fs-xs); }
