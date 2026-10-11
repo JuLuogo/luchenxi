@@ -320,7 +320,24 @@ function back() {
   <div class="open-page">
     <div class="head">
       <h2>公开课</h2>
-      <span class="sub">点名 → 抽题 → 现场判定 → 现场评价，一步一屏</span>
+      <span class="sub">展示课专用：老师当众走完「点名 → 抽题 → 判定 → 评价」，一步一屏</span>
+    </div>
+
+    <!-- 2026-10-11 用户反馈："公开课和课堂协同看着差不多，不明白这页是干嘛的" ——
+         把"什么时候用它、和日常课什么区别"直接写在页面上，而不是只留一个名字。 -->
+    <div class="role-note">
+      <div class="rn-main">
+        <b>这页给谁用：</b>有听课老师在场的<b>展示课</b>。全程由<b>老师一台机器</b>操作 ——
+        点名、抽题、当众判定、现场四维评价，<b>不依赖学生端提交</b>（学生没设备也能走完）。
+      </div>
+      <div class="rn-diff">
+        <span class="rn-tag">日常课请用</span>
+        「课堂协同」：学生端扫码作答、客观题自动判分、在线小组与抢答实时流。
+        <br />
+        <span class="rn-tag">两者关系</span>
+        同一套底账（积分/流水/学情都写进同一个班级），区别只是<b>推进方式</b>：
+        日常课靠学生提交推进，公开课靠老师当众推进。
+      </div>
     </div>
 
     <el-steps :active="step - 1" simple class="steps">
@@ -481,6 +498,22 @@ function back() {
 .head { display: flex; align-items: baseline; gap: var(--sp-2); margin-bottom: var(--sp-3); }
 .head h2 { margin: 0; }
 .sub { color: var(--el-text-color-secondary); font-size: var(--fs-sm); }
+
+/* 角色说明（用户反馈："这页和课堂协同看着差不多"）—— 用左侧色条把它做成"页面说明"而不是正文 */
+.role-note {
+  margin-bottom: var(--sp-4); padding: var(--sp-3) var(--sp-4);
+  background: var(--ci-fill, var(--el-fill-color-light));
+  border-left: 3px solid var(--el-color-primary);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm); line-height: var(--lh-relaxed);
+}
+.role-note .rn-main { color: var(--el-text-color-primary); }
+.role-note .rn-diff { margin-top: var(--sp-2); color: var(--el-text-color-secondary); }
+.role-note .rn-tag {
+  display: inline-block; margin-right: var(--sp-1); padding: 0 var(--sp-2);
+  border-radius: var(--radius-sm); background: var(--el-fill-color);
+  color: var(--el-text-color-regular); font-size: var(--fs-xs);
+}
 .steps { margin-bottom: var(--sp-4); }
 .panel { padding: var(--sp-2) var(--sp-1); }
 .big-hint { font-size: var(--fs-xl); font-weight: 700; margin-bottom: var(--sp-4); }
