@@ -27,6 +27,47 @@ const roundInfo = computed(() => ({
   pool: pool.value.length
 }));
 
+/**
+ * 本轮点名统计（用户反馈：只有"学生总数/被点过"，看不到"加了多少分"）
+ *
+ * `history` 里每条 = 一次点名；判分后把 delta 写回去，于是能算出本轮累计加分。
+ */
+const rollStats = computed(() => {
+  const judged = history.value.filter((h) => h.delta !== undefined);
+  const gained = Math.round(judged.reduce((a, h) => a + (h.delta || 0), 0) * 100) / 100;
+  const byResult: any = { correct: 0, half: 0, wrong: 0, skip: 0 };
+  judged.forEach((h) => { if (h.result && byResult[h.result] !== undefined) byResult[h.result] += 1; });
+  return {
+    picked: history.value.length,
+    judged: judged.length,
+    gained,
+    avg: judged.length ? Math.round((gained / judged.length) * 10) / 10 : 0,
+    byResult
+  };
+});
+
+/**
+ * 把"这次点名加了多少分"记回点名顺序里
+ *
+ * 为什么：原来 judge() 只弹了个 toast，历史列表里只有名字 ——
+ * 老师下课后想复盘"这轮点了谁、加了多少分"就无从查起。
+ */
+function recordScore(sid: string, delta: number, result: string) {
+  const hit = history.value.find((h) => h.sid === sid && h.delta === undefined);
+  if (hit) { hit.delta = delta; hit.result = result; return; }
+  // 兜底：判的是历史里的某一位（不是刚抽到的），累加到最新一条上
+  if (history.value.length) {
+    const h = history.value[0];
+    h.delta = Math.round(((h.delta || 0) + delta) * 100) / 100;
+    h.result = result;
+  }
+}
+
+/** 判定结果 → 标签文字（列表里显示"+3 答对"这样的短标记） */
+function resultShort(r: string) {
+  return ({ correct: '答对', half: '半对', wrong: '答错', skip: '跳过' } as any)[r] || '';
+}
+
 async function doPick() {
   // 点名优先走 Rust 核心（/api/domain/pick，与 parity 基准同一套算法），不可达时回退本地实现
   const r = await fetchPick();
@@ -52,13 +93,17 @@ function judge(result) {
   CI.rollcall.judge(result);
   const after = store.scoreOf(current.value.sid);
   const delta = Math.round((after - before) * 100) / 100;
+  recordScore(current.value.sid, delta, result);   // 记回点名顺序，供统计与复盘
   ElMessage.success(`${current.value.name} ${CI.store.RESULT_LABEL[result]}${delta ? '（' + (delta > 0 ? '+' : '') + delta + '）' : ''}`);
   doPick();                       // 判分后立刻抽下一位
 }
 
 function quick(tierKey, result) {
   if (!current.value) { ElMessage.info('先点一次名'); return; }
+  const before = store.scoreOf(current.value.sid);
   CI.rollcall.quickFor(current.value.sid, tierKey, result || 'correct');
+  const after = store.scoreOf(current.value.sid);
+  recordScore(current.value.sid, Math.round((after - before) * 100) / 100, result || 'correct');
   ElMessage.success(`${current.value.name} 已按题型记分`);
 }
 
@@ -139,10 +184,42 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
         </div>
 
         <div class="panel">
-          <h3 class="panel-title">本轮点名顺序<span class="sub">共 {{ history.length }} 人</span></h3>
+          <h3 class="panel-title">
+            本轮点名顺序
+            <span class="sub">共 {{ history.length }} 人 · 已判分 {{ rollStats.judged }} 人</span>
+          </h3>
+          <!-- 用户反馈："这个点名顺序我不明白是什么" —— 把口径写在脸上 -->
+          <div class="hint order-hint">
+            名字按<b>被点到的先后</b>排列（新点的在最上面）；后面的 <b>+N</b> 是这次点名给他加的分。
+            抽人规则由右边「点名策略」决定，「重置点名池」会清空这份顺序。
+          </div>
+          
+          <!-- 本轮统计（用户反馈：应该有"回答的学生加了多少分"的统计） -->
+          <div v-if="rollStats.picked" class="roll-stats">
+            <div class="st-item"><span class="k">本轮点名</span><b class="num">{{ rollStats.picked }}</b><span class="u">人</span></div>
+            <div class="st-item"><span class="k">已判分</span><b class="num">{{ rollStats.judged }}</b><span class="u">人</span></div>
+            <div class="st-item gain"><span class="k">累计加分</span><b class="num">{{ rollStats.gained > 0 ? '+' : '' }}{{ rollStats.gained }}</b><span class="u">分</span></div>
+            <div class="st-item"><span class="k">人均</span><b class="num">{{ rollStats.avg > 0 ? '+' : '' }}{{ rollStats.avg }}</b><span class="u">分</span></div>
+            <div class="st-dist">
+              <el-tag v-if="rollStats.byResult.correct" size="small" type="success" effect="plain">答对 {{ rollStats.byResult.correct }}</el-tag>
+              <el-tag v-if="rollStats.byResult.half" size="small" type="warning" effect="plain">半对 {{ rollStats.byResult.half }}</el-tag>
+              <el-tag v-if="rollStats.byResult.wrong" size="small" type="danger" effect="plain">答错 {{ rollStats.byResult.wrong }}</el-tag>
+              <el-tag v-if="rollStats.byResult.skip" size="small" effect="plain">跳过 {{ rollStats.byResult.skip }}</el-tag>
+            </div>
+          </div>
+          
           <div v-if="history.length" class="history">
-            <el-tag v-for="(h, i) in history" :key="h.sid + '-' + i" size="small" effect="plain" class="h-tag">
+            <el-tag
+              v-for="(h, i) in history"
+              :key="h.sid + '-' + i"
+              size="small"
+              effect="plain"
+              class="h-tag"
+              :type="h.result === 'correct' ? 'success' : h.result === 'half' ? 'warning' : h.result === 'wrong' ? 'danger' : 'info'"
+            >
               {{ history.length - i }}. {{ h.name }}
+              <b v-if="h.delta !== undefined" class="h-delta">{{ h.delta > 0 ? '+' : '' }}{{ h.delta }}</b>
+              <span v-if="h.result" class="h-res">{{ resultShort(h.result) }}</span>
             </el-tag>
           </div>
           <div v-else class="empty-hint">还没有点过名</div>
@@ -177,6 +254,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
             <el-descriptions-item label="学生总数">{{ roundInfo.total }}</el-descriptions-item>
             <el-descriptions-item label="已被点过">{{ roundInfo.called }}</el-descriptions-item>
             <el-descriptions-item label="当前候选">{{ roundInfo.pool }}</el-descriptions-item>
+            <el-descriptions-item label="本轮累计加分">
+              <b>{{ rollStats.gained > 0 ? '+' : '' }}{{ rollStats.gained }}</b> 分（人均 {{ rollStats.avg }}）
+            </el-descriptions-item>
           </el-descriptions>
         </div>
       </el-col>
@@ -197,4 +277,24 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 .history { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .hint { color: var(--ci-text-weak); font-size: var(--fs-xs); margin-left: var(--sp-2); }
 .oral-hint { margin-top: var(--sp-2); }
+
+/* ---- 点名顺序说明 + 本轮统计（用户反馈：顺序看不懂、没有加分统计） ---- */
+.order-hint { display: block; margin: 0 0 var(--sp-3); line-height: var(--lh-relaxed); }
+.order-hint b { color: var(--ci-text); }
+
+.roll-stats {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-5);
+  padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-3);
+  background: var(--ci-fill); border-radius: var(--radius-md);
+}
+.roll-stats .st-item { display: flex; align-items: baseline; gap: var(--sp-1); }
+.roll-stats .k { color: var(--ci-text-weak); font-size: var(--fs-sm); }
+.roll-stats .num { font-size: var(--fs-xl); font-weight: var(--fw-bold); color: var(--ci-text); }
+.roll-stats .u { color: var(--ci-text-weak); font-size: var(--fs-xs); }
+.roll-stats .gain .num { color: var(--c-success); }
+.roll-stats .st-dist { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin-left: auto; }
+
+.history .h-delta { margin-left: var(--sp-1); }
+.history .h-res { margin-left: var(--sp-1); opacity: .75; font-size: var(--fs-xs); }
+
 </style>

@@ -13,6 +13,7 @@ import { buildMenu } from './router';
 import { useClassStore } from '../shared/class-store';
 import { createRuntime } from '../shared/runtime';
 import { CI } from '../shared/bridge';
+import { openExternal } from '../shared/open-external';
 
 const route = useRoute();
 const router = useRouter();
@@ -69,13 +70,13 @@ async function copyStudentUrl() {
   }
 }
 
-function openStage() {
-  // 大屏页由**枢纽**提供（/stage），所以要用枢纽的绝对地址。
-  // 2026-10-11 修复：这里原来用 window.location.origin —— 桌面客户端（Tauri）的
-  // origin 是 tauri://localhost，那里没有 /stage，点「打开大屏」只会得到空白页。
+async function openStage() {
+  // 大屏页由**枢纽**提供（/stage），必须用枢纽绝对地址；
+  // 且桌面端要经 openExternal（Tauri 会拦掉 window.open 的外部 http 地址）
   const fallback = window.location.origin + '/stage?room=' + encodeURIComponent(rt.room || 'default');
   const url = (CI.sync as any).stageURL() || fallback;
-  window.open(url, '_blank');
+  const ok = await openExternal(url);
+  if (!ok) ElMessage.warning({ message: '没打开大屏，请手动在浏览器访问：' + url, duration: 8000 });
 }
 
 onMounted(() => {

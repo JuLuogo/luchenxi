@@ -8,6 +8,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { useClassStore } from '../../shared/class-store';
 import { CI } from '../../shared/bridge';
 import { fetchPick } from '../../shared/domain-api';
+import { openExternal } from '../../shared/open-external';
 
 const store = useClassStore();
 const tick = ref(0);
@@ -127,13 +128,17 @@ async function copyJoin() {
   try { await navigator.clipboard.writeText(joinUrl.value); ElMessage.success('学生端地址已复制'); }
   catch (e) { ElMessage.warning('复制失败，请手动选择'); }
 }
-function openStage() {
+async function openStage() {
   // 大屏页由**枢纽**提供（/stage）—— 必须用绝对地址。
-  // 2026-10-11 修复：原来写相对路径 '/stage'，在桌面客户端（tauri://localhost）下
-  // 会解析到应用自身，大屏打不开（这正是"教师端看起来只是个壳子"的一半原因）。
+  // 2026-10-11 修复：① 原来写相对路径 '/stage'，桌面端（tauri://localhost）会解析到应用自身；
+  // ② 桌面端里 window.open 对**外部 http 地址**会被 Tauri 拦掉（用户实测：点了没反应），
+  //    所以统一走 openExternal（桌面端用系统浏览器打开）。
   const url = (CI.sync as any).stageURL();
   if (!url) { ElMessage.warning('还没连上枢纽，暂时打不开大屏'); return; }
-  window.open(url, '_blank');
+  const ok = await openExternal(url);
+  if (!ok) {
+    ElMessage.warning({ message: '没打开大屏，请手动在浏览器访问：' + url, duration: 8000 });
+  }
 }
 function restore() {
   ElMessageBox.confirm(

@@ -457,5 +457,8 @@ function saveCourseName(v: string) {
 .course-row { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3); }
 .course-label { color: var(--el-text-color-secondary); font-size: var(--fs-sm); }
 .course-input { max-width: 320px; }
-.roster-file { margin-top: var(--sp-2); display: flex; align-items: center; gap: var(--sp-2); }
+/* 2026-10-11：这一行原来 flex 不换行，提示文字会顶出对话框右边框（实测截图可见）——
+   改成"按钮一行、提示另起一行且允许换行"，并把提示的字号/行高收敛到尺度上 */
+.roster-file { margin-top: var(--sp-2); display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.roster-file .hint { flex: 1 1 100%; margin: 0; line-height: var(--lh-relaxed); white-space: normal; }
 </style>
