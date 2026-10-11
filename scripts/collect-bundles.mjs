@@ -36,7 +36,9 @@ function findBundles(dir, depth) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const q = path.join(dir, e.name);
     if (e.isDirectory()) out = out.concat(findBundles(q, depth + 1));
-    else if (EXTENSIONS.some((x) => e.name.endsWith(x))) out.push(q);
+    // `.AppImage`（大写 I）——于是 Linux 教师端那个"自带 GTK/WebKit、不依赖系统库"的包
+    // 被**静默丢掉**了（发行版里只剩 .deb，它是要靠系统装依赖的）。改成大小写无关。
+    else if (EXTENSIONS.some((x) => e.name.toLowerCase().endsWith(x))) out.push(q);
   }
   return out;
 }

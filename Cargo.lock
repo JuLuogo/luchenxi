@@ -405,7 +405,7 @@ dependencies = [
 
 [[package]]
 name = "ci-core"
-version = "4.2.1"
+version = "4.2.3"
 dependencies = [
  "axum",
  "ci-domain",
@@ -422,7 +422,7 @@ dependencies = [
 
 [[package]]
 name = "ci-domain"
-version = "4.2.1"
+version = "4.2.3"
 dependencies = [
  "serde",
  "serde_json",
@@ -432,7 +432,7 @@ dependencies = [
 
 [[package]]
 name = "ci-hub"
-version = "4.2.1"
+version = "4.2.3"
 dependencies = [
  "axum",
  "ci-domain",
@@ -451,11 +451,11 @@ dependencies = [
 
 [[package]]
 name = "ci-protocol"
-version = "4.2.1"
+version = "4.2.3"
 
 [[package]]
 name = "ci-store"
-version = "4.2.1"
+version = "4.2.3"
 dependencies = [
  "rusqlite",
  "serde_json",
@@ -2075,7 +2075,7 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
 name = "luchenxi-student"
-version = "4.2.1"
+version = "4.2.3"
 dependencies = [
  "ci-domain",
  "ci-protocol",
@@ -2089,7 +2089,7 @@ dependencies = [
 
 [[package]]
 name = "luchenxi-teacher"
-version = "4.2.1"
+version = "4.2.3"
 dependencies = [
  "ci-core",
  "ci-domain",
