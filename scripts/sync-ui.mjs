@@ -25,8 +25,11 @@ const DIST = path.join(ROOT, 'web', 'dist');
 /** 每个客户端需要哪些前端文件（都来自 web/dist） */
 const APPS = {
   teacher: {
-    // 教师端 + 内置大屏页（index.html 就是大屏）
-    html: ['admin.html', 'index.html'],
+    // 教师端界面（admin.html）+ 内置大屏页（index.html）
+    // + **学生页（student.html）**：教师端的内置枢纽要直接服务学生的浏览器
+    //   （`http://<教师机IP>:8080/join`），所以这里必须一起拷进去 ——
+    //   2026-10-11 修复：以前只拷 admin+index，导致 /join 在教师端 404。
+    html: ['admin.html', 'index.html', 'student.html'],
     out: 'apps/teacher/ui'
   },
   student: {

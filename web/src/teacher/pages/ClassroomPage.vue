@@ -128,7 +128,12 @@ async function copyJoin() {
   catch (e) { ElMessage.warning('复制失败，请手动选择'); }
 }
 function openStage() {
-  window.open('/stage?room=' + encodeURIComponent(CI.sync.room()), '_blank');
+  // 大屏页由**枢纽**提供（/stage）—— 必须用绝对地址。
+  // 2026-10-11 修复：原来写相对路径 '/stage'，在桌面客户端（tauri://localhost）下
+  // 会解析到应用自身，大屏打不开（这正是"教师端看起来只是个壳子"的一半原因）。
+  const url = (CI.sync as any).stageURL();
+  if (!url) { ElMessage.warning('还没连上枢纽，暂时打不开大屏'); return; }
+  window.open(url, '_blank');
 }
 function restore() {
   ElMessageBox.confirm(

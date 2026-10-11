@@ -70,7 +70,11 @@ async function copyStudentUrl() {
 }
 
 function openStage() {
-  const url = window.location.origin + '/stage?room=' + encodeURIComponent(rt.room || 'default');
+  // 大屏页由**枢纽**提供（/stage），所以要用枢纽的绝对地址。
+  // 2026-10-11 修复：这里原来用 window.location.origin —— 桌面客户端（Tauri）的
+  // origin 是 tauri://localhost，那里没有 /stage，点「打开大屏」只会得到空白页。
+  const fallback = window.location.origin + '/stage?room=' + encodeURIComponent(rt.room || 'default');
+  const url = (CI.sync as any).stageURL() || fallback;
   window.open(url, '_blank');
 }
 

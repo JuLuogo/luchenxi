@@ -97,6 +97,37 @@ console.log('\n=== E. 守卫都在 CI 里 ===');
    'rule-audit.test.js', 'fix-hub-verify.cjs'].forEach((f) => check(ci.includes(f), 'CI 含 ' + f));
 }
 
+console.log('\n=== G. 客户端打包契约（装完就能用）===');
+{
+  /* 2026-10-11：用户反馈"装了客户端只是个展示页面的壳子，没有后端"——
+     根因是**桌面端内置枢纽不服务任何网页**（静态层只在独立枢纽里）。
+     这一组断言保证修好的打包契约不会再丢。 */
+  const hubStatic = has('crates/ci-hub/src/static_files.rs');
+  check(hubStatic, '静态层在 ci-hub 里（独立枢纽与桌面端共用一份）');
+  const hubStaticSrc = hubStatic ? read('crates/ci-hub/src/static_files.rs') : '';
+  check(hubStaticSrc.includes('router_with_static') && hubStaticSrc.includes('serve_with_static'),
+    'ci-hub 暴露 router_with_static / serve_with_static');
+  check(hubStaticSrc.includes('/join') && hubStaticSrc.includes('/stage'),
+    '入口映射含 /join 与 /stage（学生端与大屏）');
+  check(read('crates/ci-core/src/server.rs').includes('static_files::router_with_static'),
+    '独立枢纽复用共享静态层（没有第二份实现）');
+  check(read('apps/teacher/src-tauri/src/lib.rs').includes('static_files::serve_with_static'),
+    '教师端内置枢纽挂了静态服务');
+  const tconf = read('apps/teacher/src-tauri/tauri.conf.json');
+  check(/"\.\.\/ui\/"\s*:\s*"web\/dist\/"/.test(tconf),
+    '教师端把界面打进安装包（bundle.resources → web/dist）');
+  check(/'student\.html'/.test(read('scripts/sync-ui.mjs')),
+    '教师端 ui 里带 student.html（否则 /join 404）');
+  check(/\.stageURL\(\)|stageURL: stageURL/.test(read('assets/js/sync.js')),
+    '入口地址由领域层提供 stageURL()');
+  check(/stageURL\(\)/.test(read('web/src/teacher/App.vue')),
+    '教师端顶栏「打开大屏」用枢纽绝对地址');
+  check(/stageURL\(\)/.test(read('web/src/teacher/pages/ClassroomPage.vue')),
+    '课堂协同页「打开大屏」用枢纽绝对地址');
+  check(/入口页可打开/.test(read('tests/fix-hub-verify.cjs')),
+    '黑盒测试覆盖入口页（/join、/stage）');
+}
+
 console.log('\n=== F. 文档同步 ===');
 {
   const d16 = read('docs/16-审计记录.md');

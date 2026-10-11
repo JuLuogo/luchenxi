@@ -244,13 +244,29 @@
       .catch(function () { /* 无枢纽信息（单机模式） */ });
   }
 
-  /** 当前学生端入口地址（供二维码/文字展示）；拿不到时返回空串，由界面给出提示 */
-  function joinURL() {
+  /**
+   * 入口地址（学生端 /join、大屏 /stage）——都指向**枢纽**，不是本地页面
+   *
+   * 为什么抽出来（2026-10-11 修复）：界面里原来写死相对路径 `/stage`，
+   * 在桌面客户端（Tauri 自定义协议 tauri://localhost）下会解析到应用自身 →
+   * 大屏打不开。入口页由枢纽提供，必须用枢纽的绝对地址。
+   */
+  function entryURL(path) {
     var roomId = room();
     var ip = serverInfo && serverInfo.ips && serverInfo.ips.length ? serverInfo.ips[0] : null;
     var port = serverInfo && serverInfo.port ? serverInfo.port : (servedOverHttp() ? root.location.port : DEFAULT_LOCAL_PORT);
-    if (!ip) return servedOverHttp() ? ((root.location ? root.location.origin : '') + '/join?room=' + roomId) : '';
-    return 'http://' + ip + ':' + port + '/join?room=' + roomId;
+    if (!ip) return servedOverHttp() ? ((root.location ? root.location.origin : '') + path + '?room=' + roomId) : '';
+    return 'http://' + ip + ':' + port + path + '?room=' + roomId;
+  }
+
+  /** 当前学生端入口地址（供二维码/文字展示）；拿不到时返回空串，由界面给出提示 */
+  function joinURL() {
+    return entryURL('/join');
+  }
+
+  /** 大屏入口地址（由枢纽提供 /stage 页面） */
+  function stageURL() {
+    return entryURL('/stage');
   }
 
   function qrURL(text) {
@@ -442,7 +458,7 @@
   // 枢纽基址：**单一来源**（domain-api.ts 的 Rust 优先判定也用它 —— 审计发现那边原来自己实现，
   // 缺了 tauri.localhost / file:// 的处理，导致桌面端 Rust 路径永久失效）
   hubBase: hubBase,
-    joinURL: joinURL, qrURL: qrURL, serverInfo: function () { return serverInfo; },
+    joinURL: joinURL, stageURL: stageURL, qrURL: qrURL, serverInfo: function () { return serverInfo; },
     sameOrigin: sameOrigin, reconnect: reconnect, refreshServerInfo: fetchServerInfo,
     state: function () { return ws ? ws.readyState : -1; },
     connected: function () { return !!ws && ws.readyState === 1; },

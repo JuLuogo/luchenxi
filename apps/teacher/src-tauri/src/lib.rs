@@ -163,10 +163,46 @@ pub fn run() {
                 port,
             };
 
+            // 静态根：网页界面（学生端 /join 与大屏 /stage 由**内置枢纽**直接服务）
+            //
+            // 2026-10-11 修复：内置枢纽原来**不服务任何网页**（静态层只在独立枢纽里），
+            // 于是装完教师端后「复制学生端地址」给的是 `http://<IP>:8080/join?room=…`，
+            // 而那个端口没有 /join —— 学生用浏览器打不开；「打开大屏」的相对路径 /stage
+            // 在 Tauri 里也会解析到自定义协议 → 大屏打不开。教师端因此"看起来只是个壳子"。
+            //
+            // 现在：UI 作为 bundle.resources 打进安装包（见 tauri.conf.json 的
+            // `"../ui/": "web/dist/"`），内置枢纽按同一套映射服务 /join、/stage 与静态资源。
+            let static_root = std::env::var("CLASSROOM_STATIC_ROOT")
+                .map(PathBuf::from)
+                .unwrap_or_else(|_| {
+                    let res = app
+                        .path()
+                        .resource_dir()
+                        .unwrap_or_else(|_| PathBuf::from("."));
+                    if res.join("web").join("dist").join("admin.html").exists() {
+                        res
+                    } else {
+                        // 开发模式（tauri dev）：资源目录里没有前端产物，退回仓库根
+                        // （CARGO_MANIFEST_DIR = apps/teacher/src-tauri，上两级是仓库根）
+                        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                            .join("..")
+                            .join("..")
+                    }
+                });
+            if !static_root.join("web").join("dist").join("admin.html").exists() {
+                eprintln!(
+                    "[hub] 警告：静态根 {} 下没有 web/dist/admin.html —— 学生端 /join 与大屏 /stage 将不可用",
+                    static_root.display()
+                );
+            }
+
             // 枢纽跑在 Tauri 自带的 tokio 运行时里；即便端口被占用也不该挡住主界面
             let hub_for_task = hub_state.clone();
+            let static_for_task = static_root.clone();
             tauri::async_runtime::spawn(async move {
-                if let Err(e) = hub::serve(hub_for_task).await {
+                if let Err(e) =
+                    hub::static_files::serve_with_static(hub_for_task, static_for_task, false).await
+                {
                     eprintln!("[hub] 内置枢纽未启动：{}", e);
                 }
             });

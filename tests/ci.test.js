@@ -92,7 +92,12 @@ const teacherMain = read('apps/teacher/src-tauri/src/lib.rs');   // 业务代码
   ok(teacherMain.indexOf('fn ' + cmd) >= 0 || teacherMain.indexOf(cmd + ',') >= 0, '教师端注册了命令 ' + cmd);
 });
 ok(teacherMain.indexOf('tauri::generate_handler!') >= 0, '教师端使用 generate_handler 注册命令');
-ok(teacherMain.indexOf('hub::serve') >= 0, '教师端启动内置枢纽');
+// 2026-10-11：桌面端内置枢纽换成 serve_with_static（要给学生端 /join 与大屏 /stage 发页面），
+// 断言接受两种写法 —— 检查的仍然是"教师端真的把内置枢纽拉起来了"
+ok(
+  teacherMain.indexOf('hub::serve') >= 0 || teacherMain.indexOf('hub::static_files::serve_with_static') >= 0,
+  '教师端启动内置枢纽'
+);
 
 const teacherDb = read('crates/ci-store/src/lib.rs');
 ok(teacherDb.indexOf('include_str!("../schema.sql")') >= 0, 'db.rs 引用与 Node 共用的 schema.sql');

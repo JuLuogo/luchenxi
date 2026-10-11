@@ -125,6 +125,23 @@ const check = (ok, label, extra) => {
     if (qr === 200) check(health.qrcode === true, '/health 的 qrcode 与 /qr.png 实际能力一致');
   }
   
+  console.log('\n=== ③.8 入口页真的能打开（学生端 /join、大屏 /stage） ===');
+  {
+    /* 2026-10-11 修复：静态层原来只在独立枢纽里，桌面端内置枢纽没有它 ——
+       于是装完教师端后「复制学生端地址」给出的 http://<IP>:8080/join 打不开，
+       「打开大屏」也打不开（相对路径解析到 Tauri 自定义协议）。
+       这条断言保证两个枢纽都能真的把入口页发出来。 */
+    for (const [path, label] of [['/join', '学生端'], ['/stage', '大屏'], ['/admin', '教师端']]) {
+      const r = await fetch(BASE + path).catch(() => null);
+      const code = r ? r.status : 0;
+      const ct = r ? (r.headers.get('content-type') || '') : '';
+      let body = '';
+      try { body = r ? await r.text() : ''; } catch (e) { /* 忽略 */ }
+      check(code === 200 && ct.includes('text/html') && body.includes('./assets/'),
+        label + ' 入口页可打开（' + path + '）', 'HTTP ' + code + ' ' + ct);
+    }
+  }
+
   console.log('\n=== ④ dump 不会被当 state 广播 ===');
   const secret = 'SECRET_ANSWER_' + Date.now();
   teacher.send(JSON.stringify({ type: 'dump', room, payload: { quizzes: [{ records: [{ note: secret }] }], answerKey: secret } }));

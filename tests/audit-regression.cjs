@@ -37,7 +37,9 @@ console.log('=== A. 领域层：三个高危（含"先抢答加分最少"）==='
 console.log('\n=== B. 枢纽：4 个高危（两个枢纽都修）===');
 {
   const hub = read('crates/ci-hub/src/lib.rs');
-  const srv = read('crates/ci-core/src/server.rs');
+// 静态层 2026-10-11 从 ci-core/server.rs 搬到 ci-hub/static_files.rs（独立枢纽与桌面端共用）；
+// 断言跟着搬到新文件，检查强度不变。
+  const srv = read('crates/ci-hub/src/static_files.rs');
   const node = read('sync-server.js');
   check(/c\.role == "host"/.test(hub), 'Rust 枢纽：hello 不能把自己提成 host');
   check(/first == "data"/.test(srv), 'Rust 静态服务：拉黑 data/');
